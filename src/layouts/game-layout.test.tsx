@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { GameLayout } from "./game-layout.js";
 import type { LevelConfig } from "../simulation/types.js";
+import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
+import type { Edge } from "@xyflow/react";
 
 const testLevelConfig: LevelConfig = {
   cacheHitRate: 0,
@@ -8,6 +10,30 @@ const testLevelConfig: LevelConfig = {
   timeout: 10,
   trafficSchedule: [{ opsPerSec: 100, startTime: 0 }],
 };
+
+const overloadLevelConfig: LevelConfig = {
+  cacheHitRate: 0,
+  revenueTarget: 99999,
+  timeout: 10,
+  trafficSchedule: [{ opsPerSec: 300, startTime: 0 }],
+};
+
+const overloadNodes: ArchitectureCanvasNode[] = [
+  {
+    data: { componentType: "users", label: "Users" },
+    id: "users-1",
+    position: { x: 0, y: 0 },
+    type: "architecture",
+  },
+  {
+    data: { componentType: "server", label: "Server" },
+    id: "server-1",
+    position: { x: 96, y: 0 },
+    type: "architecture",
+  },
+];
+
+const overloadEdges: Edge[] = [{ id: "edge-1", source: "users-1", target: "server-1" }];
 
 describe("game layout", () => {
   it("renders the top bar", () => {
@@ -99,5 +125,24 @@ describe("simulation mode", () => {
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
 
     expect(screen.getByText(/\$500\.00/)).toBeInTheDocument();
+  });
+
+  it("inspector load field reflects overloaded state for the selected node", () => {
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={overloadLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("canvas-node-server-1"));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByText(/load:\s*300%\s*\(overloaded\)/i)).toBeInTheDocument();
   });
 });

@@ -23,6 +23,7 @@
     "react/jsx-max-depth": ["error", { "max": 5 }],
     /* Small ids are fine. Correct usage is too context-dependent for a lint
     rule*/
+    "no-ternary": "off",
     "id-length": "off",
     /* Import: each module should have a single export declaration so it's
     immediately obvious what is in the public api */

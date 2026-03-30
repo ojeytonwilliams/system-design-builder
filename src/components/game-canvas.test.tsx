@@ -276,6 +276,111 @@ describe("onStateChange callback", () => {
   });
 });
 
+describe("overloaded node state", () => {
+  it("renders overloaded styling for nodes included in overloadedNodeIds", () => {
+    render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+        overloadedNodeIds={["server-1"]}
+      />,
+    );
+
+    expect(screen.getByTestId("canvas-node-server-1")).toHaveAttribute("data-overloaded", "true");
+  });
+
+  it("applies coral overload fill and pulse animation to overloaded nodes", () => {
+    render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+        overloadedNodeIds={["server-1"]}
+      />,
+    );
+
+    expect(screen.getByTestId("canvas-node-server-1")).toHaveStyle({
+      animation: "overload-pulse 1.2s ease-in-out infinite",
+      background: "rgb(255, 228, 221)",
+    });
+  });
+
+  it("enters overloaded state immediately when node id is added", () => {
+    const { rerender } = render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+        overloadedNodeIds={[]}
+      />,
+    );
+
+    rerender(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+        overloadedNodeIds={["server-1"]}
+      />,
+    );
+
+    expect(screen.getByTestId("canvas-node-server-1")).toHaveAttribute("data-overloaded", "true");
+  });
+
+  it("returns a node to normal state when it is removed from overloadedNodeIds", () => {
+    const { rerender } = render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+        overloadedNodeIds={["server-1"]}
+      />,
+    );
+
+    rerender(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+        overloadedNodeIds={[]}
+      />,
+    );
+
+    expect(screen.getByTestId("canvas-node-server-1")).toHaveAttribute("data-overloaded", "false");
+  });
+});
+
 describe("edge deletion", () => {
   it("removes a selected edge when Delete is pressed", () => {
     render(

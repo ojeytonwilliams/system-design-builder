@@ -150,7 +150,7 @@
 
 ## Phase 5: Overload Visualisation
 
-- [ ] CODE: Implement overloaded node state
+- [x] CODE: Implement overloaded node state
   - Feature: When a node's incoming ops/sec exceeds its capacity, it enters the overloaded visual state.
   - Files: custom React Flow node components, styles
   - Acceptance:

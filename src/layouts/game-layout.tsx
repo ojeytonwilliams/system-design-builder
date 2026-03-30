@@ -1,5 +1,5 @@
 import type { Edge } from "@xyflow/react";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType } from "../components/component-library.js";
 import { PHASE_TWO_AVAILABLE_COMPONENTS } from "../components/component-library.js";
 import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
@@ -32,6 +32,8 @@ const DEFAULT_LEVEL_CONFIG: LevelConfig = {
 };
 
 interface GameLayoutProps {
+  initialEdges?: Edge[];
+  initialNodes?: ArchitectureCanvasNode[];
   levelConfig?: LevelConfig;
 }
 
@@ -47,19 +49,32 @@ const toGraphEdge = (edge: Edge): GraphEdge => ({
 });
 
 interface GameLayoutContentProps {
+  initialEdges: Edge[];
+  initialNodes: ArchitectureCanvasNode[];
   levelConfig: LevelConfig;
 }
 
-const GameLayoutContent = ({ levelConfig }: GameLayoutContentProps) => {
-  const { endSimulation, mode, revenue, startSimulation, tick } = useSimulation();
+const GameLayoutContent = ({ initialEdges, initialNodes, levelConfig }: GameLayoutContentProps) => {
+  const { endSimulation, mode, nodeStates, revenue, startSimulation, tick } = useSimulation();
+
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [graphState, setGraphState] = useState<{ edges: Edge[]; nodes: ArchitectureCanvasNode[] }>({
+    edges: initialEdges,
+    nodes: initialNodes,
+  });
 
   const graphRef = useRef<{ edges: Edge[]; nodes: ArchitectureCanvasNode[] }>({
-    edges: [],
-    nodes: [],
+    edges: initialEdges,
+    nodes: initialNodes,
   });
 
   const handleGraphChange = useCallback((nodes: ArchitectureCanvasNode[], edges: Edge[]) => {
+    setGraphState({ edges, nodes });
     graphRef.current = { edges, nodes };
+  }, []);
+
+  const handleSelectedNodeChange = useCallback((nodeId: string | null) => {
+    setSelectedNodeId(nodeId);
   }, []);
 
   const handleToggleTraffic = useCallback(() => {
@@ -114,6 +129,32 @@ const GameLayoutContent = ({ levelConfig }: GameLayoutContentProps) => {
     }
   }, [revenue, mode, endSimulation, levelConfig.revenueTarget]);
 
+  const overloadedNodeIds = Object.entries(nodeStates)
+    .filter(([, state]) => state.droppedOps > 0)
+    .map(([nodeId]) => nodeId);
+
+  let selectedNode = graphState.nodes.find((node) => node.id === selectedNodeId);
+
+  if (selectedNodeId === null) {
+    selectedNode = undefined;
+  }
+
+  let selectedNodeLabel: string | undefined;
+  let loadPercent: number | undefined;
+  let isSelectedNodeOverloaded = false;
+
+  if (selectedNode !== undefined) {
+    selectedNodeLabel = selectedNode.data.label;
+
+    const selectedNodeState = nodeStates[selectedNode.id];
+    const selectedNodeCapacity = DEFAULT_CAPACITIES[selectedNode.data.componentType] ?? Infinity;
+
+    if (selectedNodeState !== undefined && Number.isFinite(selectedNodeCapacity)) {
+      loadPercent = (selectedNodeState.incomingOps / selectedNodeCapacity) * 100;
+      isSelectedNodeOverloaded = selectedNodeState.incomingOps > selectedNodeCapacity;
+    }
+  }
+
   const isLocked = mode === "SIMULATE";
 
   return (
@@ -138,22 +179,41 @@ const GameLayoutContent = ({ levelConfig }: GameLayoutContentProps) => {
           <Palette availableComponents={PHASE_TWO_AVAILABLE_COMPONENTS} isDisabled={isLocked} />
         </section>
         <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-          <GameCanvas isLocked={isLocked} onStateChange={handleGraphChange} />
+          <GameCanvas
+            initialEdges={initialEdges}
+            initialNodes={initialNodes}
+            isLocked={isLocked}
+            onSelectedNodeChange={handleSelectedNodeChange}
+            onStateChange={handleGraphChange}
+            overloadedNodeIds={overloadedNodeIds}
+          />
         </main>
         <section
           aria-label="Inspector"
           style={{ flexShrink: 0, overflowY: "auto", width: "16rem" }}
         >
-          <Inspector />
+          <Inspector
+            isOverloaded={isSelectedNodeOverloaded}
+            loadPercent={loadPercent}
+            selectedNodeLabel={selectedNodeLabel}
+          />
         </section>
       </div>
     </div>
   );
 };
 
-const GameLayout = ({ levelConfig = DEFAULT_LEVEL_CONFIG }: GameLayoutProps) => (
+const GameLayout = ({
+  initialEdges = [],
+  initialNodes = [],
+  levelConfig = DEFAULT_LEVEL_CONFIG,
+}: GameLayoutProps) => (
   <SimulationProvider>
-    <GameLayoutContent levelConfig={levelConfig} />
+    <GameLayoutContent
+      initialEdges={initialEdges}
+      initialNodes={initialNodes}
+      levelConfig={levelConfig}
+    />
   </SimulationProvider>
 );
 

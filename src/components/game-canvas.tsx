@@ -27,6 +27,20 @@ const GRID_SIZE = 48;
 const BACKGROUND_GAP = 24;
 const BACKGROUND_SIZE = 0.8;
 const CANVAS_BACKGROUND = "#f8f5ec";
+const OVERLOAD_PULSE_ANIMATION = "overload-pulse 1.2s ease-in-out infinite";
+const OVERLOAD_PULSE_KEYFRAMES = `
+@keyframes overload-pulse {
+  0% {
+    box-shadow: 0 0 0 4px rgba(229, 99, 77, 0.15), 0 0 10px rgba(229, 99, 77, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(229, 99, 77, 0.3), 0 0 22px rgba(229, 99, 77, 0.58);
+  }
+  100% {
+    box-shadow: 0 0 0 4px rgba(229, 99, 77, 0.15), 0 0 10px rgba(229, 99, 77, 0.22);
+  }
+}
+`;
 const NODE_WIDTH = 88;
 const NODE_MIN_HEIGHT = 96;
 const CANVAS_COMPONENT_LIBRARY = {
@@ -67,6 +81,7 @@ interface Point {
 type ArchitectureNodeData = Record<string, unknown> & {
   componentType: ComponentType;
   icon?: string;
+  isOverloaded?: boolean;
   isSelected?: boolean;
   label: string;
 };
@@ -102,8 +117,12 @@ interface GameCanvasProps {
   initialEdges?: Edge[];
   initialNodes?: ArchitectureCanvasNode[];
   isLocked?: boolean;
+  onSelectedNodeChange?: (nodeId: string | null) => void;
   onStateChange?: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
+  overloadedNodeIds?: string[];
 }
+
+const DEFAULT_OVERLOADED_NODE_IDS: string[] = [];
 
 const canvasDropzoneStyles: CSSProperties = {
   background: "radial-gradient(circle at 1px 1px, rgba(26, 39, 68, 0.11) 1px, transparent 0)",
@@ -160,6 +179,37 @@ const setSelectedNode = (
     },
   }));
 
+const setOverloadedNodes = (
+  nodes: ArchitectureCanvasNode[],
+  overloadedNodeIds: Set<string>,
+): ArchitectureCanvasNode[] => {
+  let didChange = false;
+
+  const nextNodes = nodes.map((node) => {
+    const isOverloaded = overloadedNodeIds.has(node.id);
+
+    if (node.data.isOverloaded === isOverloaded) {
+      return node;
+    }
+
+    didChange = true;
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        isOverloaded: isOverloaded,
+      },
+    };
+  });
+
+  if (didChange) {
+    return nextNodes;
+  }
+
+  return nodes;
+};
+
 const getNextNodeId = (componentType: ComponentType, nodes: ArchitectureCanvasNode[]): string => {
   const nextIndex = nodes.filter((node) => node.data.componentType === componentType).length + 1;
 
@@ -178,7 +228,10 @@ const removeNodeAndConnections = (
 const ArchitectureNode = ({ data, id }: NodeProps<ArchitectureCanvasNode>) => {
   const { accentColor } = CANVAS_COMPONENT_LIBRARY[data.componentType];
   const isSelected = data.isSelected === true;
+  const isOverloaded = data.isOverloaded === true;
   const isUsersNode = data.componentType === "users";
+  let overloadAttributeValue = "false";
+  let animation = "none";
   let backgroundColor = "#fffdf8";
   let borderColor = "#1a2744";
   let boxShadow = "0 10px 25px rgba(26, 39, 68, 0.08)";
@@ -188,6 +241,14 @@ const ArchitectureNode = ({ data, id }: NodeProps<ArchitectureCanvasNode>) => {
     backgroundColor = "#fff3ea";
     borderColor = "#e5634d";
     boxShadow = "0 0 0 4px rgba(229, 99, 77, 0.12)";
+  }
+
+  if (isOverloaded) {
+    overloadAttributeValue = "true";
+    animation = OVERLOAD_PULSE_ANIMATION;
+    backgroundColor = "#ffe4dd";
+    borderColor = "#e5634d";
+    boxShadow = "0 0 0 4px rgba(229, 99, 77, 0.25), 0 0 18px rgba(229, 99, 77, 0.5)";
   }
 
   if (!isUsersNode) {
@@ -202,9 +263,11 @@ const ArchitectureNode = ({ data, id }: NodeProps<ArchitectureCanvasNode>) => {
   return (
     <div
       data-component-type={data.componentType}
+      data-overloaded={overloadAttributeValue}
       data-testid={`canvas-node-${id}`}
       style={{
         alignItems: "center",
+        animation,
         background: backgroundColor,
         border: `2px solid ${borderColor}`,
         borderRadius: "1rem",
@@ -300,7 +363,9 @@ const GameCanvas = ({
   initialEdges = [],
   initialNodes = [],
   isLocked = false,
+  onSelectedNodeChange,
   onStateChange,
+  overloadedNodeIds = DEFAULT_OVERLOADED_NODE_IDS,
 }: GameCanvasProps) => {
   const [nodes, setNodes] = useState<ArchitectureCanvasNode[]>(() =>
     initialNodes.map(withDefaultNodeShape),
@@ -314,6 +379,16 @@ const GameCanvas = ({
   useEffect(() => {
     setNodes((currentNodes) => setSelectedNode(currentNodes, selectedNodeId));
   }, [selectedNodeId]);
+
+  useEffect(() => {
+    const overloadedNodeSet = new Set(overloadedNodeIds);
+
+    setNodes((currentNodes) => setOverloadedNodes(currentNodes, overloadedNodeSet));
+  }, [overloadedNodeIds]);
+
+  useEffect(() => {
+    onSelectedNodeChange?.(selectedNodeId);
+  }, [selectedNodeId, onSelectedNodeChange]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -527,6 +602,7 @@ const GameCanvas = ({
 
   return (
     <div data-testid="game-canvas" style={{ height: "100%", position: "relative", width: "100%" }}>
+      <style>{OVERLOAD_PULSE_KEYFRAMES}</style>
       <div
         data-testid="game-canvas-dropzone"
         onDragOver={handleDragOver}

@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.5.0] - 2026-03-30
+
+### Phase 5 — Overload Visualisation
+
+**Canvas overload state (`src/components/game-canvas.tsx`)**
+
+- Added explicit overloaded node state via `overloadedNodeIds` and `isOverloaded` node data.
+- Overloaded nodes now render with coral fill and animated pulse (`overload-pulse 1.2s ease-in-out infinite`).
+- Added keyframes for overload pulse/glow and `data-overloaded` node attribute for deterministic assertions.
+- Fixed a render-loop/non-terminating test scenario by using a stable default `overloadedNodeIds` array and no-op guarding in overload state updates.
+
+**Inspector overload feedback (`src/components/inspector.tsx`, `src/layouts/game-layout.tsx`)**
+
+- Inspector now receives selected node label, computed load percentage, and overloaded state from simulation data.
+- Load text shows overload status when capacity is exceeded (e.g. `Load: 300% (Overloaded)`).
+
+#### Tests
+
+- Added coverage for overloaded canvas styling/state transitions in `src/components/game-canvas.test.tsx`.
+- Added overload text assertions in `src/components/inspector.test.tsx`.
+- Added integration coverage in `src/layouts/game-layout.test.tsx` for inspector overload state during simulation.
+
 ## [1.4.0] - 2026-03-30
 
 ### Phase 4 — Traffic Simulation Engine
