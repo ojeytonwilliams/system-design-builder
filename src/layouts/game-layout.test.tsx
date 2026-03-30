@@ -18,6 +18,16 @@ const overloadLevelConfig: LevelConfig = {
   trafficSchedule: [{ opsPerSec: 300, startTime: 0 }],
 };
 
+const resolvingOverloadLevelConfig: LevelConfig = {
+  cacheHitRate: 0,
+  revenueTarget: 99999,
+  timeout: 10,
+  trafficSchedule: [
+    { opsPerSec: 300, startTime: 0 },
+    { opsPerSec: 50, startTime: 2 },
+  ],
+};
+
 const overloadNodes: ArchitectureCanvasNode[] = [
   {
     data: { componentType: "users", label: "Users" },
@@ -144,5 +154,24 @@ describe("simulation mode", () => {
     });
 
     expect(screen.getByText(/load:\s*300%\s*\(overloaded\)/i)).toBeInTheDocument();
+  });
+
+  it("returns the selected node to normal load state when traffic drops below capacity", () => {
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={resolvingOverloadLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("canvas-node-server-1"));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(screen.getByText(/load:\s*50%$/i)).toBeInTheDocument();
   });
 });
