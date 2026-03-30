@@ -1,14 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "eslint",
-    "import",
-    "typescript",
-    "react",
-    "oxc",
-    "promise",
-    "vitest"
-  ],
+  "plugins": ["eslint", "import", "typescript", "react", "oxc", "promise", "vitest"],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
@@ -23,6 +15,12 @@
   },
   "ignorePatterns": ["dist/**"],
   "rules": {
+    /* React 17+ automatic JSX runtime — React does not need to be in scope */
+    "react/react-in-jsx-scope": "off",
+    /* Default max of 2 is too restrictive for typical component trees */
+    "react/jsx-max-depth": ["error", { "max": 5 }],
+    /* Small ids are fine. Correct usage is too context-dependent for a lint
+    rule*/
     "id-length": "off",
     /* Import: each module should have a single export declaration so it's
     immediately obvious what is in the public api */
@@ -32,14 +30,22 @@
     "import/prefer-default-export": "off",
     /* Various rules conflict  */
     "no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }],
-    /* Test specific rules below. Move to override when override bugs are fixed */
+    /* TEST SPECIFIC RULES BELOW. Move to override when override bugs are fixed */
     "vitest/prefer-describe-function-title": "error",
     "jest/valid-title": "off",
+    /* describe blocks include functions and can be quite large, so this doesn't make sense*/
     "max-lines-per-function": "off",
+    /* each test is a statement */
     "max-statements": "off",
+    /* magic numbers aren't great, but the blanket rule has too many false
+    positives (e.g. 0 in a loop or 2 as a divisor) and I don't want to configure
+    it */
     "no-magic-numbers": "off",
     "max-lines": ["error", { "max": 1000 }],
+    /* Before/after hooks have their place*/
     "no-hooks": "off",
+    /* A fairly common pattern is to declare a variable in describe block and
+    initialize it in a hook. We want to allow this. */
     "init-declarations": "off"
   }
 }
