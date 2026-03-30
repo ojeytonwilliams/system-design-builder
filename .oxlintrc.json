@@ -54,6 +54,8 @@
     "vitest/prefer-to-be-falsy": "off",
     "vitest/prefer-to-be-truthy": "off",
     /* Either calledOnce or calledTimes(1) is fine, but we should pick one for consistency */
-    "vitest/prefer-called-times": "off"
+    "vitest/prefer-called-times": "off",
+    /* We're more interested in testing behaviour. If a test needs to make an unsafe assertion, that's okay */
+    "typescript/no-unsafe-type-assertion": "off"
   }
 }
