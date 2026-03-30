@@ -1,7 +1,40 @@
 # Changelog
 
 ## [1.2.0] - 2026-03-30
+# Changelog
 
+## [1.3.0] - 2026-03-30
+
+### Phase 3 — Port-Based Connections
+
+**Connection ports on nodes**
+
+- `ArchitectureNode` now renders React Flow `Handle` components for outgoing (source) ports on the right and bottom edges, and incoming (target) ports on the left and top edges.
+- `Users` node has source handles only — no target handles — so it cannot be the destination of any connection.
+- All handles carry `data-testid="handle-{nodeId}-{type}-{side}"` attributes for deterministic tests.
+
+**Connection flow and validation**
+
+- `onConnect` callback on `ReactFlow` uses `addEdge` to create a new animated `architecture-edge` when the user drags from an outgoing port to an incoming port.
+- Exported `isConnectionValid(sourceType, targetType)` pure function; connections whose target is `users` are rejected, enforcing the "Users is a source only" rule.
+- Pressing Escape during an in-progress connection drag cancels it (React Flow built-in behaviour).
+
+**Animated edges**
+
+- All edges carry `animated: true` (set in `withDefaultEdgeShape`), rendering a moving dash animation that indicates traffic direction along the bezier path.
+
+**Edge deletion**
+
+- `onEdgeClick` marks the clicked edge as `selected: true` in state; pressing Delete then removes the selected edge and hides any open context menu.
+- `onEdgeContextMenu` on `ReactFlow` opens an inline Remove context menu at the pointer position; clicking Remove deletes the edge.
+- `ContextMenuState` extended to a discriminated union (`kind: "node" | "edge"`) so node and edge context menus share the same rendering path.
+- `GameCanvas` accepts an optional `initialContextMenu` prop to pre-seed context menu state (used in tests).
+
+**Tests**
+
+- Added 12 new tests across three new describe blocks: `connection ports` (handle presence, Users target-handle absence), `connection validation` (6 unit tests of `isConnectionValid`), and `edge deletion` (Delete-key removal, context-menu removal).
+
+## [1.2.0] - 2026-03-30
 ### Phase 2 — Game Canvas
 
 **Component library**

@@ -1,7 +1,24 @@
-import { Background, BackgroundVariant, BaseEdge, ReactFlow, getBezierPath } from "@xyflow/react";
+import {
+  Background,
+  BackgroundVariant,
+  BaseEdge,
+  Handle,
+  Position,
+  ReactFlow,
+  addEdge,
+  getBezierPath,
+} from "@xyflow/react";
 import type { CSSProperties, DragEvent, ReactElement } from "react";
-import type { Edge, EdgeProps, Node, NodeMouseHandler, NodeProps } from "@xyflow/react";
-import { useEffect, useMemo, useState } from "react";
+import type {
+  Connection,
+  Edge,
+  EdgeMouseHandler,
+  EdgeProps,
+  Node,
+  NodeMouseHandler,
+  NodeProps,
+} from "@xyflow/react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 const GRID_SIZE = 48;
 const BACKGROUND_GAP = 24;
@@ -53,13 +70,32 @@ type ArchitectureNodeData = Record<string, unknown> & {
 
 type ArchitectureCanvasNode = Node<ArchitectureNodeData, "architecture">;
 
-interface ContextMenuState {
+const isConnectionValid = (_sourceType: ComponentType, targetType: ComponentType): boolean => {
+  if (targetType === "users") {
+    return false;
+  }
+
+  return true;
+};
+
+interface EdgeContextMenu {
+  edgeId: string;
+  kind: "edge";
+  x: number;
+  y: number;
+}
+
+interface NodeContextMenu {
+  kind: "node";
   nodeId: string;
   x: number;
   y: number;
 }
 
+type ContextMenuState = EdgeContextMenu | NodeContextMenu;
+
 interface GameCanvasProps {
+  initialContextMenu?: ContextMenuState;
   initialEdges?: Edge[];
   initialNodes?: ArchitectureCanvasNode[];
 }
@@ -137,14 +173,25 @@ const removeNodeAndConnections = (
 const ArchitectureNode = ({ data, id }: NodeProps<ArchitectureCanvasNode>) => {
   const { accentColor } = CANVAS_COMPONENT_LIBRARY[data.componentType];
   const isSelected = data.isSelected === true;
+  const isUsersNode = data.componentType === "users";
   let backgroundColor = "#fffdf8";
   let borderColor = "#1a2744";
   let boxShadow = "0 10px 25px rgba(26, 39, 68, 0.08)";
+  let targetHandles: ReactElement | null = null;
 
   if (isSelected) {
     backgroundColor = "#fff3ea";
     borderColor = "#e5634d";
     boxShadow = "0 0 0 4px rgba(229, 99, 77, 0.12)";
+  }
+
+  if (!isUsersNode) {
+    targetHandles = (
+      <>
+        <Handle data-testid={`handle-${id}-target-left`} position={Position.Left} type="target" />
+        <Handle data-testid={`handle-${id}-target-top`} position={Position.Top} type="target" />
+      </>
+    );
   }
 
   return (
@@ -164,10 +211,14 @@ const ArchitectureNode = ({ data, id }: NodeProps<ArchitectureCanvasNode>) => {
         justifyContent: "center",
         minHeight: `${NODE_MIN_HEIGHT}px`,
         padding: "0.875rem 0.75rem 0.75rem",
+        position: "relative",
         textAlign: "center",
         width: `${NODE_WIDTH}px`,
       }}
     >
+      <Handle data-testid={`handle-${id}-source-right`} position={Position.Right} type="source" />
+      <Handle data-testid={`handle-${id}-source-bottom`} position={Position.Bottom} type="source" />
+      {targetHandles}
       <span
         aria-hidden="true"
         style={{
@@ -239,13 +290,19 @@ const ArchitectureEdge = ({
 const nodeTypes = { architecture: ArchitectureNode };
 const edgeTypes = { "architecture-edge": ArchitectureEdge };
 
-const GameCanvas = ({ initialEdges = [], initialNodes = [] }: GameCanvasProps) => {
+const GameCanvas = ({
+  initialContextMenu,
+  initialEdges = [],
+  initialNodes = [],
+}: GameCanvasProps) => {
   const [nodes, setNodes] = useState<ArchitectureCanvasNode[]>(() =>
     initialNodes.map(withDefaultNodeShape),
   );
   const [edges, setEdges] = useState<Edge[]>(() => initialEdges.map(withDefaultEdgeShape));
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(
+    initialContextMenu ?? null,
+  );
 
   useEffect(() => {
     setNodes((currentNodes) => setSelectedNode(currentNodes, selectedNodeId));
@@ -253,19 +310,30 @@ const GameCanvas = ({ initialEdges = [], initialNodes = [] }: GameCanvasProps) =
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Delete" || selectedNodeId === null) {
+      if (event.key !== "Delete") {
         return;
       }
 
-      setNodes((currentNodes) => {
-        const nextState = removeNodeAndConnections(selectedNodeId, currentNodes, edges);
+      if (selectedNodeId !== null) {
+        setNodes((currentNodes) => {
+          const nextState = removeNodeAndConnections(selectedNodeId, currentNodes, edges);
 
-        setEdges(nextState.edges);
+          setEdges(nextState.edges);
 
-        return setSelectedNode(nextState.nodes, null);
-      });
-      setSelectedNodeId(null);
-      setContextMenu(null);
+          return setSelectedNode(nextState.nodes, null);
+        });
+        setSelectedNodeId(null);
+        setContextMenu(null);
+
+        return;
+      }
+
+      const selectedEdge = edges.find((e) => e.selected === true);
+
+      if (selectedEdge !== undefined) {
+        setEdges((currentEdges) => currentEdges.filter((e) => e.id !== selectedEdge.id));
+        setContextMenu(null);
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -319,6 +387,7 @@ const GameCanvas = ({ initialEdges = [], initialNodes = [] }: GameCanvasProps) =
     event.preventDefault();
     setSelectedNodeId(node.id);
     setContextMenu({
+      kind: "node",
       nodeId: node.id,
       x: event.clientX,
       y: event.clientY,
@@ -352,18 +421,65 @@ const GameCanvas = ({ initialEdges = [], initialNodes = [] }: GameCanvasProps) =
       return;
     }
 
-    setNodes((currentNodes) => {
-      const nextState = removeNodeAndConnections(contextMenu.nodeId, currentNodes, edges);
+    if (contextMenu.kind === "node") {
+      setNodes((currentNodes) => {
+        const nextState = removeNodeAndConnections(contextMenu.nodeId, currentNodes, edges);
 
-      setEdges(nextState.edges);
+        setEdges(nextState.edges);
 
-      return setSelectedNode(nextState.nodes, null);
-    });
-    setSelectedNodeId(null);
+        return setSelectedNode(nextState.nodes, null);
+      });
+      setSelectedNodeId(null);
+    } else {
+      setEdges((currentEdges) => currentEdges.filter((e) => e.id !== contextMenu.edgeId));
+    }
+
     setContextMenu(null);
   };
 
   const defaultViewport = useMemo(() => ({ x: 0, y: 0, zoom: 1 }), []);
+
+  const handleConnect = useCallback(
+    (connection: Connection) => {
+      const sourceNode = nodes.find((n) => n.id === connection.source);
+      const targetNode = nodes.find((n) => n.id === connection.target);
+
+      if (sourceNode === undefined || targetNode === undefined) {
+        return;
+      }
+
+      if (!isConnectionValid(sourceNode.data.componentType, targetNode.data.componentType)) {
+        return;
+      }
+
+      setEdges((currentEdges) =>
+        addEdge({ ...connection, animated: true, type: "architecture-edge" }, currentEdges),
+      );
+    },
+    [nodes],
+  );
+
+  const handleEdgeClick: EdgeMouseHandler = (_event, edge) => {
+    setEdges((currentEdges) =>
+      currentEdges.map((e) => ({
+        ...e,
+        selected: e.id === edge.id,
+      })),
+    );
+    setSelectedNodeId(null);
+    setContextMenu(null);
+  };
+
+  const handleEdgeContextMenu: EdgeMouseHandler = (event, edge) => {
+    event.preventDefault();
+    setContextMenu({
+      edgeId: edge.id,
+      kind: "edge",
+      x: event.clientX,
+      y: event.clientY,
+    });
+    setSelectedNodeId(null);
+  };
   let contextMenuElement: ReactElement | null = null;
 
   if (contextMenu !== null) {
@@ -412,6 +528,9 @@ const GameCanvas = ({ initialEdges = [], initialNodes = [] }: GameCanvasProps) =
           nodeTypes={nodeTypes}
           nodes={nodes}
           nodesDraggable
+          onConnect={handleConnect}
+          onEdgeClick={handleEdgeClick}
+          onEdgeContextMenu={handleEdgeContextMenu}
           onNodeClick={handleNodeClick}
           onNodeContextMenu={handleNodeContextMenu}
           onNodeDragStop={handleNodeDragStop}
@@ -432,4 +551,4 @@ const GameCanvas = ({ initialEdges = [], initialNodes = [] }: GameCanvasProps) =
   );
 };
 
-export { GameCanvas, snapPositionToGrid };
+export { GameCanvas, isConnectionValid, snapPositionToGrid };

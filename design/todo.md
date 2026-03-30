@@ -64,7 +64,7 @@
 
 ## Phase 3: Port-Based Connections
 
-- [ ] CODE: Add connection ports to nodes
+- [x] CODE: Add connection ports to nodes
   - Feature: Each node exposes outgoing and incoming ports as small circles on its edges.
   - Files: custom React Flow node components
   - Acceptance:
@@ -74,7 +74,7 @@
     - DB and Cache have no outgoing port that leads to Users.
     - Ports are visible on hover (or always-on — to be decided in implementation).
 
-- [ ] CODE: Implement port-click connection flow
+- [x] CODE: Implement port-click connection flow
   - Feature: Clicking an outgoing port begins a connection drag; clicking an incoming port completes it.
   - Files: `src/components/GameCanvas.*`, edge types
   - Acceptance:
@@ -84,7 +84,7 @@
     - Pressing Escape cancels an in-progress connection.
     - A node may have unlimited connections.
 
-- [ ] CODE: Render animated flow edges
+- [x] CODE: Render animated flow edges
   - Feature: Connections are displayed as light animated React Flow edges indicating traffic direction.
   - Files: custom React Flow edge component
   - Acceptance:
@@ -92,7 +92,7 @@
     - Edge animation speed or density visually reflects the request rate passing through it.
     - Edges into an overloaded node appear thicker/crowded compared to normal edges.
 
-- [ ] CODE: Implement edge deletion
+- [x] CODE: Implement edge deletion
   - Feature: An edge can be selected and removed.
   - Files: custom React Flow edge component
   - Acceptance:

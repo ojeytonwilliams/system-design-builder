@@ -1,4 +1,4 @@
-import { GameCanvas, snapPositionToGrid } from "./game-canvas.js";
+import { GameCanvas, isConnectionValid, snapPositionToGrid } from "./game-canvas.js";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 describe("game canvas", () => {
@@ -112,5 +112,143 @@ describe("game canvas", () => {
 describe("grid snapping", () => {
   it("snaps a dropped position to the nearest grid cell", () => {
     expect(snapPositionToGrid({ x: 145, y: 117 })).toStrictEqual({ x: 144, y: 96 });
+  });
+});
+
+const INITIAL_NODES_TWO = [
+  {
+    data: { componentType: "users", label: "Users" },
+    id: "users-1",
+    position: { x: 0, y: 0 },
+    type: "architecture",
+  },
+  {
+    data: { componentType: "server", label: "Server" },
+    id: "server-1",
+    position: { x: 96, y: 0 },
+    type: "architecture",
+  },
+] as const;
+
+describe("connection ports", () => {
+  it("renders source handles on server nodes", () => {
+    const { container } = render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      container.querySelector('[data-testid="handle-server-1-source-right"]'),
+    ).toBeInTheDocument();
+  });
+
+  it("renders target handles on server nodes", () => {
+    const { container } = render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      container.querySelector('[data-testid="handle-server-1-target-left"]'),
+    ).toBeInTheDocument();
+  });
+
+  it("users node has no target handles", () => {
+    const { container } = render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "users", label: "Users" },
+            id: "users-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+      />,
+    );
+
+    expect(
+      container.querySelector('[data-testid="handle-users-1-target-left"]'),
+    ).not.toBeInTheDocument();
+    expect(
+      container.querySelector('[data-testid="handle-users-1-source-right"]'),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("connection validation", () => {
+  it("allows server to server connections", () => {
+    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
+    expect(isConnectionValid("server", "server")).toBeTruthy();
+  });
+
+  it("allows users to server connections", () => {
+    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
+    expect(isConnectionValid("users", "server")).toBeTruthy();
+  });
+
+  it("allows server to db connections", () => {
+    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
+    expect(isConnectionValid("server", "db")).toBeTruthy();
+  });
+
+  it("blocks server targeting users", () => {
+    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
+    expect(isConnectionValid("server", "users")).toBeFalsy();
+  });
+
+  it("blocks db targeting users", () => {
+    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
+    expect(isConnectionValid("db", "users")).toBeFalsy();
+  });
+
+  it("blocks cache targeting users", () => {
+    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
+    expect(isConnectionValid("cache", "users")).toBeFalsy();
+  });
+});
+
+describe("edge deletion", () => {
+  it("removes a selected edge when Delete is pressed", () => {
+    render(
+      <GameCanvas
+        initialEdges={[{ id: "edge-1", selected: true, source: "users-1", target: "server-1" }]}
+        initialNodes={[...INITIAL_NODES_TWO]}
+      />,
+    );
+
+    fireEvent.keyDown(window, { key: "Delete" });
+
+    expect(screen.queryByTestId("canvas-edge-edge-1")).not.toBeInTheDocument();
+  });
+
+  it("clicking Remove in the edge context menu removes the edge", () => {
+    render(
+      <GameCanvas
+        initialContextMenu={{ edgeId: "edge-1", kind: "edge", x: 200, y: 100 }}
+        initialEdges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
+        initialNodes={[...INITIAL_NODES_TWO]}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /remove/i }));
+
+    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
   });
 });
