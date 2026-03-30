@@ -1,0 +1,77 @@
+import { LEVELS, getLevelById } from "./index.js";
+
+describe("level definitions", () => {
+  it("exports exactly 6 levels", () => {
+    expect(LEVELS).toHaveLength(6);
+  });
+
+  it("levels have sequential ids from 1 to 6", () => {
+    LEVELS.forEach((level, index) => {
+      expect(level.id).toBe(index + 1);
+    });
+  });
+
+  it("each level has at least one traffic schedule entry", () => {
+    LEVELS.forEach((level) => {
+      expect(level.trafficSchedule.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("each level has a non-empty title", () => {
+    LEVELS.forEach((level) => {
+      expect(level.title.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("each level has a positive revenueTarget", () => {
+    LEVELS.forEach((level) => {
+      expect(level.revenueTarget).toBeGreaterThan(0);
+    });
+  });
+
+  it("each level has at least one available component", () => {
+    LEVELS.forEach((level) => {
+      expect(level.availableComponents.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("each level has feedbackText", () => {
+    LEVELS.forEach((level) => {
+      expect(level.feedbackText.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("level 1 has users, server, and db available", () => {
+    const level = getLevelById(1);
+
+    expect(level?.availableComponents).toContain("users");
+    expect(level?.availableComponents).toContain("server");
+    expect(level?.availableComponents).toContain("db");
+  });
+
+  it("level 6 has cache available", () => {
+    const level = getLevelById(6);
+
+    expect(level?.availableComponents).toContain("cache");
+  });
+
+  it("level 6 has a non-zero cacheHitRate", () => {
+    const level = getLevelById(6);
+
+    expect(level?.cacheHitRate).toBeGreaterThan(0);
+  });
+});
+
+describe(getLevelById, () => {
+  it("returns the level with the given id", () => {
+    expect(getLevelById(1)?.id).toBe(1);
+    expect(getLevelById(3)?.id).toBe(3);
+    expect(getLevelById(6)?.id).toBe(6);
+  });
+
+  it("returns undefined for an id that does not exist", () => {
+    expect(getLevelById(0)).toBeUndefined();
+    expect(getLevelById(7)).toBeUndefined();
+    expect(getLevelById(99)).toBeUndefined();
+  });
+});

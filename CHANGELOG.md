@@ -1,5 +1,49 @@
 # Changelog
 
+## [1.7.0] - 2026-03-30
+
+### Phase 7 — Level System
+
+**Level schema and data (`src/levels/`)**
+
+- `src/levels/types.ts`: `LevelDefinition`, `UnlockTrigger` union (CAPACITY_REACHED, OVERLOAD_SUSTAINED, SERVERS_PLACED, LEVEL_COMPLETE), `CoachMessage`, `ComponentUnlock` interfaces.
+- `src/levels/level1–6.ts`: six hand-authored levels with traffic schedules, revenue targets, coach messages, feedback text, and per-level palette.
+- Level 3 includes a mid-level `SERVERS_PLACED` unlock that adds Load Balancer to the palette immediately when 2 servers are placed.
+- Level 6 introduces Cache with a 70% cache hit rate.
+
+**Unlock trigger evaluator (`src/simulation/unlocks.ts`)**
+
+- `evaluateUnlockTrigger`: pure function for all four trigger types.
+- `updateOverloadDurations`: tracks per-node consecutive overload ticks (used for OVERLOAD_SUSTAINED).
+- `computeAvailableComponents`: merges base palette with components unlocked by triggers.
+
+**End-of-level screen (`src/components/end-of-level-screen.tsx`)**
+
+- Overlay modal shown when revenue target is reached.
+- Shows level title, 1–3 star rating (efficiency-based), earned revenue, 2-3 feedback lines.
+- Continue and Replay buttons with handlers wired in the layout.
+
+**localStorage persistence (`src/persistence.ts`)**
+
+- `saveProgress` / `loadProgress` with a `version` field that clears stale data on schema changes.
+
+**Game layout integration (`src/layouts/game-layout.tsx`)**
+
+- Level data drives palette, traffic schedule, revenue target, and coach messages.
+- `effectiveLevelConfig` memoised to prevent unnecessary re-renders.
+- Tick loop now tracks overload durations and calls `computeAvailableComponents` on each tick.
+- `handleGraphChange` re-evaluates SERVERS_PLACED unlock in design mode.
+- Win condition: when `revenue >= revenueTarget`, simulation ends, end-of-level screen shown, progress saved.
+- Continue advances `currentLevelId`; Replay resets to design mode.
+
+#### Tests
+
+- `src/levels/index.test.ts`: 12 structural tests across all 6 levels.
+- `src/simulation/unlocks.test.ts`: 22 unit tests for all trigger types + duration tracking + palette computation.
+- `src/components/end-of-level-screen.test.tsx`: 11 tests (heading, title, feedback, star ratings, button callbacks).
+- `src/persistence.test.ts`: 6 tests (save/load, version mismatch, malformed data).
+- `src/layouts/game-layout.test.tsx`: 5 new integration tests (level 1 palette, end screen shown, replay/continue, localStorage save).
+
 ## [1.6.0] - 2026-03-30
 
 ### Phase 6 — Inspector Panel

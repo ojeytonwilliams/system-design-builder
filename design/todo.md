@@ -176,14 +176,14 @@
 
 ## Phase 7: Level System
 
-- [ ] CODE: Define level data schema
+- [x] CODE: Define level data schema
   - Feature: Create a data structure for hand-authored levels specifying palette, traffic script, and revenue target.
   - Files: `src/levels/types.*`, `src/levels/index.*`
   - Acceptance:
     - Each level record contains: id, available components, traffic growth script, simulation timeout, revenue target, unlock trigger, coach messages, and end-of-level feedback text.
     - Level data is authored in a separate file from game logic.
 
-- [ ] CODE: Author 6 levels
+- [x] CODE: Author 6 levels
   - Feature: Write the hand-authored data for all 6 MVP levels.
   - Files: `src/levels/level1.*` … `src/levels/level6.*`
   - Acceptance:
@@ -195,7 +195,7 @@
     - Level 6: Introduces Cache; teaches read offloading and cache hit rate.
     - Each level's revenue target is achievable with the correct architecture and increasingly challenging with a naive one.
 
-- [ ] CODE: Implement unlock trigger system
+- [x] CODE: Implement unlock trigger system
   - Feature: Components and mechanics unlock based on defined trigger conditions.
   - Files: `src/simulation/unlocks.*`
   - Acceptance:
@@ -205,7 +205,7 @@
     - Levels 5 and 6 unlock on completion of the previous level.
     - Newly unlocked components appear in the palette immediately.
 
-- [ ] CODE: Implement win condition and level completion
+- [x] CODE: Implement win condition and level completion
   - Feature: The level completes when earned revenue reaches the target amount.
   - Files: `src/simulation/engine.*`, `src/store.*`
   - Acceptance:
@@ -213,7 +213,7 @@
     - The end-of-level screen is shown.
     - Progress is saved to `localStorage` before showing the end-of-level screen.
 
-- [ ] CODE: Build end-of-level screen
+- [x] CODE: Build end-of-level screen
   - Feature: Display score, educational feedback, and Continue/Replay options after each level.
   - Files: `src/components/EndOfLevelScreen.*`
   - Acceptance:
@@ -223,7 +223,7 @@
     - A Replay button resets the current level for a better score.
     - Tone is calm, specific, and educational.
 
-- [ ] CODE: Implement localStorage save and restore
+- [x] CODE: Implement localStorage save and restore
   - Feature: Auto-save completed level progress to localStorage; restore on page load.
   - Files: `src/store.*`, `src/persistence.*`
   - Acceptance:

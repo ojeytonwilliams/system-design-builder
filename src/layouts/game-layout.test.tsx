@@ -1,8 +1,17 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { GameLayout } from "./game-layout.js";
+import { loadProgress } from "../persistence.js";
 import type { LevelConfig } from "../simulation/types.js";
 import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
 import type { Edge } from "@xyflow/react";
+
+// Level config that is won after 1 tick (100 ops/s * $0.10 = $10, target $510)
+const winLevelConfig: LevelConfig = {
+  cacheHitRate: 0,
+  revenueTarget: 510,
+  timeout: 60,
+  trafficSchedule: [{ opsPerSec: 100, startTime: 0 }],
+};
 
 const testLevelConfig: LevelConfig = {
   cacheHitRate: 0,
@@ -173,5 +182,98 @@ describe("simulation mode", () => {
     });
 
     expect(screen.getByText(/load:\s*50%$/i)).toBeInTheDocument();
+  });
+});
+
+describe("level system", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+  });
+
+  it("palette shows users, server and db for level 1", () => {
+    render(<GameLayout />);
+
+    expect(screen.getByTestId("palette-item-users")).toBeInTheDocument();
+    expect(screen.getByTestId("palette-item-server")).toBeInTheDocument();
+    expect(screen.getByTestId("palette-item-db")).toBeInTheDocument();
+    expect(screen.queryByTestId("palette-item-cache")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("palette-item-load-balancer")).not.toBeInTheDocument();
+  });
+
+  it("shows the end-of-level screen when revenue target is reached", () => {
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={winLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(screen.getByRole("heading", { name: /level complete/i })).toBeInTheDocument();
+  });
+
+  it("replay button dismisses end-of-level screen and returns to design mode", () => {
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={winLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    fireEvent.click(screen.getByRole("button", { name: /replay/i }));
+
+    expect(screen.queryByRole("heading", { name: /level complete/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start traffic/i })).toBeInTheDocument();
+  });
+
+  it("continue button dismisses end-of-level screen", () => {
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={winLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+
+    expect(screen.queryByRole("heading", { name: /level complete/i })).not.toBeInTheDocument();
+  });
+
+  it("saves completed level to localStorage when a level is won", () => {
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={winLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+
+    expect(loadProgress().completedLevels).toContain(1);
   });
 });
