@@ -41,6 +41,24 @@ describe("level definitions", () => {
     });
   });
 
+  it("each level has objective text", () => {
+    LEVELS.forEach((level) => {
+      expect(level.objectiveText.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("each level has a users node in the starting layout", () => {
+    LEVELS.forEach((level) => {
+      expect(level.startingNodes.some((node) => node.componentType === "users")).toBe(true);
+    });
+  });
+
+  it("level 1 starts with no authored edges", () => {
+    const level = getLevelById(1);
+
+    expect(level?.startingEdges).toHaveLength(0);
+  });
+
   it("level 1 has users, server, and db available", () => {
     const level = getLevelById(1);
 

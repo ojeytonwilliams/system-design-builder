@@ -235,7 +235,7 @@
 
 ## Phase 7.5: Playable Level Runtime
 
-- [ ] CODE: Add level-authored starting layouts
+- [x] CODE: Add level-authored starting layouts
   - Feature: Extend level definitions with per-level starting nodes/edges and objective text so each level loads as a distinct playable setup.
   - Files: `src/levels/types.*`, `src/levels/level1.*` … `src/levels/level6.*`
   - Acceptance:
@@ -243,7 +243,7 @@
     - Level 1 starts with a clear minimum setup objective shown in level data.
     - Levels with pre-placed infrastructure mark locked nodes when required by the design.
 
-- [ ] CODE: Load and reset level sessions correctly
+- [x] CODE: Load and reset level sessions correctly
   - Feature: Add a single level-loading path that resets board/session state whenever a level is entered, continued, replayed, or restored.
   - Files: `src/layouts/game-layout.*`, `src/store.*`
   - Acceptance:
@@ -252,7 +252,7 @@
     - Replay reloads the current level's authored starting layout.
     - Revenue/simulation state resets consistently at level start.
 
-- [ ] CODE: Restore first incomplete level on startup
+- [x] CODE: Restore first incomplete level on startup
   - Feature: Derive the active level from persisted progress so players resume at the first uncompleted level.
   - Files: `src/persistence.*`, `src/layouts/game-layout.*`
   - Acceptance:
@@ -260,7 +260,7 @@
     - With saved progress, the game starts on the first incomplete level.
     - Schema-mismatch or malformed saved data falls back safely to level 1.
 
-- [ ] CODE: Surface level context in top-level UI
+- [x] CODE: Surface level context in top-level UI
   - Feature: Display level number/title, current objective, and revenue target in the main gameplay chrome.
   - Files: `src/components/top-bar.*`, `src/layouts/game-layout.*`
   - Acceptance:
@@ -268,7 +268,7 @@
     - Objective text is visible without opening secondary panels.
     - Revenue target for the active level is visible while playing.
 
-- [ ] CODE: Add selectable level progression strip
+- [x] CODE: Add selectable level progression strip
   - Feature: Provide a compact level selector showing completed, current, unlocked, and locked levels.
   - Files: `src/components/*`, `src/layouts/game-layout.*`
   - Acceptance:
@@ -276,7 +276,7 @@
     - The next unlocked level is selectable after meeting unlock rules.
     - Locked levels are visible but non-interactive.
 
-- [ ] CODE: Block simulation when architecture is not runnable
+- [x] CODE: Block simulation when architecture is not runnable
   - Feature: Prevent Start Traffic until the canvas has a valid path from Users to a terminal service and show a concise hint.
   - Files: `src/layouts/game-layout.*`, `src/simulation/*`
   - Acceptance:
@@ -284,7 +284,7 @@
     - A short, actionable message tells the player what to place/connect.
     - Once architecture is valid, Start Traffic works without extra confirmation.
 
-- [ ] CODE: Add runtime level progression tests
+- [x] CODE: Add runtime level progression tests
   - Feature: Cover level load/continue/replay/restore behavior and non-runnable-architecture gating with automated tests.
   - Files: `src/layouts/game-layout.test.tsx`, `src/persistence.test.ts`, level-related tests
   - Acceptance:

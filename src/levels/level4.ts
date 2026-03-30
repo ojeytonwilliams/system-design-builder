@@ -23,7 +23,18 @@ const level4: LevelDefinition = {
     "But notice: all those requests still hit the database. What happens when it can't keep up?",
   ],
   id: 4,
+  lockedNodeIds: ["users-1"],
+  objectiveText: "Place a Load Balancer and route traffic evenly across your servers.",
   revenueTarget: 1800,
+  startingEdges: [],
+  startingNodes: [
+    {
+      componentType: "users",
+      id: "users-1",
+      label: "Users",
+      position: { x: 96, y: 160 },
+    },
+  ],
   timeout: 90,
   title: "Balance the Load",
   trafficSchedule: [

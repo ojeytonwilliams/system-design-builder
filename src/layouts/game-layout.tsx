@@ -6,12 +6,19 @@ import { EndOfLevelScreen } from "../components/end-of-level-screen.js";
 import { GameCanvas } from "../components/game-canvas.js";
 import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
 import { Inspector } from "../components/inspector.js";
+import { LevelStrip } from "../components/level-strip.js";
 import { Palette } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
-import { getLevelById } from "../levels/index.js";
+import { LEVELS, getLevelById } from "../levels/index.js";
 import { level1 } from "../levels/level1.js";
-import { loadProgress, saveProgress } from "../persistence.js";
-import { computeRevenue, computeTrafficFlow, getTrafficRate } from "../simulation/engine.js";
+import type { LevelDefinition, StartingEdge, StartingNode } from "../levels/types.js";
+import { getFirstIncompleteLevel, loadProgress, saveProgress } from "../persistence.js";
+import {
+  computeRevenue,
+  computeTrafficFlow,
+  getTrafficRate,
+  hasRunnablePath,
+} from "../simulation/engine.js";
 import type { GraphEdge, GraphNode, LevelConfig } from "../simulation/types.js";
 import { computeAvailableComponents, updateOverloadDurations } from "../simulation/unlocks.js";
 import type { OverloadDurations } from "../simulation/unlocks.js";
@@ -58,6 +65,21 @@ const toGraphEdge = (edge: Edge): GraphEdge => ({
   target: edge.target,
 });
 
+const levelNodeToCanvasNode = (node: StartingNode): ArchitectureCanvasNode => ({
+  data: { componentType: node.componentType, label: node.label },
+  id: node.id,
+  position: node.position,
+  type: "architecture",
+});
+
+const levelEdgeToCanvasEdge = (startingEdge: StartingEdge): Edge => ({
+  animated: true,
+  id: startingEdge.id,
+  source: startingEdge.source,
+  target: startingEdge.target,
+  type: "architecture-edge",
+});
+
 interface GameLayoutContentProps {
   initialEdges: Edge[];
   initialNodes: ArchitectureCanvasNode[];
@@ -73,14 +95,27 @@ const GameLayoutContent = ({
 }: GameLayoutContentProps) => {
   const { endSimulation, mode, nodeStates, revenue, startSimulation, tick } = useSimulation();
 
-  const [currentLevelId, setCurrentLevelId] = useState<number>(1);
+  const [currentLevelId, setCurrentLevelId] = useState<number>(() =>
+    getFirstIncompleteLevel(loadProgress().completedLevels, LEVELS.length),
+  );
   const [completedLevels, setCompletedLevels] = useState<number[]>(
     () => loadProgress().completedLevels,
   );
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [, setOverloadDurations] = useState<OverloadDurations>(EMPTY_OVERLOAD_DURATIONS);
+  const [canvasKey, setCanvasKey] = useState(0);
 
   const currentLevel = getLevelById(currentLevelId) ?? level1;
+
+  const initialCanvasNodes =
+    initialNodes.length > 0 ? initialNodes : currentLevel.startingNodes.map(levelNodeToCanvasNode);
+  const initialCanvasEdges =
+    initialNodes.length > 0 ? initialEdges : currentLevel.startingEdges.map(levelEdgeToCanvasEdge);
+
+  const [levelStartNodes, setLevelStartNodes] = useState<ArchitectureCanvasNode[]>(
+    () => initialCanvasNodes,
+  );
+  const [levelStartEdges, setLevelStartEdges] = useState<Edge[]>(() => initialCanvasEdges);
 
   const effectiveLevelConfig = useMemo<LevelConfig>(
     () =>
@@ -94,10 +129,9 @@ const GameLayoutContent = ({
   );
 
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [graphState, setGraphState] = useState<{ edges: Edge[]; nodes: ArchitectureCanvasNode[] }>({
-    edges: initialEdges,
-    nodes: initialNodes,
-  });
+  const [graphState, setGraphState] = useState<{ edges: Edge[]; nodes: ArchitectureCanvasNode[] }>(
+    () => ({ edges: initialCanvasEdges, nodes: initialCanvasNodes }),
+  );
 
   const buildUnlockInput = useCallback(
     (
@@ -125,8 +159,8 @@ const GameLayoutContent = ({
   );
 
   const graphRef = useRef<{ edges: Edge[]; nodes: ArchitectureCanvasNode[] }>({
-    edges: initialEdges,
-    nodes: initialNodes,
+    edges: initialCanvasEdges,
+    nodes: initialCanvasNodes,
   });
 
   const handleGraphChange = useCallback(
@@ -158,32 +192,67 @@ const GameLayoutContent = ({
     setSelectedNodeId(nodeId);
   }, []);
 
+  const loadLevel = useCallback(
+    (level: LevelDefinition) => {
+      const newNodes = level.startingNodes.map(levelNodeToCanvasNode);
+      const newEdges = level.startingEdges.map(levelEdgeToCanvasEdge);
+      setCurrentLevelId(level.id);
+      setLevelStartNodes(newNodes);
+      setLevelStartEdges(newEdges);
+      setCanvasKey((k) => k + 1);
+      setGraphState({ edges: newEdges, nodes: newNodes });
+      graphRef.current = { edges: newEdges, nodes: newNodes };
+      setSelectedNodeId(null);
+      setOverloadDurations(new Map());
+      setShowEndScreen(false);
+      endSimulation();
+      setAvailableComponents(
+        computeAvailableComponents(level.availableComponents, level.componentUnlocks, {
+          graphNodes: newNodes.map(toGraphNode),
+          overloadDurations: EMPTY_OVERLOAD_DURATIONS,
+          revenue: 0,
+          revenueTarget: level.revenueTarget,
+          snapshot: {},
+        }),
+      );
+    },
+    [endSimulation],
+  );
+
+  const isRunnable = hasRunnablePath(
+    graphState.nodes.map(toGraphNode),
+    graphState.edges.map(toGraphEdge),
+  );
+
   const handleToggleTraffic = useCallback(() => {
     if (mode === "SIMULATE") {
       endSimulation();
-    } else {
+    } else if (isRunnable) {
       startSimulation();
     }
-  }, [mode, startSimulation, endSimulation]);
+  }, [mode, startSimulation, endSimulation, isRunnable]);
 
   const handleContinue = useCallback(() => {
-    const nextLevelId = currentLevelId + 1;
-    const nextLevel = getLevelById(nextLevelId);
-
+    const nextLevel = getLevelById(currentLevelId + 1);
     setShowEndScreen(false);
-    setOverloadDurations(new Map());
-
     if (nextLevel !== undefined) {
-      setCurrentLevelId(nextLevelId);
-      setAvailableComponents(nextLevel.availableComponents);
+      loadLevel(nextLevel);
     }
-  }, [currentLevelId]);
+  }, [currentLevelId, loadLevel]);
 
   const handleReplay = useCallback(() => {
-    setShowEndScreen(false);
-    setOverloadDurations(new Map());
-    endSimulation();
-  }, [endSimulation]);
+    loadLevel(currentLevel);
+  }, [currentLevel, loadLevel]);
+
+  const handleSelectLevel = useCallback(
+    (levelId: number) => {
+      const level = getLevelById(levelId);
+      if (level !== undefined) {
+        loadLevel(level);
+      }
+    },
+    [loadLevel],
+  );
 
   // Simulation tick loop
   useEffect(() => {
@@ -312,7 +381,22 @@ const GameLayoutContent = ({
         height: "100dvh",
       }}
     >
-      <TopBar mode={mode} onStartTraffic={handleToggleTraffic} revenue={revenue} />
+      <TopBar
+        levelNumber={currentLevel.id}
+        levelTitle={currentLevel.title}
+        mode={mode}
+        objectiveText={currentLevel.objectiveText}
+        onStartTraffic={handleToggleTraffic}
+        revenue={revenue}
+        revenueTarget={effectiveLevelConfig.revenueTarget}
+        startTrafficDisabled={!isRunnable}
+      />
+      <LevelStrip
+        completedLevelIds={completedLevels}
+        currentLevelId={currentLevelId}
+        levels={LEVELS}
+        onSelectLevel={handleSelectLevel}
+      />
       <div
         style={{
           display: "flex",
@@ -325,9 +409,11 @@ const GameLayoutContent = ({
         </section>
         <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           <GameCanvas
-            initialEdges={initialEdges}
-            initialNodes={initialNodes}
+            key={canvasKey}
+            initialEdges={levelStartEdges}
+            initialNodes={levelStartNodes}
             isLocked={isLocked}
+            lockedNodeIds={currentLevel.lockedNodeIds}
             onSelectedNodeChange={handleSelectedNodeChange}
             onStateChange={handleGraphChange}
             overloadedNodeIds={overloadedNodeIds}

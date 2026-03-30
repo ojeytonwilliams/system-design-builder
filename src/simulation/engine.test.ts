@@ -1,4 +1,4 @@
-import { computeRevenue, computeTrafficFlow, getTrafficRate } from "./engine.js";
+import { computeRevenue, computeTrafficFlow, getTrafficRate, hasRunnablePath } from "./engine.js";
 import type { GraphEdge, GraphNode, TrafficScheduleEntry } from "./types.js";
 
 const CACHE_HIT_RATE_NONE = 0;
@@ -321,5 +321,31 @@ describe("traffic rate schedule", () => {
     const lateSchedule: TrafficScheduleEntry[] = [{ opsPerSec: 50, startTime: 5 }];
 
     expect(getTrafficRate(lateSchedule, 3)).toBe(0);
+  });
+});
+
+describe(hasRunnablePath, () => {
+  it("returns false when there are no nodes", () => {
+    expect(hasRunnablePath([], [])).toBe(false);
+  });
+
+  it("returns false when a users node has no outgoing edges", () => {
+    const nodes = [usersNode()];
+
+    expect(hasRunnablePath(nodes, [])).toBe(false);
+  });
+
+  it("returns true when a users node has at least one outgoing edge", () => {
+    const nodes = [usersNode(), serverNode()];
+    const edges = [edge("users-1", "server-1")];
+
+    expect(hasRunnablePath(nodes, edges)).toBe(true);
+  });
+
+  it("returns false when there are edges but none from a users node", () => {
+    const nodes = [serverNode(), dbNode()];
+    const edges = [edge("server-1", "db-1")];
+
+    expect(hasRunnablePath(nodes, edges)).toBe(false);
   });
 });

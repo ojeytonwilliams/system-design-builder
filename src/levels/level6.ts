@@ -23,7 +23,18 @@ const level6: LevelDefinition = {
     "This pattern — read offloading — is one of the most common optimisations in real systems.",
   ],
   id: 6,
+  lockedNodeIds: ["users-1"],
+  objectiveText: "Add a cache in front of the database so most reads never reach the DB.",
   revenueTarget: 1900,
+  startingEdges: [],
+  startingNodes: [
+    {
+      componentType: "users",
+      id: "users-1",
+      label: "Users",
+      position: { x: 96, y: 160 },
+    },
+  ],
   timeout: 90,
   title: "Read Offloading",
   trafficSchedule: [

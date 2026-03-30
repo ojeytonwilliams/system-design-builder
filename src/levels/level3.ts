@@ -25,7 +25,18 @@ const level3: LevelDefinition = {
     "Notice that a Load Balancer just appeared in your palette — you unlocked it by placing two servers.",
   ],
   id: 3,
+  lockedNodeIds: ["users-1"],
+  objectiveText: "Scale out by adding a second server before traffic overwhelms one machine.",
   revenueTarget: 1500,
+  startingEdges: [],
+  startingNodes: [
+    {
+      componentType: "users",
+      id: "users-1",
+      label: "Users",
+      position: { x: 96, y: 160 },
+    },
+  ],
   timeout: 90,
   title: "Add Another Server",
   trafficSchedule: [

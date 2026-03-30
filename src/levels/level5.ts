@@ -23,7 +23,19 @@ const level5: LevelDefinition = {
     "You've unlocked a Cache — next level you'll use it to offload database reads.",
   ],
   id: 5,
+  lockedNodeIds: ["users-1"],
+  objectiveText:
+    "Keep server load healthy while preventing the database from becoming the bottleneck.",
   revenueTarget: 1700,
+  startingEdges: [],
+  startingNodes: [
+    {
+      componentType: "users",
+      id: "users-1",
+      label: "Users",
+      position: { x: 96, y: 160 },
+    },
+  ],
   timeout: 90,
   title: "Database Bottleneck",
   trafficSchedule: [

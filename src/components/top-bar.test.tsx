@@ -34,4 +34,30 @@ describe("top bar", () => {
 
     expect(screen.getByRole("button", { name: /stop traffic/i })).toBeInTheDocument();
   });
+
+  it("shows level number and title when provided", () => {
+    render(<TopBar levelNumber={1} levelTitle="First Request" />);
+
+    expect(screen.getByText(/level 1/i)).toBeInTheDocument();
+    expect(screen.getByText(/first request/i)).toBeInTheDocument();
+  });
+
+  it("shows objective text when provided", () => {
+    render(<TopBar objectiveText="Place a Server and DB, then connect them." />);
+
+    expect(screen.getByText(/place a server and db/i)).toBeInTheDocument();
+  });
+
+  it("shows the revenue target when provided", () => {
+    render(<TopBar revenueTarget={800} />);
+
+    expect(screen.getByTestId("revenue-target")).toBeInTheDocument();
+    expect(screen.getByTestId("revenue-target").textContent).toMatch(/800/);
+  });
+
+  it("disables the Start Traffic button when startTrafficDisabled is true", () => {
+    render(<TopBar startTrafficDisabled />);
+
+    expect(screen.getByRole("button", { name: /start traffic/i })).toBeDisabled();
+  });
 });

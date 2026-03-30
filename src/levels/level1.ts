@@ -13,7 +13,18 @@ const level1: LevelDefinition = {
     "A single server handles this load just fine — for now.",
   ],
   id: 1,
+  lockedNodeIds: ["users-1"],
+  objectiveText: "Place a Server and DB, then connect Users → Server → DB.",
   revenueTarget: 800,
+  startingEdges: [],
+  startingNodes: [
+    {
+      componentType: "users",
+      id: "users-1",
+      label: "Users",
+      position: { x: 96, y: 160 },
+    },
+  ],
   timeout: 90,
   title: "First Request",
   trafficSchedule: [

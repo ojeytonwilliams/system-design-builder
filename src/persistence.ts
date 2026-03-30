@@ -45,5 +45,15 @@ const saveProgress = (completedLevels: number[]): void => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 };
 
-export { loadProgress, saveProgress };
+const getFirstIncompleteLevel = (completedLevels: number[], totalLevels: number): number => {
+  for (let i = 1; i <= totalLevels; i++) {
+    if (!completedLevels.includes(i)) {
+      return i;
+    }
+  }
+
+  return totalLevels;
+};
+
+export { getFirstIncompleteLevel, loadProgress, saveProgress };
 export type { PersistedProgress };

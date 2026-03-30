@@ -127,6 +127,64 @@
 ## [1.2.0] - 2026-03-30
 # Changelog
 
+## [1.8.0] - 2026-03-30
+
+### Phase 7.5 — Playable Level Runtime
+
+**Level schema extended (`src/levels/types.ts`, `src/levels/level*.ts`)**
+
+- `LevelDefinition` extended with `objectiveText`, `startingNodes`, `startingEdges`, and `lockedNodeIds`.
+- `StartingNode` and `StartingEdge` types added for authored initial graph states.
+- All six levels populated with a locked `users-1` pre-placed node and per-level objective text.
+
+**`getFirstIncompleteLevel` (`src/persistence.ts`)**
+
+- New exported helper returns the first level not in `completedLevels`, capping at total levels.
+- On startup the layout uses this to resume at the player's actual progress rather than always starting at level 1.
+
+**`hasRunnablePath` (`src/simulation/engine.ts`)**
+
+- New exported helper returns `true` when at least one users-type node has an outgoing edge.
+- Used by the layout to gate the Start Traffic button.
+
+**`LevelStrip` component (`src/components/level-strip.tsx`)**
+
+- New `<nav aria-label="Level progression">` component showing one button per level.
+- `getLevelStatus` util gives each level a `completed | active | locked` status.
+- Completed and active levels are clickable; locked levels render disabled.
+- Each button carries `data-testid` and `data-status` attributes.
+
+**`TopBar` extended (`src/components/top-bar.tsx`)**
+
+- New props: `levelNumber`, `levelTitle`, `objectiveText`, `revenueTarget`, `startTrafficDisabled`.
+- Two-row header: main row (level title, balance, target, button) + optional objective row.
+- Start Traffic button is disabled and visually grayed when `startTrafficDisabled && !isSimulating`.
+
+**`GameCanvas` locked nodes (`src/components/game-canvas.tsx`)**
+
+- New `lockedNodeIds` prop; keyed nodes are protected from keyboard-delete and context-menu actions.
+
+**`GameLayoutContent` rewired (`src/layouts/game-layout.tsx`)**
+
+- Initializes `currentLevelId` from persisted progress via `getFirstIncompleteLevel`.
+- `levelNodeToCanvasNode` / `levelEdgeToCanvasEdge` converters build `ArchitectureCanvasNode`/`Edge` from authored level data.
+- `loadLevel` callback resets graph, selection, overload state, available components, canvas key, and simulation on every level transition.
+- `handleContinue` and `handleReplay` both delegate to `loadLevel`.
+- `handleSelectLevel` allows jumping to any non-locked level from the strip.
+- `isRunnable` computed from live `graphState`; `handleToggleTraffic` is gated — Start Traffic is a no-op when `!isRunnable`.
+- `<LevelStrip>` rendered below `<TopBar>`; `<GameCanvas>` receives `key={canvasKey}` for hard remount on level change and `lockedNodeIds` from the current level definition.
+- `<TopBar>` receives `levelNumber`, `levelTitle`, `objectiveText`, `revenueTarget`, and `startTrafficDisabled`.
+
+**Tests (191 total, 0 failing)**
+
+- `src/persistence.test.ts`: 5 new tests for `getFirstIncompleteLevel`.
+- `src/simulation/engine.test.ts`: 4 new tests for `hasRunnablePath`.
+- `src/components/top-bar.test.tsx`: 4 new tests for level context props and disabled state.
+- `src/components/level-strip.test.tsx`: 8 new tests (new file).
+- `src/components/game-canvas.test.tsx`: 2 new tests for locked-node protection.
+- `src/layouts/game-layout.test.tsx`: 14 new tests covering level context UI, startup restore, level progression, simulation gating, and the level strip.
+
+
 ## [1.3.0] - 2026-03-30
 
 ### Phase 3 — Port-Based Connections

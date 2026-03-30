@@ -167,4 +167,10 @@ const computeRevenue = (
   return total * REVENUE_PER_REQUEST;
 };
 
-export { REVENUE_PER_REQUEST, computeRevenue, computeTrafficFlow, getTrafficRate };
+const hasRunnablePath = (nodes: GraphNode[], edges: GraphEdge[]): boolean => {
+  const usersNodeIds = new Set(nodes.filter((n) => n.type === "users").map((n) => n.id));
+
+  return edges.some((e) => usersNodeIds.has(e.source));
+};
+
+export { REVENUE_PER_REQUEST, computeRevenue, computeTrafficFlow, getTrafficRate, hasRunnablePath };

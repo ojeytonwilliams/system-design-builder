@@ -16,7 +16,18 @@ const level2: LevelDefinition = {
     "Next challenge: what if you could split the load across two servers?",
   ],
   id: 2,
+  lockedNodeIds: ["users-1"],
+  objectiveText: "Build a stable Users → Server → DB path that survives the traffic spike.",
   revenueTarget: 1100,
+  startingEdges: [],
+  startingNodes: [
+    {
+      componentType: "users",
+      id: "users-1",
+      label: "Users",
+      position: { x: 96, y: 160 },
+    },
+  ],
   timeout: 90,
   title: "Over Capacity",
   trafficSchedule: [

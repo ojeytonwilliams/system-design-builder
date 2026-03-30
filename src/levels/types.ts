@@ -30,6 +30,24 @@ interface CoachMessage {
   text: string;
 }
 
+interface StartingNodePosition {
+  x: number;
+  y: number;
+}
+
+interface StartingNode {
+  componentType: ComponentType;
+  id: string;
+  label: string;
+  position: StartingNodePosition;
+}
+
+interface StartingEdge {
+  id: string;
+  source: string;
+  target: string;
+}
+
 interface ComponentUnlock {
   components: ComponentType[];
   trigger: UnlockTrigger;
@@ -42,7 +60,11 @@ interface LevelDefinition {
   componentUnlocks: ComponentUnlock[];
   feedbackText: string[];
   id: number;
+  lockedNodeIds: string[];
+  objectiveText: string;
   revenueTarget: number;
+  startingEdges: StartingEdge[];
+  startingNodes: StartingNode[];
   timeout: number;
   title: string;
   trafficSchedule: TrafficScheduleEntry[];
@@ -55,6 +77,9 @@ export type {
   LevelCompleteTrigger,
   LevelDefinition,
   OverloadSustainedTrigger,
+  StartingEdge,
+  StartingNode,
+  StartingNodePosition,
   ServersPlacedTrigger,
   UnlockTrigger,
 };

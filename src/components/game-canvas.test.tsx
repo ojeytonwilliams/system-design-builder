@@ -436,3 +436,34 @@ describe("edge deletion", () => {
     expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
   });
 });
+
+const LOCKED_USERS_NODE = [
+  {
+    data: { componentType: "users" as const, label: "Users" },
+    id: "users-1",
+    position: { x: 0, y: 0 },
+    type: "architecture" as const,
+  },
+];
+
+describe("locked nodes", () => {
+  it("does not remove a locked node when Delete is pressed", () => {
+    render(<GameCanvas initialNodes={LOCKED_USERS_NODE} lockedNodeIds={["users-1"]} />);
+
+    fireEvent.click(screen.getByTestId("canvas-node-users-1"));
+    fireEvent.keyDown(window, { key: "Delete" });
+
+    expect(screen.getByTestId("canvas-node-users-1")).toBeInTheDocument();
+  });
+
+  it("does not show a context menu for a locked node", () => {
+    render(<GameCanvas initialNodes={LOCKED_USERS_NODE} lockedNodeIds={["users-1"]} />);
+
+    fireEvent.contextMenu(screen.getByTestId("canvas-node-users-1"), {
+      clientX: 100,
+      clientY: 100,
+    });
+
+    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+  });
+});

@@ -117,12 +117,14 @@ interface GameCanvasProps {
   initialEdges?: Edge[];
   initialNodes?: ArchitectureCanvasNode[];
   isLocked?: boolean;
+  lockedNodeIds?: string[];
   onSelectedNodeChange?: (nodeId: string | null) => void;
   onStateChange?: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
   overloadedNodeIds?: string[];
 }
 
 const DEFAULT_OVERLOADED_NODE_IDS: string[] = [];
+const DEFAULT_LOCKED_NODE_IDS: string[] = [];
 
 const canvasDropzoneStyles: CSSProperties = {
   background: "radial-gradient(circle at 1px 1px, rgba(26, 39, 68, 0.11) 1px, transparent 0)",
@@ -363,6 +365,7 @@ const GameCanvas = ({
   initialEdges = [],
   initialNodes = [],
   isLocked = false,
+  lockedNodeIds = DEFAULT_LOCKED_NODE_IDS,
   onSelectedNodeChange,
   onStateChange,
   overloadedNodeIds = DEFAULT_OVERLOADED_NODE_IDS,
@@ -404,6 +407,10 @@ const GameCanvas = ({
       }
 
       if (selectedNodeId !== null) {
+        if (lockedNodeIds.includes(selectedNodeId)) {
+          return;
+        }
+
         setNodes((currentNodes) => {
           const nextState = removeNodeAndConnections(selectedNodeId, currentNodes, edges);
 
@@ -430,7 +437,7 @@ const GameCanvas = ({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [edges, selectedNodeId]);
+  }, [edges, lockedNodeIds, selectedNodeId]);
 
   useEffect(() => {
     onStateChange?.(nodes, edges);
@@ -482,6 +489,11 @@ const GameCanvas = ({
 
   const handleNodeContextMenu: NodeMouseHandler<ArchitectureCanvasNode> = (event, node) => {
     event.preventDefault();
+
+    if (lockedNodeIds.includes(node.id)) {
+      return;
+    }
+
     setSelectedNodeId(node.id);
     setContextMenu({
       kind: "node",
