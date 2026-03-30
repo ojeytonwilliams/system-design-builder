@@ -20,6 +20,9 @@ import type {
 } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+// oxlint-disable-next-line import/no-unassigned-import
+import "@xyflow/react/dist/style.css";
+
 const GRID_SIZE = 48;
 const BACKGROUND_GAP = 24;
 const BACKGROUND_SIZE = 0.8;
