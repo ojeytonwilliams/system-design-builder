@@ -101,6 +101,8 @@ interface GameCanvasProps {
   initialContextMenu?: ContextMenuState;
   initialEdges?: Edge[];
   initialNodes?: ArchitectureCanvasNode[];
+  isLocked?: boolean;
+  onStateChange?: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
 }
 
 const canvasDropzoneStyles: CSSProperties = {
@@ -297,6 +299,8 @@ const GameCanvas = ({
   initialContextMenu,
   initialEdges = [],
   initialNodes = [],
+  isLocked = false,
+  onStateChange,
 }: GameCanvasProps) => {
   const [nodes, setNodes] = useState<ArchitectureCanvasNode[]>(() =>
     initialNodes.map(withDefaultNodeShape),
@@ -346,6 +350,10 @@ const GameCanvas = ({
     };
   }, [edges, selectedNodeId]);
 
+  useEffect(() => {
+    onStateChange?.(nodes, edges);
+  }, [nodes, edges, onStateChange]);
+
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.dataTransfer.dropEffect = "copy";
@@ -353,6 +361,10 @@ const GameCanvas = ({
 
   const handleDrop = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
+
+    if (isLocked) {
+      return;
+    }
 
     const componentType = event.dataTransfer.getData("application/component-type");
 
@@ -530,7 +542,8 @@ const GameCanvas = ({
           minZoom={1}
           nodeTypes={nodeTypes}
           nodes={nodes}
-          nodesDraggable
+          nodesDraggable={!isLocked}
+          nodesConnectable={!isLocked}
           onConnect={handleConnect}
           onEdgeClick={handleEdgeClick}
           onEdgeContextMenu={handleEdgeContextMenu}
@@ -555,3 +568,4 @@ const GameCanvas = ({
 };
 
 export { GameCanvas, isConnectionValid, snapPositionToGrid };
+export type { ArchitectureCanvasNode, ArchitectureNodeData };

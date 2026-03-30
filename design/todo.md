@@ -103,7 +103,7 @@
 
 ## Phase 4: Traffic Simulation
 
-- [ ] CODE: Implement traffic simulation engine
+- [x] CODE: Implement traffic simulation engine
   - Feature: Model traffic as a request rate (ops/sec) that flows through the graph and grows on a scripted timer. The simulation runs automatically and stops on its own — no manual stop control needed.
   - Files: `src/simulation/engine.*`, `src/simulation/types.*`
   - Acceptance:
@@ -120,7 +120,7 @@
     - Each node processes up to its max capacity; excess requests are dropped.
     - Simulation state is accessible to all UI components.
 
-- [ ] CODE: Implement Load Balancer distribution
+- [x] CODE: Implement Load Balancer distribution
   - Feature: A Load Balancer node distributes incoming requests evenly across all connected downstream nodes.
   - Files: `src/simulation/engine.*`
   - Acceptance:
@@ -128,7 +128,7 @@
     - The Load Balancer itself has no capacity limit and cannot become overloaded.
     - Removing a downstream server rebalances traffic across remaining servers immediately.
 
-- [ ] CODE: Implement Cache interception
+- [x] CODE: Implement Cache interception
   - Feature: A Cache node intercepts a percentage of DB-bound requests (cache hit rate, defined per level).
   - Files: `src/simulation/engine.*`
   - Acceptance:
@@ -137,7 +137,7 @@
     - Cache misses continue to the DB as normal.
     - The Cache node itself has a capacity of 200 ops/sec and can become overloaded.
 
-- [ ] CODE: Implement revenue tracking
+- [x] CODE: Implement revenue tracking
   - Feature: Each successfully handled request earns $0.10; dropped requests earn nothing.
   - Files: `src/simulation/engine.*`, `src/store.*`
   - Acceptance:

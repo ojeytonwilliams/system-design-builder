@@ -4,9 +4,10 @@ import { PaletteItem } from "./palette-item.js";
 
 interface PaletteProps {
   availableComponents?: ComponentType[];
+  isDisabled?: boolean;
 }
 
-const Palette = ({ availableComponents }: PaletteProps) => {
+const Palette = ({ availableComponents, isDisabled = false }: PaletteProps) => {
   let content = (
     <p style={{ color: "#6b6b6b", fontSize: "0.8125rem", margin: 0 }}>
       Components will appear here.
@@ -23,6 +24,7 @@ const Palette = ({ availableComponents }: PaletteProps) => {
             <PaletteItem
               componentType={componentType}
               icon={componentDefinition.icon}
+              isDisabled={isDisabled}
               key={componentType}
               label={componentDefinition.label}
             />

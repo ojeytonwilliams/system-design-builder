@@ -48,6 +48,9 @@
     "no-hooks": "off",
     /* A fairly common pattern is to declare a variable in describe block and
     initialize it in a hook. We want to allow this. */
-    "init-declarations": "off"
+    "init-declarations": "off",
+    /* Strictness is preferrable for true or false */
+    "vitest/prefer-to-be-falsy": "off",
+    "vitest/prefer-to-be-truthy": "off"
   }
 }

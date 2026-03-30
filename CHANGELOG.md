@@ -1,5 +1,39 @@
 # Changelog
 
+## [1.4.0] - 2026-03-30
+
+### Phase 4 — Traffic Simulation Engine
+
+**Simulation engine (`src/simulation/`)**
+
+- New `types.ts` defines `GraphNode`, `GraphEdge`, `FlowConfig`, `RevenueConfig`, `NodeTrafficState`, `TrafficSnapshot`, `LevelConfig`, and `SimulationMode`.
+- `engine.ts` implements three pure functions:
+  - `computeTrafficFlow(nodes, edges, config)` — BFS traversal from `users` nodes; enforces per-node `capacity`, splits traffic evenly across Load Balancer children, and forwards only `(1 - cacheHitRate)` fraction downstream from Cache nodes.
+  - `computeRevenue(snapshot, nodes, config)` — sums handled ops at sink nodes and cache-hit ops to produce per-tick revenue.
+  - `getTrafficRate(schedule, elapsedSeconds)` — returns the traffic rate for the current simulation time from a step schedule.
+- 26 engine tests covering all behaviours.
+
+**Simulation store (`src/store.tsx`)**
+
+- React Context + `useReducer` store with actions `START_SIMULATION`, `TICK`, and `END_SIMULATION`.
+- Exposes `mode`, `revenue`, `nodeStates`, `startSimulation`, `endSimulation`, and `tick` via `useSimulation()`.
+- Context value memoised with `useMemo` to avoid unnecessary renders.
+- 11 store tests.
+
+**Component updates**
+
+- `GameCanvas`: new `isLocked` prop disables drag, drop, and connect interactions during simulation; new `onStateChange` callback fires whenever nodes or edges change.
+- `Palette` / `PaletteItem`: new `isDisabled` prop renders items at reduced opacity with drag disabled.
+- `TopBar`: new `mode`, `revenue`, and `onStartTraffic` props; displays live balance and toggles button label between "Start Traffic" / "Stop Traffic".
+
+**Layout wiring (`src/layouts/game-layout.tsx`)**
+
+- `SimulationProvider` wraps the entire layout.
+- `DEFAULT_LEVEL_CONFIG` defines a 60-second round with a two-phase traffic schedule and a $5 000 revenue target.
+- `setInterval` tick loop (1 s) calls `computeTrafficFlow` → `computeRevenue` → `tick`; auto-ends when the timeout elapses or the revenue target is reached.
+- `graphRef` captures live canvas state via `onStateChange` without re-triggering the interval effect.
+- 4 new simulation-mode tests (fake timers) added to the existing 6 layout tests.
+
 ## [1.2.0] - 2026-03-30
 # Changelog
 

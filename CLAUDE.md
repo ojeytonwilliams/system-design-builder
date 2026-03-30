@@ -34,7 +34,7 @@ Strict mode is on with additional checks: `noUncheckedIndexedAccess`, `exactOpti
 
 ## Skills to use
 
-Make sure to use `typescript-guidelines` when writing TypeScript and `typescript-test-guidelines` when writing tests.
+Make sure to use `typescript-guidelines` when writing TypeScript or .tsx files and `typescript-test-guidelines` when writing tests or test.tsx files.
 
 ## TDD
 

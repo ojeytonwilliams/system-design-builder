@@ -194,33 +194,85 @@ describe("connection ports", () => {
 
 describe("connection validation", () => {
   it("allows server to server connections", () => {
-    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
-    expect(isConnectionValid("server", "server")).toBeTruthy();
+    expect(isConnectionValid("server", "server")).toBe(true);
   });
 
   it("allows users to server connections", () => {
-    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
-    expect(isConnectionValid("users", "server")).toBeTruthy();
+    expect(isConnectionValid("users", "server")).toBe(true);
   });
 
   it("allows server to db connections", () => {
-    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
-    expect(isConnectionValid("server", "db")).toBeTruthy();
+    expect(isConnectionValid("server", "db")).toBe(true);
   });
 
   it("blocks server targeting users", () => {
-    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
-    expect(isConnectionValid("server", "users")).toBeFalsy();
+    expect(isConnectionValid("server", "users")).toBe(false);
   });
 
   it("blocks db targeting users", () => {
-    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
-    expect(isConnectionValid("db", "users")).toBeFalsy();
+    expect(isConnectionValid("db", "users")).toBe(false);
   });
 
   it("blocks cache targeting users", () => {
-    // oxlint-disable-next-line vitest/prefer-strict-boolean-matchers
-    expect(isConnectionValid("cache", "users")).toBeFalsy();
+    expect(isConnectionValid("cache", "users")).toBe(false);
+  });
+});
+
+describe("locked mode", () => {
+  it("does not place a node when isLocked is true and a palette item is dropped", () => {
+    render(<GameCanvas isLocked />);
+    const dropzone = screen.getByTestId("game-canvas-dropzone");
+
+    vi.spyOn(dropzone, "getBoundingClientRect").mockReturnValue({
+      bottom: 500,
+      height: 500,
+      left: 20,
+      right: 820,
+      toJSON: () => ({}),
+      top: 20,
+      width: 800,
+      x: 20,
+      y: 20,
+    });
+
+    fireEvent.drop(dropzone, {
+      clientX: 145,
+      clientY: 117,
+      dataTransfer: { getData: () => "server" },
+    });
+
+    expect(screen.queryByTestId("canvas-node-server-1")).not.toBeInTheDocument();
+  });
+});
+
+describe("onStateChange callback", () => {
+  it("fires with updated nodes after a node is dropped", () => {
+    const onStateChange = vi.fn();
+    render(<GameCanvas onStateChange={onStateChange} />);
+    const dropzone = screen.getByTestId("game-canvas-dropzone");
+
+    vi.spyOn(dropzone, "getBoundingClientRect").mockReturnValue({
+      bottom: 500,
+      height: 500,
+      left: 20,
+      right: 820,
+      toJSON: () => ({}),
+      top: 20,
+      width: 800,
+      x: 20,
+      y: 20,
+    });
+
+    fireEvent.drop(dropzone, {
+      clientX: 145,
+      clientY: 117,
+      dataTransfer: { getData: () => "server" },
+    });
+
+    expect(onStateChange).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: "server-1" })]),
+      expect.any(Array),
+    );
   });
 });
 
