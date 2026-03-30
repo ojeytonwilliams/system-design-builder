@@ -40,6 +40,14 @@ The core loop is **Design → Simulate → Redesign**:
 
 Reach the level's revenue target to complete it and unlock the next concept.
 
+## Playable Level Runtime
+
+- Levels are hand-authored with starting layouts (initial nodes/edges) and short objective text.
+- The game always shows active level context during play (level number/title, objective, and revenue target).
+- Continue and Replay load/reset the correct level session state.
+- On startup, the player resumes at the first incomplete level from `localStorage` progress.
+- Start Traffic is blocked when architecture is not runnable, with a short actionable hint.
+
 ## Complexity Progression (6 Levels)
 
 1. Place components and connect them

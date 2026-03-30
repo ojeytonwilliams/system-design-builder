@@ -344,6 +344,8 @@ Running cash balance is shown in the top bar at all times.
 
 Levels are **hand-authored scenarios** for v1. Each level specifies:
 - available palette (which components the player can place)
+- authored starting layout (initial nodes/edges and optional locked infrastructure)
+- objective text (a short mission visible during play)
 - traffic script (how fast traffic grows)
 - simulation timeout (maximum duration of a single simulation run)
 - revenue target (win condition — level completes if reached before timeout)
@@ -352,6 +354,17 @@ Levels are **hand-authored scenarios** for v1. Each level specifies:
 There is no hard fail state. The player can always delete, reconnect, and retry within the same level.
 
 Progress is **auto-saved to `localStorage`** after each level is completed.
+On startup, the game resumes at the **first incomplete level**.
+
+The gameplay UI must always show level context during play:
+- active level number and title
+- current objective text
+- current level revenue target
+
+The game includes a compact level progression strip where:
+- completed levels are replayable
+- the current unlocked level is selectable
+- locked levels are visible but non-interactive
 
 ### Level Summary
 
@@ -446,6 +459,7 @@ The player drags a second Server onto the canvas and connects Users to it direct
 - **Click component** to open the Inspector panel
 - **Delete key** (or right-click → Remove) removes a selected component and all its connections
 - **Start Traffic button** begins the simulation run; no manual stop is needed
+- Start Traffic is blocked when architecture is not runnable (no valid path from Users to a terminal service), and a short actionable hint is shown
 - Canvas editing (placement, connection, deletion) is only available in design mode, not during simulation
 - Touch-friendly: drag-and-drop is the only placement model on all platforms
 
@@ -559,7 +573,12 @@ Note: the reference image shows a "Connect" mode button in the toolbar. This has
 12. The system must complete a level when the revenue target is reached.
 13. The system must auto-save progress to localStorage on level completion.
 14. The system must display an end-of-level screen with a score and educational feedback when the revenue target is reached.
-15. The system must run as a responsive HTML5 browser experience on modern mobile and desktop browsers in portrait and landscape orientations.
+15. The system must load each level from authored starting state and reset session state correctly on continue/replay.
+16. The system must resume at the first incomplete level on startup using local progress.
+17. The system must display active level number/title, objective text, and revenue target during gameplay.
+18. The system must provide a level progression selector with replayable completed levels and visibly locked future levels.
+19. The system must prevent simulation from starting when the architecture is not runnable and show a concise guidance message.
+20. The system must run as a responsive HTML5 browser experience on modern mobile and desktop browsers in portrait and landscape orientations.
 
 ---
 
