@@ -1,0 +1,45 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "eslint",
+    "import",
+    "typescript",
+    "react",
+    "oxc",
+    "promise",
+    "vitest"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "pedantic": "error",
+    "perf": "error",
+    "style": "error"
+  },
+  "options": {
+    "typeAware": true,
+    "typeCheck": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "ignorePatterns": ["dist/**"],
+  "rules": {
+    "id-length": "off",
+    /* Import: each module should have a single export declaration so it's
+    immediately obvious what is in the public api */
+    "import/no-named-export": "off",
+    "import/no-default-export": "error",
+    "import/group-exports": "error",
+    "import/prefer-default-export": "off",
+    /* Various rules conflict  */
+    "no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }],
+    /* Test specific rules below. Move to override when override bugs are fixed */
+    "vitest/prefer-describe-function-title": "error",
+    "jest/valid-title": "off",
+    "max-lines-per-function": "off",
+    "max-statements": "off",
+    "no-magic-numbers": "off",
+    "max-lines": ["error", { "max": 1000 }],
+    "no-hooks": "off",
+    "init-declarations": "off"
+  }
+}
