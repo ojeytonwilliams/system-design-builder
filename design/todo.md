@@ -2,7 +2,7 @@
 
 ## Phase 1: Project Scaffold
 
-- [ ] CODE: Initialise project scaffold
+- [x] CODE: Initialise project scaffold
   - Feature: Create the Astro + React project with TypeScript and pnpm.
   - Files: `package.json`, `pnpm-lock.yaml`, `astro.config.*`, `tsconfig.json`
   - Acceptance:
@@ -10,7 +10,7 @@
     - React and React Flow are installed as dependencies.
     - Opening the local URL displays a non-blank page.
 
-- [ ] CODE: Configure quality tooling
+- [x] CODE: Configure quality tooling
   - Feature: Add lint, format, and test tooling.
   - Files: `package.json`, Vitest config, ESLint config, Prettier config
   - Acceptance:
@@ -18,7 +18,7 @@
     - `pnpm lint` runs ESLint successfully.
     - `pnpm format --check` runs Prettier successfully.
 
-- [ ] CODE: Build app shell layout
+- [x] CODE: Build app shell layout
   - Feature: Implement the top-level UI layout: top bar (with Start Traffic button and cash balance), left palette panel, central canvas area, right inspector panel.
   - Files: `src/layouts/GameLayout.*`, `src/components/TopBar.*`, `src/components/Palette.*`, `src/components/Inspector.*`
   - Acceptance:
@@ -27,7 +27,7 @@
     - Layout is responsive across desktop and mobile in portrait and landscape.
     - No game logic is wired up yet.
 
-- [ ] TASK: Document local run workflow
+- [x] TASK: Document local run workflow
   - Acceptance:
     - A new contributor can install, start, lint, and test the project from a clean checkout using pnpm commands.
 

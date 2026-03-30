@@ -6,7 +6,7 @@
   "compilerOptions": {
     "outDir": "./dist",
 
-    "types": ["vitest/globals"],
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
 
     // Other Outputs
     "sourceMap": true,
