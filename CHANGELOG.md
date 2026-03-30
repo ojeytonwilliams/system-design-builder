@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.6.0] - 2026-03-30
+
+### Phase 6 — Inspector Panel
+
+**Inspector panel (`src/components/inspector.tsx`)**
+
+- Added `componentType`, `opsPerSec`, `maxCapacity`, `latencyMs`, and `cost` props.
+- Panel now shows component type label, current ops/s (or `—` when no simulation data), capacity (`∞` for unlimited nodes), latency contribution (ms), and cost per hour.
+- Load and ops/s fields render in real time during simulation.
+
+**Escape key support (`src/components/game-canvas.tsx`)**
+
+- Pressing Escape deselects the current node and closes the inspector panel.
+
+**Game layout (`src/layouts/game-layout.tsx`)**
+
+- Defined `LATENCY_MS` and `COST_PER_HOUR` constants per component type.
+- Passes all new Inspector props derived from simulation state and component metadata.
+
+#### Tests
+
+- `inspector.test.tsx`: added tests for component type label, ops/s, capacity (finite and ∞), latency, and cost fields.
+- `game-canvas.test.tsx`: added test verifying Escape key calls `onSelectedNodeChange(null)`.
+
 ## [1.5.0] - 2026-03-30
 
 ### Phase 5 — Overload Visualisation

@@ -392,6 +392,13 @@ const GameCanvas = ({
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedNodeId(null);
+        setContextMenu(null);
+
+        return;
+      }
+
       if (event.key !== "Delete") {
         return;
       }

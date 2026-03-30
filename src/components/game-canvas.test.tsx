@@ -381,6 +381,33 @@ describe("overloaded node state", () => {
   });
 });
 
+describe("escape key", () => {
+  it("pressing Escape calls onSelectedNodeChange with null to close the inspector", () => {
+    const onSelectedNodeChange = vi.fn();
+
+    render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+        onSelectedNodeChange={onSelectedNodeChange}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("canvas-node-server-1"));
+    onSelectedNodeChange.mockClear();
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    expect(onSelectedNodeChange).toHaveBeenCalledWith(null);
+  });
+});
+
 describe("edge deletion", () => {
   it("removes a selected edge when Delete is pressed", () => {
     render(

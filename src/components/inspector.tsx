@@ -1,10 +1,34 @@
+import type { ComponentType } from "./component-library.js";
+
+const TYPE_LABELS: Record<ComponentType, string> = {
+  cache: "Cache",
+  db: "Database",
+  "load-balancer": "Load Balancer",
+  server: "Server",
+  users: "Traffic Source",
+};
+
 interface InspectorProps {
+  componentType?: ComponentType | undefined;
+  cost?: number | undefined;
   isOverloaded?: boolean | undefined;
+  latencyMs?: number | undefined;
   loadPercent?: number | undefined;
+  maxCapacity?: number | undefined;
+  opsPerSec?: number | undefined;
   selectedNodeLabel?: string | undefined;
 }
 
-const Inspector = ({ isOverloaded = false, loadPercent, selectedNodeLabel }: InspectorProps) => {
+const Inspector = ({
+  componentType,
+  cost,
+  isOverloaded = false,
+  latencyMs,
+  loadPercent,
+  maxCapacity,
+  opsPerSec,
+  selectedNodeLabel,
+}: InspectorProps) => {
   let loadText = "Load: —";
 
   if (loadPercent !== undefined) {
@@ -16,6 +40,20 @@ const Inspector = ({ isOverloaded = false, loadPercent, selectedNodeLabel }: Ins
       loadText = `${loadText} (Overloaded)`;
     }
   }
+
+  const opsText = opsPerSec === undefined ? "— ops/s" : `${Math.round(opsPerSec)} ops/s`;
+
+  let capacityText: string | undefined;
+
+  if (maxCapacity !== undefined) {
+    capacityText = maxCapacity === Infinity ? "Capacity: ∞" : `Capacity: ${maxCapacity} ops/s`;
+  }
+
+  const latencyText = latencyMs === undefined ? undefined : `Latency: ${latencyMs} ms`;
+
+  const costText = cost === undefined ? undefined : `Cost: $${cost}/hr`;
+
+  const typeLabel = componentType === undefined ? undefined : TYPE_LABELS[componentType];
 
   return (
     <div
@@ -44,7 +82,18 @@ const Inspector = ({ isOverloaded = false, loadPercent, selectedNodeLabel }: Ins
       ) : (
         <div style={{ color: "#1a2744", display: "grid", gap: "0.4rem" }}>
           <p style={{ fontSize: "0.875rem", fontWeight: 700, margin: 0 }}>{selectedNodeLabel}</p>
+          {typeLabel !== undefined && (
+            <p style={{ color: "#6b6b6b", fontSize: "0.8125rem", margin: 0 }}>{typeLabel}</p>
+          )}
           <p style={{ fontSize: "0.8125rem", margin: 0 }}>{loadText}</p>
+          <p style={{ fontSize: "0.8125rem", margin: 0 }}>{opsText}</p>
+          {capacityText !== undefined && (
+            <p style={{ fontSize: "0.8125rem", margin: 0 }}>{capacityText}</p>
+          )}
+          {latencyText !== undefined && (
+            <p style={{ fontSize: "0.8125rem", margin: 0 }}>{latencyText}</p>
+          )}
+          {costText !== undefined && <p style={{ fontSize: "0.8125rem", margin: 0 }}>{costText}</p>}
         </div>
       )}
     </div>

@@ -163,7 +163,7 @@
 
 ## Phase 6: Inspector Panel
 
-- [ ] CODE: Build Inspector panel
+- [x] CODE: Build Inspector panel
   - Feature: Clicking a node opens the Inspector panel showing per-component operational data.
   - Files: `src/components/Inspector.*`
   - Acceptance:
