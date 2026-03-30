@@ -56,3 +56,4 @@ Commit the changes with a conventional commit including a brief summary in the c
 
 Do NOT look inside node_modules. To verify a package is installed, run `pnpm list <package-name>`.
 Do NOT install packages. If you need something, ask the user to install it for you.
+Do not use the tdd-unit skill.

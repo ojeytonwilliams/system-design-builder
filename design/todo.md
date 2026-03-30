@@ -35,7 +35,7 @@
 
 ## Phase 2: Game Canvas
 
-- [ ] CODE: Render dotted-grid canvas with React Flow
+- [x] CODE: Render dotted-grid canvas with React Flow
   - Feature: Display an empty React Flow canvas styled as an off-white dotted grid.
   - Files: `src/components/GameCanvas.*`, global styles
   - Acceptance:
@@ -43,7 +43,7 @@
     - Canvas fills its container and responds to window resize.
     - React Flow background pattern is used for the grid.
 
-- [ ] CODE: Implement palette with draggable components
+- [x] CODE: Implement palette with draggable components
   - Feature: Palette lists available components; each can be dragged onto the canvas.
   - Files: `src/components/Palette.*`, `src/components/PaletteItem.*`
   - Acceptance:
@@ -52,7 +52,7 @@
     - Dropped nodes snap to the nearest grid cell.
     - Each node displays its icon and label beneath it.
 
-- [ ] CODE: Implement node deletion
+- [x] CODE: Implement node deletion
   - Feature: A placed node can be selected and deleted along with all its connections.
   - Files: `src/components/GameCanvas.*`, node types
   - Acceptance:

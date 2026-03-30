@@ -1,4 +1,6 @@
+import { GameCanvas } from "../components/game-canvas.js";
 import { Inspector } from "../components/inspector.js";
+import { PHASE_TWO_AVAILABLE_COMPONENTS } from "../components/component-library.js";
 import { Palette } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
 
@@ -21,10 +23,10 @@ const GameLayout = () => (
       }}
     >
       <section aria-label="Palette" style={{ flexShrink: 0, overflowY: "auto", width: "14rem" }}>
-        <Palette />
+        <Palette availableComponents={PHASE_TWO_AVAILABLE_COMPONENTS} />
       </section>
       <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-        {/* Canvas — Phase 2 */}
+        <GameCanvas />
       </main>
       <section aria-label="Inspector" style={{ flexShrink: 0, overflowY: "auto", width: "16rem" }}>
         <Inspector />

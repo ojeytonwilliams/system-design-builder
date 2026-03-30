@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.2.0] - 2026-03-30
+
+### Phase 2 — Game Canvas
+
+**Component library**
+
+- Added `src/components/component-library.ts` — shared catalogue of all five component types (`users`, `server`, `db`, `cache`, `load-balancer`) with accent colours, icons, and labels; exports `PHASE_TWO_AVAILABLE_COMPONENTS` and `isComponentType` helper.
+
+**Game canvas**
+
+- Added `src/components/game-canvas.tsx` — React Flow canvas with a dotted off-white grid background (`BackgroundVariant.Dots`); fills its container at 100 % width/height.
+- Drop zone accepts dragged palette items via HTML5 drag-and-drop; dropped nodes are snapped to a 48 px grid and rendered as custom `ArchitectureNode` elements showing an icon and label.
+- Clicking a node selects it (highlighted border); pressing Delete removes it and all connected edges.
+- Right-clicking a node shows an inline Remove context menu that performs the same deletion.
+- Node positions are also snapped on drag-stop.
+- Exported `snapPositionToGrid` pure helper for testing.
+
+**Palette**
+
+- Added `src/components/palette-item.tsx` — draggable button that sets `application/component-type` on `dataTransfer`; includes `data-testid` and `data-component-type` attributes.
+- Updated `src/components/palette.tsx` — accepts optional `availableComponents` prop; renders a `PaletteItem` for each entry or a placeholder when the prop is absent.
+
+**Layout**
+
+- Updated `src/layouts/game-layout.tsx` — mounts `<GameCanvas />` in the canvas area and passes `PHASE_TWO_AVAILABLE_COMPONENTS` to `<Palette />`.
+
+**Tests**
+
+- Added/extended tests for `GameCanvas` (7 tests), `PaletteItem` (4 tests), and `Palette` (5 tests).
+- Moved `ResizeObserver` stub into `test-setup.ts` so all test files share it automatically.
+- 25 tests total, all passing.
+
 ## [1.1.0] - 2026-03-30
 
 ### Phase 1 — Project Scaffold
