@@ -51,6 +51,8 @@
     "init-declarations": "off",
     /* Strictness is preferrable for true or false */
     "vitest/prefer-to-be-falsy": "off",
-    "vitest/prefer-to-be-truthy": "off"
+    "vitest/prefer-to-be-truthy": "off",
+    /* Either calledOnce or calledTimes(1) is fine, but we should pick one for consistency */
+    "vitest/prefer-called-times": "off"
   }
 }

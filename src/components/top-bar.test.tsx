@@ -26,7 +26,6 @@ describe("top bar", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
 
-    // oxlint-disable-next-line vitest/prefer-called-times
     expect(onStartTraffic).toHaveBeenCalledOnce();
   });
 
