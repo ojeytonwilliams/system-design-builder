@@ -15,9 +15,9 @@ const level5: LevelDefinition = {
     "Choosing the right-sized components for your budget is called right-sizing your infrastructure.",
   ],
   id: 5,
-  lockedNodeIds: ["users-1"],
+  lockedNodeIds: ["users-1", "lb-1", "cache-1", "db-1"],
   monthlyBudget: 220,
-  objectiveText: "Redesign within the $220/mo budget to handle 180 req/s.",
+  objectiveText: "Redesign within the $220/mo budget to handle 120 req/s.",
   startingEdges: [
     { id: "edge-u-lb", source: "users-1", target: "lb-1" },
     { id: "edge-lb-s1", source: "lb-1", target: "server-1" },
@@ -74,9 +74,9 @@ const level5: LevelDefinition = {
   ],
   timeout: 60,
   title: "Right-Sizing",
-  trafficPeak: 180,
-  trafficStart: 180,
-  trafficTarget: 180,
+  trafficPeak: 120,
+  trafficStart: 120,
+  trafficTarget: 120,
 };
 
 export { level5 };

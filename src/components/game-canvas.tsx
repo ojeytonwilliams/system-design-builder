@@ -28,7 +28,8 @@ const BACKGROUND_GAP = 24;
 const BACKGROUND_SIZE = 0.8;
 const CANVAS_BACKGROUND = "#f8f5ec";
 const OVERLOAD_PULSE_ANIMATION = "overload-pulse 1.2s ease-in-out infinite";
-const OVERLOAD_PULSE_KEYFRAMES = `
+const FLOW_DASH_ANIMATION = "flow-dash 0.45s linear infinite";
+const CANVAS_KEYFRAMES = `
 @keyframes overload-pulse {
   0% {
     box-shadow: 0 0 0 4px rgba(229, 99, 77, 0.15), 0 0 10px rgba(229, 99, 77, 0.22);
@@ -39,6 +40,10 @@ const OVERLOAD_PULSE_KEYFRAMES = `
   100% {
     box-shadow: 0 0 0 4px rgba(229, 99, 77, 0.15), 0 0 10px rgba(229, 99, 77, 0.22);
   }
+}
+@keyframes flow-dash {
+  from { stroke-dashoffset: 12; }
+  to   { stroke-dashoffset: 0; }
 }
 `;
 const NODE_WIDTH = 88;
@@ -130,6 +135,7 @@ interface GameCanvasProps {
   initialEdges?: Edge[];
   initialNodes?: ArchitectureCanvasNode[];
   isLocked?: boolean;
+  isSimulating?: boolean;
   lockedNodeIds?: string[];
   onComponentPlaced?: () => void;
   onSelectedNodeChange?: (nodeId: string | null) => void;
@@ -353,6 +359,7 @@ const ArchitectureNode = ({ data, id }: NodeProps<ArchitectureCanvasNode>) => {
 };
 
 const ArchitectureEdge = ({
+  animated,
   id,
   markerEnd,
   selected,
@@ -389,29 +396,19 @@ const ArchitectureEdge = ({
     strokeWidth = 3;
   }
 
+  const isAnimated = animated === true;
+  const edgeStyle = {
+    animation: isAnimated ? FLOW_DASH_ANIMATION : "none",
+    opacity: 0.9,
+    stroke,
+    strokeDasharray: isAnimated ? "6 6" : "none",
+    strokeWidth,
+  };
+
   if (markerEnd === undefined) {
-    edgeElement = (
-      <BaseEdge
-        path={edgePath}
-        style={{
-          opacity: 0.9,
-          stroke,
-          strokeWidth,
-        }}
-      />
-    );
+    edgeElement = <BaseEdge path={edgePath} style={edgeStyle} />;
   } else {
-    edgeElement = (
-      <BaseEdge
-        markerEnd={markerEnd}
-        path={edgePath}
-        style={{
-          opacity: 0.9,
-          stroke,
-          strokeWidth,
-        }}
-      />
-    );
+    edgeElement = <BaseEdge markerEnd={markerEnd} path={edgePath} style={edgeStyle} />;
   }
 
   return <g data-testid={`canvas-edge-${id}`}>{edgeElement}</g>;
@@ -452,6 +449,7 @@ const GameCanvas = ({
   initialEdges = [],
   initialNodes = [],
   isLocked = false,
+  isSimulating = false,
   lockedNodeIds = DEFAULT_LOCKED_NODE_IDS,
   onComponentPlaced,
   onSelectedNodeChange,
@@ -476,6 +474,10 @@ const GameCanvas = ({
 
     setNodes((currentNodes) => setOverloadedNodes(currentNodes, overloadedNodeSet));
   }, [overloadedNodeIds]);
+
+  useEffect(() => {
+    setEdges((currentEdges) => currentEdges.map((edge) => ({ ...edge, animated: isSimulating })));
+  }, [isSimulating]);
 
   useEffect(() => {
     onSelectedNodeChange?.(selectedNodeId);
@@ -729,7 +731,7 @@ const GameCanvas = ({
 
   return (
     <div data-testid="game-canvas" style={{ height: "100%", position: "relative", width: "100%" }}>
-      <style>{OVERLOAD_PULSE_KEYFRAMES}</style>
+      <style>{CANVAS_KEYFRAMES}</style>
       <div
         data-testid="game-canvas-dropzone"
         onDragOver={handleDragOver}

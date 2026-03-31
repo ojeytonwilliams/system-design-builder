@@ -223,11 +223,17 @@ describe("level system", () => {
     localStorage.clear();
   });
 
-  it("resources panel shows server and db for level 1 but not users", () => {
+  it("resources panel shows server, server-large and db for level 1", () => {
     render(<GameLayout />);
 
     expect(screen.getByTestId("resource-item-server")).toBeInTheDocument();
+    expect(screen.getByTestId("resource-item-server-large")).toBeInTheDocument();
     expect(screen.getByTestId("resource-item-db")).toBeInTheDocument();
+  });
+
+  it("resources panel does not show users, cache or load-balancer for level 1", () => {
+    render(<GameLayout />);
+
     expect(screen.queryByTestId("resource-item-users")).not.toBeInTheDocument();
     expect(screen.queryByTestId("resource-item-cache")).not.toBeInTheDocument();
     expect(screen.queryByTestId("resource-item-load-balancer")).not.toBeInTheDocument();
@@ -244,7 +250,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(11000);
+      vi.advanceTimersByTime(4000);
     });
 
     expect(screen.getByRole("heading", { name: /level complete/i })).toBeInTheDocument();
@@ -261,7 +267,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(11000);
+      vi.advanceTimersByTime(4000);
     });
     fireEvent.click(screen.getByRole("button", { name: /replay/i }));
 
@@ -280,7 +286,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(11000);
+      vi.advanceTimersByTime(4000);
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
@@ -298,7 +304,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(11000);
+      vi.advanceTimersByTime(4000);
     });
 
     expect(loadProgress().completedLevels).toContain(1);
@@ -323,7 +329,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(11000);
+      vi.advanceTimersByTime(4000);
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
@@ -342,7 +348,7 @@ describe("level context UI", () => {
     render(<GameLayout />);
 
     expect(
-      screen.getByText("Your server is overloaded. Fix the architecture to handle 80 req/s."),
+      screen.getByText("Your server is overloaded. Fix the architecture to handle 70 req/s."),
     ).toBeInTheDocument();
   });
 });

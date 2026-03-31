@@ -15,8 +15,8 @@ const level4: LevelDefinition = {
     "Storing frequently accessed data in memory to avoid repeated database queries is called caching.",
   ],
   id: 4,
-  lockedNodeIds: ["users-1"],
-  monthlyBudget: 200,
+  lockedNodeIds: ["users-1", "lb-1", "server-1", "server-2", "db-1"],
+  monthlyBudget: 280,
   objectiveText: "The database is still overloaded. Add a Cache to reduce DB reads.",
   startingEdges: [
     { id: "edge-u-lb", source: "users-1", target: "lb-1" },
@@ -39,15 +39,15 @@ const level4: LevelDefinition = {
       position: { x: 260, y: 200 },
     },
     {
-      componentType: "server",
+      componentType: "server-large",
       id: "server-1",
-      label: "Small Server",
+      label: "Large Server",
       position: { x: 440, y: 80 },
     },
     {
-      componentType: "server",
+      componentType: "server-large",
       id: "server-2",
-      label: "Small Server",
+      label: "Large Server",
       position: { x: 440, y: 320 },
     },
     {

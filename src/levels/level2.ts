@@ -6,7 +6,7 @@ const level2: LevelDefinition = {
   coachMessages: [
     {
       atSecond: 2,
-      text: "One server is over capacity. A Load Balancer can spread traffic across both servers evenly.",
+      text: "Both servers are receiving the full 80 req/s — way over their 50 req/s limit. Add a Load Balancer to split the traffic evenly.",
     },
   ],
   componentUnlocks: [],
@@ -15,9 +15,9 @@ const level2: LevelDefinition = {
     "Distributing requests across multiple machines is called load balancing.",
   ],
   id: 2,
-  lockedNodeIds: ["users-1"],
+  lockedNodeIds: ["users-1", "server-1", "server-2", "db-1"],
   monthlyBudget: 150,
-  objectiveText: "One server is over capacity. Add a Load Balancer to spread the traffic.",
+  objectiveText: "Both servers are overloaded. Add a Load Balancer to split the traffic.",
   startingEdges: [
     { id: "edge-u-s1", source: "users-1", target: "server-1" },
     { id: "edge-u-s2", source: "users-1", target: "server-2" },
@@ -44,17 +44,17 @@ const level2: LevelDefinition = {
       position: { x: 320, y: 320 },
     },
     {
-      componentType: "db",
+      componentType: "db-large",
       id: "db-1",
-      label: "Small DB",
+      label: "Large DB",
       position: { x: 560, y: 200 },
     },
   ],
   timeout: 60,
   title: "Over Capacity",
-  trafficPeak: 120,
-  trafficStart: 120,
-  trafficTarget: 120,
+  trafficPeak: 80,
+  trafficStart: 80,
+  trafficTarget: 80,
 };
 
 export { level2 };

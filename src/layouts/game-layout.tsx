@@ -23,7 +23,7 @@ import { computeAvailableComponents, updateOverloadDurations } from "../simulati
 import type { OverloadDurations } from "../simulation/unlocks.js";
 import { SimulationProvider, useSimulation } from "../store.js";
 
-const WIN_SUSTAIN_SECONDS = 10;
+const WIN_SUSTAIN_SECONDS = 3;
 
 const LATENCY_MS: Record<ComponentType, number> = {
   cache: 5,
@@ -601,6 +601,7 @@ const GameLayoutContent = ({
             initialEdges={levelStartEdges}
             initialNodes={levelStartNodes}
             isLocked={isLocked}
+            isSimulating={mode === "SIMULATE"}
             lockedNodeIds={currentLevel.lockedNodeIds}
             onComponentPlaced={handleComponentPlaced}
             onSelectedNodeChange={handleSelectedNodeChange}
