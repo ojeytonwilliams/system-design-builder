@@ -44,6 +44,7 @@ const OVERLOAD_PULSE_KEYFRAMES = `
 const NODE_WIDTH = 88;
 const NODE_MIN_HEIGHT = 96;
 const PORT_HIT_SIZE = 44;
+const PORT_CENTER_OFFSET = PORT_HIT_SIZE / 2;
 const CANVAS_COMPONENT_LIBRARY = {
   cache: {
     accentColor: "#d9a65b",
@@ -347,10 +348,27 @@ const ArchitectureEdge = ({
   selected,
   sourceX,
   sourceY,
+  sourcePosition,
   targetX,
   targetY,
+  targetPosition,
 }: EdgeProps) => {
-  const [edgePath] = getBezierPath({ sourceX, sourceY, targetX, targetY });
+  const sourceAnchor = getHandleCenterAnchorPoint({
+    position: sourcePosition,
+    x: sourceX,
+    y: sourceY,
+  });
+  const targetAnchor = getHandleCenterAnchorPoint({
+    position: targetPosition,
+    x: targetX,
+    y: targetY,
+  });
+  const [edgePath] = getBezierPath({
+    sourceX: sourceAnchor.x,
+    sourceY: sourceAnchor.y,
+    targetX: targetAnchor.x,
+    targetY: targetAnchor.y,
+  });
   const isSelected = selected === true;
   let stroke = "#7b8cb2";
   let strokeWidth = 2;
@@ -391,6 +409,32 @@ const ArchitectureEdge = ({
 
 const nodeTypes = { architecture: ArchitectureNode };
 const edgeTypes = { "architecture-edge": ArchitectureEdge };
+
+interface HandleAnchorPointInput {
+  position: Position | undefined;
+  x: number;
+  y: number;
+}
+
+const getHandleCenterAnchorPoint = ({ position, x, y }: HandleAnchorPointInput): Point => {
+  if (position === Position.Left) {
+    return { x: x + PORT_CENTER_OFFSET, y };
+  }
+
+  if (position === Position.Right) {
+    return { x: x - PORT_CENTER_OFFSET, y };
+  }
+
+  if (position === Position.Top) {
+    return { x, y: y + PORT_CENTER_OFFSET };
+  }
+
+  if (position === Position.Bottom) {
+    return { x, y: y - PORT_CENTER_OFFSET };
+  }
+
+  return { x, y };
+};
 
 const GameCanvas = ({
   componentToPlace,
