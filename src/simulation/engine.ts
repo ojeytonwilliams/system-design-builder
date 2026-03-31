@@ -1,14 +1,5 @@
-import type {
-  FlowConfig,
-  GraphEdge,
-  GraphNode,
-  RevenueConfig,
-  TrafficScheduleEntry,
-  TrafficSnapshot,
-} from "./types.js";
 import type { ComponentType } from "../components/component-library.js";
-
-const REVENUE_PER_REQUEST = 0.1;
+import type { FlowConfig, GraphEdge, GraphNode, TrafficSnapshot } from "./types.js";
 
 interface ForwardingOptions {
   cacheHitRate: number;
@@ -31,16 +22,26 @@ const computeForwardedOps = (
   return handledOps;
 };
 
-const getTrafficRate = (schedule: TrafficScheduleEntry[], elapsedSeconds: number): number => {
-  let rate = 0;
+interface LinearTrafficRateParams {
+  elapsed: number;
+  timeout: number;
+  trafficPeak: number;
+  trafficStart: number;
+}
 
-  for (const entry of schedule) {
-    if (entry.startTime <= elapsedSeconds) {
-      rate = entry.opsPerSec;
-    }
+const getLinearTrafficRate = ({
+  elapsed,
+  timeout,
+  trafficPeak,
+  trafficStart,
+}: LinearTrafficRateParams): number => {
+  if (timeout <= 0) {
+    return trafficPeak;
   }
 
-  return rate;
+  const progress = Math.min(elapsed / timeout, 1);
+
+  return trafficStart + (trafficPeak - trafficStart) * progress;
 };
 
 const computeTrafficFlow = (
@@ -137,40 +138,10 @@ const computeTrafficFlow = (
   return snapshot;
 };
 
-const computeRevenue = (
-  snapshot: TrafficSnapshot,
-  nodes: GraphNode[],
-  config: RevenueConfig,
-): number => {
-  const { cacheHitRate, edges } = config;
-  const sourceNodeIds = new Set(edges.map((e) => e.source));
-  let total = 0;
-
-  for (const node of nodes) {
-    const state = snapshot[node.id];
-
-    if (state !== undefined) {
-      if (node.type === "cache") {
-        // Cache hits are served from cache and count as completed requests
-        total += state.handledOps * cacheHitRate;
-      } else if (
-        node.type !== "users" &&
-        node.type !== "load-balancer" &&
-        !sourceNodeIds.has(node.id)
-      ) {
-        // Sink nodes represent the final handler of a request
-        total += state.handledOps;
-      }
-    }
-  }
-
-  return total * REVENUE_PER_REQUEST;
-};
-
 const hasRunnablePath = (nodes: GraphNode[], edges: GraphEdge[]): boolean => {
   const usersNodeIds = new Set(nodes.filter((n) => n.type === "users").map((n) => n.id));
 
   return edges.some((e) => usersNodeIds.has(e.source));
 };
 
-export { REVENUE_PER_REQUEST, computeRevenue, computeTrafficFlow, getTrafficRate, hasRunnablePath };
+export { computeTrafficFlow, getLinearTrafficRate, hasRunnablePath };

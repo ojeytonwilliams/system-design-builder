@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 
 **Working title:** System Design Builder
-**Status:** Draft v2
+**Status:** Draft v3
 
 ---
 
@@ -104,16 +104,19 @@ The player should feel:
 | As a… | I want to… | So that… |
 |---|---|---|
 | beginner | open the game in my browser immediately | I don't have to install anything |
-| beginner | start with an empty grid and a simple goal | I'm not overwhelmed before I begin |
+| beginner | start a level with a broken system already in place | I can immediately see what failure looks like and start fixing it |
 | player | drag components onto a canvas | I can build an architecture visually |
 | player | connect components by clicking their ports | I can wire up flows without switching modes |
 | player | launch traffic and watch it flow | I can see my architecture in action |
 | player | see a component turn red when it's overloaded | I understand where the bottleneck is |
+| player | always see the current requests/sec rate prominently | I can judge whether my architecture is keeping up |
 | player | receive a short, calm explanation when something fails | I learn what went wrong without feeling punished |
 | player | add or rearrange components after a failure | I can iterate quickly toward a better design |
+| player | see the price and capacity of each component in the resources panel | I can make budget-conscious architecture decisions |
 | player | unlock new components as traffic grows | the game reveals complexity at the right pace |
 | player | tap/click a component to see its current stats | I can inspect what's happening under the hood |
-| player | reach a target revenue amount to complete a level | I have a clear win condition |
+| player | sustain a target requests/sec without dropping traffic to complete a level | I have a clear, traffic-based win condition |
+| player | stay within a monthly infrastructure budget | I understand cost trade-offs in real architecture |
 | educator | share the game URL with students | they can explore system design concepts visually |
 
 ---
@@ -277,79 +280,91 @@ When failure occurs, the game should:
 - show the issue visually (overloaded node)
 - explain the issue briefly (one or two lines)
 - allow quick iteration (delete/re-place/reconnect)
-- reward the corrected architecture (revenue resumes, win condition progresses)
+- reward the corrected architecture (drops stop, traffic handled, win condition progresses)
 
 Failure should feel instructive, not punishing.
+
+### 9. Resources Panel
+The **Resources panel** (replaces the former "palette") lists all components available to the player for the current level. Each entry shows:
+- component icon and name
+- monthly cost (e.g. **$20/mo**)
+- capacity (e.g. **50 req/s**)
+- one-line explanation of what the component does (e.g. *"Handles incoming requests from users"*)
+
+The **Users** node is always pre-placed in the level's starting layout and is **not** shown in the Resources panel. Users is a fixed traffic source that the player cannot add, move, or delete.
+
+Components that are not yet unlocked for the current level are hidden from the Resources panel.
 
 ---
 
 ## Traffic Simulation Model
 
-Traffic is modelled as a **request rate in ops/sec**.
+Traffic is modelled as a **request rate in req/sec**.
 
 - The Users node emits requests at the current traffic rate.
 - Requests travel through connected components in sequence (e.g. Users → Server → DB).
-- Each component processes requests up to its max capacity (ops/sec).
+- Each component processes requests up to its max capacity (req/sec).
 - When incoming rate exceeds capacity, excess requests are **dropped** (not queued).
-- Traffic volume grows on a scripted schedule defined per level.
-- Each level defines a **simulation timeout** (e.g. 60–90 seconds). The simulation stops automatically when either the revenue target is reached or the timeout expires.
-- When the simulation ends, the player is returned to design mode. If the target was reached, the end-of-level screen is shown. If not, the canvas remains editable for another attempt.
+- Traffic grows **linearly** from the level's starting rate to its peak rate over the simulation duration (MVP). The rate is shown continuously in the top bar.
+- Each level defines a **peak traffic target** (req/sec) and a **simulation timeout** (e.g. 60–90 seconds). The simulation stops automatically when either the win condition is met or the timeout expires.
+- The **win condition** is met when the system sustains the target req/sec rate for a continuous 10-second window with zero dropped requests.
+- When the simulation ends, the player is returned to design mode. If the win condition was met, the end-of-level screen is shown. If not, the canvas remains editable for another attempt.
 - A Load Balancer distributes incoming requests evenly across all connected downstream nodes. It has no capacity limit of its own.
 - A Cache intercepts a configurable percentage of DB-bound requests (cache hit rate, defined per level). Hits do not travel to the DB.
 
 ---
 
-## Component Capacity
+## Component Capacity & Costs
 
-| Component | Base capacity | Upgraded capacity | Notes |
+Costs are monthly infrastructure costs, grounded in real-world cloud pricing (AWS/GCP, simplified for gameplay). Capacity represents the sustained request throughput each component can handle.
+
+| Component | Capacity | Monthly cost | Notes |
 |---|---|---|---|
-| Server | 50 ops/sec | 150 ops/sec | Handles all request types |
-| DB | 30 ops/sec | 90 ops/sec | Receives from Server or Cache miss |
-| Cache | 200 ops/sec | — | Intercepts DB reads; no upgrade needed |
-| Load Balancer | unlimited | — | Distributes evenly; no upgrade |
+| Small Server | 50 req/sec | $20/mo | Entry-level compute; handles web requests |
+| Large Server | 150 req/sec | $80/mo | Higher-capacity compute; same role, more throughput |
+| Small DB | 30 req/sec | $15/mo | Managed relational database, dev tier |
+| Large DB | 90 req/sec | $50/mo | Managed relational database, production tier |
+| Cache | 200 req/sec | $25/mo | In-memory read cache; intercepts DB reads |
+| Load Balancer | unlimited | $20/mo | Distributes traffic evenly; cannot be overloaded |
 
-Overloaded = incoming ops/sec > max capacity. Dropped ops/sec = incoming − max capacity.
+Overloaded = incoming req/sec > capacity. Dropped req/sec = incoming − capacity.
+
+There are no in-game upgrades. Players choose the right-sized component from the Resources panel when placing it.
 
 ---
 
-## Economy
+## Budget & Costs
 
-### Revenue
-- Each successfully handled request (not dropped) earns **$0.10**.
-- Revenue is reduced when requests are dropped due to overload.
-
-### Starting Budget
-- Each level begins with **$500**.
-
-### Component Costs
-
-| Component | Cost |
-|---|---|
-| Server | $200 |
-| DB | $100 |
-| Cache | $150 |
-| Load Balancer | $200 |
-| Server upgrade | $100 |
-| DB upgrade | $50 |
+### Monthly Infrastructure Budget
+- Each level has a fixed **monthly infrastructure budget** (e.g. $100–$300/mo).
+- Every component placed on the canvas costs its monthly rate, deducted from the budget.
+- Removing a component refunds its monthly cost.
+- The player cannot place a component that would exceed the remaining budget.
+- Remaining budget is displayed in the top bar at all times.
 
 ### Win Condition
-Each level has a **target revenue amount**. The level is complete when the player's total earned revenue reaches that target. Targets increase with each level to reflect the growing complexity required to sustain traffic.
+Each level has a **traffic target** (req/sec). The level is complete when the player's architecture sustains that req/sec rate for a continuous 10-second window with zero dropped requests. The target increases with each level to reflect the growing complexity required.
 
 ### Display
-Running cash balance is shown in the top bar at all times.
+- **Remaining budget** and **monthly cost** of placed components are shown in the top bar.
+- **Current req/sec** (live traffic rate during simulation) is always prominently visible in the top bar.
+- The **traffic target** for the active level is shown in the top bar alongside the live rate.
 
 ---
 
 ## Levels
 
 Levels are **hand-authored scenarios** for v1. Each level specifies:
-- available palette (which components the player can place)
-- authored starting layout (initial nodes/edges and optional locked infrastructure)
+- available resources (which components the player can place)
+- authored starting layout (initial nodes/edges — always a **failing configuration** the player must fix)
 - objective text (a short mission visible during play)
-- traffic script (how fast traffic grows)
+- monthly infrastructure budget
+- traffic profile (starting rate, peak rate, linear growth over simulation duration)
 - simulation timeout (maximum duration of a single simulation run)
-- revenue target (win condition — level completes if reached before timeout)
+- traffic target (req/sec — win condition, level completes when sustained for 10s with no drops)
 - unlock trigger (what concept becomes available)
+
+**Every level starts in a failing state.** The preset configuration is deliberately under-powered or mis-wired so the player immediately sees overloads and must edit the architecture to fix them. This means the player's first action in every level is diagnosis and repair, not blank-canvas construction.
 
 There is no hard fail state. The player can always delete, reconnect, and retry within the same level.
 
@@ -359,7 +374,9 @@ On startup, the game resumes at the **first incomplete level**.
 The gameplay UI must always show level context during play:
 - active level number and title
 - current objective text
-- current level revenue target
+- traffic target (req/sec) for the active level
+- live req/sec rate (prominent, always visible during simulation)
+- remaining budget and total monthly cost
 
 The game includes a compact level progression strip where:
 - completed levels are replayable
@@ -368,21 +385,21 @@ The game includes a compact level progression strip where:
 
 ### Level Summary
 
-| Level | Focus concept | Key unlock |
-|---|---|---|
-| 1 | Place components and connect them | Users, Server, DB |
-| 2 | Capacity and overload | Overload visualisation |
-| 3 | Multiple servers | Second server unlocked |
-| 4 | Load balancing | Load Balancer component |
-| 5 | Database bottlenecks | DB upgrade |
-| 6 | Caching | Cache component |
+| Level | Failing start state | Focus concept | Key unlock |
+|---|---|---|---|
+| 1 | Single small server overloaded at peak | Server capacity and overload | Small Server, Small DB |
+| 2 | Two servers, no load balancer — traffic imbalanced | Load balancing | Load Balancer |
+| 3 | DB becomes the bottleneck after servers are balanced | Database capacity | Large DB |
+| 4 | Large DB still insufficient — cache missing | Read caching | Cache |
+| 5 | Cache hit rate low, budget tight | Budget optimisation and right-sizing | Large Server |
+| 6 | Multi-component system overloaded at high traffic | Full architecture design under budget | All components |
 
 ### End-of-Level Screen
 
-When the player reaches the revenue target, an end-of-level screen is shown before the next level loads. It must display:
+When the player sustains the traffic target for 10 seconds, an end-of-level screen is shown before the next level loads. It must display:
 
-- **Score**: a numerical or star-based score derived from efficiency (e.g. revenue earned vs time taken, or revenue vs money spent on components)
-- **Feedback**: 2–3 lines of specific, positive feedback explaining what the player's architecture did well and what concept was demonstrated (e.g. "You added a second server to split the load — that's horizontal scaling.")
+- **Score**: a numerical or star-based score derived from efficiency (e.g. budget headroom remaining, time taken to reach the win condition)
+- **Feedback**: 2–3 lines of specific, positive feedback explaining what the player's architecture did well and what concept was demonstrated (e.g. "You added a load balancer to split traffic evenly across two servers — that's horizontal scaling.")
 - A **Continue** button to proceed to the next level
 - A **Replay** button to retry the level (for a better score)
 
@@ -394,7 +411,7 @@ Feedback tone should match the rest of the game: calm, specific, educational. It
 
 ### Must Have
 - HTML5 browser-based game
-- Empty dotted-grid map with grid snapping
+- Dotted-grid map with grid snapping
 - Drag-and-drop placement of core components
 - Port-based connections (click outgoing port → click incoming port)
 - Animated directional flow lines between components
@@ -403,57 +420,58 @@ Feedback tone should match the rest of the game: calm, specific, educational. It
 - Gradual component and mechanic unlock system
 - Overloaded visual state (red/coral) on nodes and crowded flows
 - Persistent labels under components
-- Inspector panel per component (ops/sec, load, capacity, latency, cost)
+- Inspector panel per component (req/sec, load, capacity, latency, monthly cost)
 - Ability to delete components and connections and re-place
-- Traffic growth simulation (scripted per level)
-- Revenue generated from successful requests
-- Per-level revenue target as win condition
-- Running cash balance displayed at all times
+- Linear traffic growth simulation (starting rate → peak rate over simulation duration)
+- Live req/sec display always prominent in top bar (current rate + target)
+- Monthly infrastructure budget per level; remaining budget shown in top bar
+- Per-level traffic target (req/sec) as win condition; met by sustaining target for 10s with zero drops
+- Two server sizes (Small and Large) with different capacities and costs
+- Resources panel listing available components with price, capacity, and one-line description; Users node excluded
+- Levels start in a failing preset configuration the player must fix
 - Auto-save to localStorage on level completion
 - End-of-level screen with score and educational feedback
 
 ### Should Have
 - Short scenario-based coach prompts
 - Tooltips that explain concepts only after they matter
-- Visual success state when revenue target is reached
-- Basic upgrade paths for Server and DB
+- Visual success state when traffic target is sustained
 - Event log showing key state changes
 
 ### Could Have
 - Sandbox mode after completing tutorial levels
 - Incident cards such as "traffic spike" or "marketing campaign"
-- Comparison overlay showing before vs after revenue/performance
+- Comparison overlay showing before vs after req/sec handling
 - Export state for sharing or debugging
 
 ---
 
 ## Example Early Player Journey
 
-### Stage 1: Blank Workspace
-The player sees an empty dotted grid and a coach message: *"Build the smallest setup needed to launch your website."*
+### Stage 1: Failing Start
+The player opens Level 1 and sees a pre-built architecture: Users → Small Server → Small DB. The server is already red. A coach message reads: *"Your server can't handle this much traffic. Fix it."*
 
-Available palette: Users · Server · DB
+Available resources: Small Server ($20/mo · 50 req/s) · Large Server ($80/mo · 150 req/s) · Small DB ($15/mo · 30 req/s)
 
-### Stage 2: First Success
-The player drags a Server and a DB onto the canvas, connects them via ports, and connects Users to Server. They press Start Traffic. Requests flow. Revenue accumulates.
+Monthly budget: $100/mo. Currently spent: $35/mo (1× Small Server + 1× Small DB).
 
-### Stage 3: First Failure
-Traffic grows. The Server receives more requests than it can handle. It turns red. Requests are dropped. Revenue rate falls.
+### Stage 2: Player Diagnoses
+The player clicks the overloaded server. The Inspector panel shows: 80 req/s incoming, 50 req/s capacity, 37% dropped.
 
-### Stage 4: Guided Reflection
-Coach message: *"Too many requests are hitting one server. You need more capacity."*
+The player sees there is $65/mo of budget remaining — enough for one more Small Server ($20/mo) or to swap to a Large Server.
 
-A second Server is unlocked in the palette.
+### Stage 3: Player Fixes
+The player deletes the Small Server and drags a Large Server onto the canvas. Monthly cost rises to $95/mo. They press Start Traffic.
 
-### Stage 5: Improved Architecture
-The player drags a second Server onto the canvas and connects Users to it directly. Load is now split. Both servers stay normal. Revenue recovers. The player reaches the target and completes the level.
+### Stage 4: Success
+Traffic grows linearly. The Large Server handles it. The coach says: *"Larger hardware means more capacity — that's vertical scaling."* The player sustains the target (e.g. 80 req/s) for 10 seconds. Level complete.
 
 ---
 
 ## UX Requirements
 
 ### Interaction Model
-- **Drag** component from palette to place on the canvas grid
+- **Drag** component from the Resources panel to place on the canvas grid
 - **Click outgoing port** on a component, then **click incoming port** on another to create a flow connection
 - **Click flow line** then press Delete (or right-click → Remove) to remove a connection
 - **Click component** to open the Inspector panel
@@ -462,17 +480,19 @@ The player drags a second Server onto the canvas and connects Users to it direct
 - Start Traffic is blocked when architecture is not runnable (no valid path from Users to a terminal service), and a short actionable hint is shown
 - Canvas editing (placement, connection, deletion) is only available in design mode, not during simulation
 - Touch-friendly: drag-and-drop is the only placement model on all platforms
+- The Users node in the starting layout is **fixed** — it cannot be moved or deleted
 
 ### Onboarding
-- Start with only a few components and one simple goal
+- Start each level with a failing preset and one clear objective
 - Keep onboarding text brief and embedded in play via the Coach panel
-- Use simple verbs: "Drag," "Connect," "Launch," "Fix"
+- Use simple verbs: "Fix," "Swap," "Add," "Connect"
 
 ### Information Density
 - Default view should stay uncluttered
 - Advanced info is in the Inspector panel, opened on demand
 - Labels remain visible at all times under each component
-- Cash balance and traffic rate visible in top bar at all times
+- Current req/sec (live) and traffic target visible prominently in top bar at all times
+- Remaining monthly budget visible in top bar at all times
 
 ### Failure Messaging
 Tone should be calm, instructive, and specific.
@@ -560,33 +580,37 @@ Note: the reference image shows a "Connect" mode button in the toolbar. This has
 ## Functional Requirements
 
 1. The system must render a dotted-grid map as the primary playfield with grid snapping.
-2. The system must allow players to drag components from a palette onto the map.
+2. The system must allow players to drag components from the Resources panel onto the map.
 3. The system must allow components to be connected via port clicks (outgoing → incoming).
-4. The system must simulate traffic as a request rate (ops/sec) that grows on a scripted timer.
+4. The system must simulate traffic as a request rate (req/sec) that grows **linearly** from a level-defined starting rate to a peak rate over the simulation duration.
 5. The system must calculate load for each node and drop excess requests when overloaded.
 6. The system must visually mark overloaded components (red/coral state).
 7. The system must display persistent labels under all placed components.
-8. The system must provide an Inspector panel per component showing ops/sec, capacity, load, latency, and cost.
+8. The system must provide an Inspector panel per component showing req/sec, capacity, load %, latency, and monthly cost.
 9. The system must gradually unlock components and mechanics based on defined trigger conditions.
-10. The system must allow deletion of components and connections at any time.
-11. The system must track revenue earned per level and display it in real time.
-12. The system must complete a level when the revenue target is reached.
-13. The system must auto-save progress to localStorage on level completion.
-14. The system must display an end-of-level screen with a score and educational feedback when the revenue target is reached.
-15. The system must load each level from authored starting state and reset session state correctly on continue/replay.
-16. The system must resume at the first incomplete level on startup using local progress.
-17. The system must display active level number/title, objective text, and revenue target during gameplay.
-18. The system must provide a level progression selector with replayable completed levels and visibly locked future levels.
-19. The system must prevent simulation from starting when the architecture is not runnable and show a concise guidance message.
-20. The system must run as a responsive HTML5 browser experience on modern mobile and desktop browsers in portrait and landscape orientations.
+10. The system must allow deletion and replacement of non-fixed components and connections at any time in design mode.
+11. The system must enforce a per-level monthly infrastructure budget; placement must be blocked when the budget would be exceeded.
+12. The system must display remaining budget and total monthly cost of placed components in the top bar at all times.
+13. The system must display current live req/sec rate prominently in the top bar during simulation.
+14. The system must display the traffic target (req/sec) for the active level alongside the live rate.
+15. The system must complete a level when the architecture sustains the target req/sec for a continuous 10-second window with zero dropped requests.
+16. The system must auto-save progress to localStorage on level completion.
+17. The system must display an end-of-level screen with a score and educational feedback when the win condition is met.
+18. The system must load each level from an authored **failing** starting layout and reset session state correctly on continue/replay.
+19. The system must resume at the first incomplete level on startup using local progress.
+20. The system must display active level number/title, objective text, and traffic target during gameplay.
+21. The system must provide a level progression selector with replayable completed levels and visibly locked future levels.
+22. The system must prevent simulation from starting when the architecture is not runnable and show a concise guidance message.
+23. The system must display the Resources panel with each available component's name, monthly cost, capacity, and one-line description; the Users node must not appear in the Resources panel.
+24. The system must run as a responsive HTML5 browser experience on modern mobile and desktop browsers in portrait and landscape orientations.
 
 ---
 
 ## Success Metrics (v1)
 
 - Levels completed (tracked locally, displayed in-game)
-- Percentage of players who reach the Level 1 win condition
-- Percentage of players who successfully fix the first overload and continue
+- Percentage of players who meet the Level 1 traffic target
+- Percentage of players who successfully fix the first overload and continue to Level 2
 
 Analytics infrastructure is deferred to post-v1.
 
@@ -600,6 +624,8 @@ Analytics infrastructure is deferred to post-v1.
 4. Failure feels punitive instead of instructive.
 5. Technical icons become too generic to understand at a glance.
 6. Port-based connection UX is unclear on first use — players may not discover ports without a hint.
+7. Failing start states confuse players who don't understand what is wrong — coach messages and the Inspector must make the problem obvious immediately.
+8. Budget constraints may frustrate players who hit the limit before finding the right solution — level budgets must be carefully tuned to allow at least one valid architecture.
 
 ---
 
@@ -612,11 +638,10 @@ None remaining for MVP.
 ## MVP Acceptance Criteria
 
 The MVP is successful if:
-- a new player can start from a blank dotted grid,
-- drag and connect the minimum website components,
-- launch traffic,
-- observe at least one clear overload,
-- understand why it failed through brief coach feedback,
-- fix the architecture,
-- reach the level revenue target,
-- and continue to a slightly more complex scenario.
+- a new player opens Level 1 and immediately sees an overloaded component in the preset layout,
+- the Inspector panel and coach message make the problem clear without prior knowledge,
+- the player fixes the architecture within the budget constraint,
+- presses Start Traffic and watches the system handle the linear traffic ramp,
+- sees the live req/sec rate rise and sustain the target for 10 seconds with no drops,
+- receives the end-of-level screen naming the concept they demonstrated,
+- and continues to a slightly more complex failing scenario.

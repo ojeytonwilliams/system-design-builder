@@ -1,20 +1,20 @@
 import { COMPONENT_LIBRARY } from "./component-library.js";
 import type { ComponentType } from "./component-library.js";
-import { PaletteItem } from "./palette-item.js";
+import { ResourceItem } from "./palette-item.js";
 
-interface PaletteProps {
+interface ResourcesProps {
   availableComponents?: ComponentType[];
   isCompact?: boolean;
   isDisabled?: boolean;
   onPlaceComponent?: (componentType: ComponentType) => void;
 }
 
-const Palette = ({
+const Resources = ({
   availableComponents,
   isCompact = false,
   isDisabled = false,
   onPlaceComponent,
-}: PaletteProps) => {
+}: ResourcesProps) => {
   let contentDisplay = "grid";
   let contentGap = "0.75rem";
   let contentOverflowX: "auto" | "visible" = "visible";
@@ -44,27 +44,33 @@ const Palette = ({
         }}
       >
         {availableComponents.map((componentType) => {
-          const componentDefinition = COMPONENT_LIBRARY[componentType];
+          const def = COMPONENT_LIBRARY[componentType];
 
           if (onPlaceComponent === undefined) {
             return (
-              <PaletteItem
+              <ResourceItem
+                capacity={def.capacity}
                 componentType={componentType}
-                icon={componentDefinition.icon}
+                description={def.description}
+                icon={def.icon}
                 isDisabled={isDisabled}
                 key={componentType}
-                label={componentDefinition.label}
+                label={def.label}
+                monthlyCost={def.monthlyCost}
               />
             );
           }
 
           return (
-            <PaletteItem
+            <ResourceItem
+              capacity={def.capacity}
               componentType={componentType}
-              icon={componentDefinition.icon}
+              description={def.description}
+              icon={def.icon}
               isDisabled={isDisabled}
               key={componentType}
-              label={componentDefinition.label}
+              label={def.label}
+              monthlyCost={def.monthlyCost}
               onPlaceComponent={onPlaceComponent}
             />
           );
@@ -100,7 +106,7 @@ const Palette = ({
           textTransform: "uppercase",
         }}
       >
-        Palette
+        Resources
       </h2>
 
       {content}
@@ -108,4 +114,5 @@ const Palette = ({
   );
 };
 
-export { Palette };
+export { Resources };
+export type { ResourcesProps };

@@ -1,40 +1,50 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { GameLayout } from "./game-layout.js";
 import { loadProgress } from "../persistence.js";
 import type { LevelConfig } from "../simulation/types.js";
 import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
 import type { Edge } from "@xyflow/react";
 
-// Level config that is won after 1 tick (100 ops/s * $0.10 = $10, target $510)
+// Win after 10 sustained seconds: traffic=40 < server capacity=50, no drops
 const winLevelConfig: LevelConfig = {
   cacheHitRate: 0,
-  revenueTarget: 510,
+  monthlyBudget: 99999,
   timeout: 60,
-  trafficSchedule: [{ opsPerSec: 100, startTime: 0 }],
+  trafficPeak: 40,
+  trafficStart: 40,
+  trafficTarget: 40,
 };
 
 const testLevelConfig: LevelConfig = {
   cacheHitRate: 0,
-  revenueTarget: 99999,
+  monthlyBudget: 99999,
   timeout: 10,
-  trafficSchedule: [{ opsPerSec: 100, startTime: 0 }],
+  trafficPeak: 100,
+  trafficStart: 100,
+  trafficTarget: 100,
 };
 
+// 150 req/s on a 50 req/s server = 300% load
 const overloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
-  revenueTarget: 99999,
+  monthlyBudget: 99999,
   timeout: 10,
-  trafficSchedule: [{ opsPerSec: 300, startTime: 0 }],
+  trafficPeak: 150,
+  trafficStart: 150,
+  trafficTarget: 150,
 };
 
+// Traffic ramps down from 100 → 0 over 4 seconds:
+// T=1: 75 req/s (overloaded, server capacity=50)
+// T=2: 50 req/s (resolves — exactly at capacity, no drops)
+// T=3: 25 req/s (50% load)
 const resolvingOverloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
-  revenueTarget: 99999,
-  timeout: 10,
-  trafficSchedule: [
-    { opsPerSec: 300, startTime: 0 },
-    { opsPerSec: 50, startTime: 2 },
-  ],
+  monthlyBudget: 99999,
+  timeout: 4,
+  trafficPeak: 0,
+  trafficStart: 100,
+  trafficTarget: 40,
 };
 
 const overloadNodes: ArchitectureCanvasNode[] = [
@@ -82,10 +92,10 @@ describe("game layout", () => {
     expect(screen.getByRole("banner")).toBeInTheDocument();
   });
 
-  it("renders the palette region", () => {
+  it("renders the resources region", () => {
     render(<GameLayout />);
 
-    expect(screen.getByRole("region", { name: /palette/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /resources/i })).toBeInTheDocument();
   });
 
   it("renders the canvas area", () => {
@@ -104,12 +114,6 @@ describe("game layout", () => {
     render(<GameLayout />);
 
     expect(screen.getByRole("button", { name: /start traffic/i })).toBeInTheDocument();
-  });
-
-  it("renders the cash balance", () => {
-    render(<GameLayout />);
-
-    expect(screen.getByText(/\$500/)).toBeInTheDocument();
   });
 });
 
@@ -169,28 +173,6 @@ describe("simulation mode", () => {
     expect(screen.getByRole("button", { name: /start traffic/i })).toBeInTheDocument();
   });
 
-  it("resets revenue to $500 when starting a new simulation", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={testLevelConfig}
-      />,
-    );
-
-    // Start and tick a few seconds to accumulate revenue
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
-    act(() => {
-      vi.advanceTimersByTime(3000);
-    });
-
-    // Stop and restart
-    fireEvent.click(screen.getByRole("button", { name: /stop traffic/i }));
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
-
-    expect(screen.getByText(/\$500\.00/)).toBeInTheDocument();
-  });
-
   it("inspector load field reflects overloaded state for the selected node", () => {
     render(
       <GameLayout
@@ -241,17 +223,17 @@ describe("level system", () => {
     localStorage.clear();
   });
 
-  it("palette shows users, server and db for level 1", () => {
+  it("resources panel shows server and db for level 1 but not users", () => {
     render(<GameLayout />);
 
-    expect(screen.getByTestId("palette-item-users")).toBeInTheDocument();
-    expect(screen.getByTestId("palette-item-server")).toBeInTheDocument();
-    expect(screen.getByTestId("palette-item-db")).toBeInTheDocument();
-    expect(screen.queryByTestId("palette-item-cache")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("palette-item-load-balancer")).not.toBeInTheDocument();
+    expect(screen.getByTestId("resource-item-server")).toBeInTheDocument();
+    expect(screen.getByTestId("resource-item-db")).toBeInTheDocument();
+    expect(screen.queryByTestId("resource-item-users")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("resource-item-cache")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("resource-item-load-balancer")).not.toBeInTheDocument();
   });
 
-  it("shows the end-of-level screen when revenue target is reached", () => {
+  it("shows the end-of-level screen when win condition is met", () => {
     render(
       <GameLayout
         initialEdges={overloadEdges}
@@ -262,7 +244,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(11000);
     });
 
     expect(screen.getByRole("heading", { name: /level complete/i })).toBeInTheDocument();
@@ -279,7 +261,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(11000);
     });
     fireEvent.click(screen.getByRole("button", { name: /replay/i }));
 
@@ -298,7 +280,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(11000);
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
@@ -316,7 +298,7 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(11000);
     });
 
     expect(loadProgress().completedLevels).toContain(1);
@@ -327,7 +309,7 @@ describe("level system", () => {
 
     render(<GameLayout />);
 
-    expect(screen.getByText(/over capacity/i)).toBeInTheDocument();
+    expect(screen.getByTestId("level-strip-level-2")).toHaveAttribute("data-status", "active");
   });
 
   it("loads the next level after continue is clicked", () => {
@@ -341,11 +323,11 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
     act(() => {
-      vi.advanceTimersByTime(2000);
+      vi.advanceTimersByTime(11000);
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/i }));
 
-    expect(screen.getByText(/over capacity/i)).toBeInTheDocument();
+    expect(screen.getByTestId("level-strip-level-2")).toHaveAttribute("data-status", "active");
   });
 });
 
@@ -360,14 +342,14 @@ describe("level context UI", () => {
     render(<GameLayout />);
 
     expect(
-      screen.getByText("Place a Server and DB, then connect Users → Server → DB."),
+      screen.getByText("Your server is overloaded. Fix the architecture to handle 80 req/s."),
     ).toBeInTheDocument();
   });
 });
 
 describe("simulation gating", () => {
   it("start traffic button is disabled when canvas has no runnable path", () => {
-    render(<GameLayout />);
+    render(<GameLayout initialNodes={overloadNodes} initialEdges={[]} />);
 
     expect(screen.getByRole("button", { name: /start traffic/i })).toBeDisabled();
   });
@@ -427,17 +409,27 @@ describe("coach panel", () => {
     render(<GameLayout />);
 
     expect(screen.getByRole("heading", { name: /coach/i })).toBeInTheDocument();
-    expect(screen.getByText(/mission: place a server and db/i)).toBeInTheDocument();
+    expect(screen.getByText(/mission: your server is overloaded/i)).toBeInTheDocument();
   });
 
-  it("updates coach message when an unlock trigger fires", () => {
+  it("shows a timed coach message during simulation", () => {
+    // Level 3 has a coachMessage at atSecond: 2 about the database bottleneck
     localStorage.setItem("sdb_progress", JSON.stringify({ completedLevels: [1, 2], version: 1 }));
 
-    render(<GameLayout initialNodes={unlockedLevel3Nodes} />);
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={overloadLevelConfig}
+      />,
+    );
 
-    const coachRegion = screen.getByRole("region", { name: /coach/i });
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
 
-    expect(within(coachRegion).getByText(/unlocked: load balancer/i)).toBeInTheDocument();
+    expect(screen.getByText(/database is the bottleneck/i)).toBeInTheDocument();
   });
 
   it("shows a coaching message the first time overload occurs in a level", () => {
@@ -469,7 +461,7 @@ describe("event log", () => {
     localStorage.clear();
   });
 
-  it("logs placement, connections, and concept unlocks in chronological order", () => {
+  it("logs placement and connections in chronological order", () => {
     localStorage.setItem("sdb_progress", JSON.stringify({ completedLevels: [1, 2], version: 1 }));
 
     render(
@@ -487,9 +479,8 @@ describe("event log", () => {
 
     expect(screen.getByRole("heading", { name: /event log/i })).toBeInTheDocument();
     expect(screen.getByText(/component placed: users/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/component placed: server/i)).toHaveLength(2);
+    expect(screen.getAllByText(/component placed: small server/i)).toHaveLength(2);
     expect(screen.getByText(/connection created/i)).toBeInTheDocument();
-    expect(screen.getByText(/concept unlocked/i)).toBeInTheDocument();
   });
 
   it("logs overload start and resolution events", () => {
@@ -511,6 +502,32 @@ describe("event log", () => {
   });
 });
 
+describe("budget enforcement", () => {
+  it("shows a budget warning when a placed component would exceed the monthly budget", () => {
+    // OverloadNodes = users ($0) + server ($20) = $20 total; budget $20 → no room for another
+    const tightBudgetConfig: LevelConfig = {
+      cacheHitRate: 0,
+      monthlyBudget: 20,
+      timeout: 60,
+      trafficPeak: 40,
+      trafficStart: 40,
+      trafficTarget: 40,
+    };
+
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={tightBudgetConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId("resource-item-server"));
+
+    expect(screen.getByText(/over budget/i)).toBeInTheDocument();
+  });
+});
+
 describe("responsive layout", () => {
   it("reflows controls for narrow screens and keeps each panel accessible", () => {
     Object.defineProperty(window, "innerWidth", { configurable: true, value: 375, writable: true });
@@ -518,7 +535,7 @@ describe("responsive layout", () => {
 
     render(<GameLayout />);
 
-    expect(screen.getByRole("region", { name: /palette/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /resources/i })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /inspector/i })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /coach/i })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /event log/i })).toBeInTheDocument();

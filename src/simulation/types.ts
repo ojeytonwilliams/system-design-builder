@@ -19,26 +19,18 @@ interface NodeTrafficState {
 
 type TrafficSnapshot = Record<string, NodeTrafficState>;
 
-interface TrafficScheduleEntry {
-  opsPerSec: number;
-  startTime: number;
-}
-
 interface LevelConfig {
   cacheHitRate: number;
-  revenueTarget: number;
+  monthlyBudget: number;
   timeout: number;
-  trafficSchedule: TrafficScheduleEntry[];
+  trafficPeak: number;
+  trafficStart: number;
+  trafficTarget: number;
 }
 
 interface FlowConfig {
   cacheHitRate: number;
   trafficRate: number;
-}
-
-interface RevenueConfig {
-  cacheHitRate: number;
-  edges: GraphEdge[];
 }
 
 type SimulationMode = "DESIGN" | "SIMULATE";
@@ -49,8 +41,6 @@ export type {
   GraphNode,
   LevelConfig,
   NodeTrafficState,
-  RevenueConfig,
   SimulationMode,
-  TrafficScheduleEntry,
   TrafficSnapshot,
 };

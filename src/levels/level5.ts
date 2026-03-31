@@ -1,48 +1,82 @@
 import type { LevelDefinition } from "./types.js";
 
 const level5: LevelDefinition = {
-  availableComponents: ["users", "server", "load-balancer", "db"],
-  cacheHitRate: 0,
+  availableComponents: ["server", "server-large", "load-balancer", "db", "db-large", "cache"],
+  cacheHitRate: 0.6,
   coachMessages: [
     {
-      atSecond: 5,
-      text: "Your servers can handle this traffic — but watch the database when volume picks up.",
-    },
-    {
-      atSecond: 27,
-      text: "The database is now the bottleneck. It can only handle 100 ops/s regardless of how many servers you add.",
-    },
-    {
-      atSecond: 52,
-      text: "At 320 ops/s, over two thirds of DB requests are being dropped. A cache could absorb many of these reads.",
+      atSecond: 2,
+      text: "You're over budget. Replace the Large Servers with Small Servers — the Load Balancer will share the load.",
     },
   ],
   componentUnlocks: [],
   feedbackText: [
-    "The database was the weakest link. Servers scaled, but the DB maxed out at 100 ops/s.",
-    "You've unlocked a Cache — next level you'll use it to offload database reads.",
+    "Using smaller servers with a load balancer matched the performance of larger servers at lower cost.",
+    "Choosing the right-sized components for your budget is called right-sizing your infrastructure.",
   ],
   id: 5,
   lockedNodeIds: ["users-1"],
-  objectiveText:
-    "Keep server load healthy while preventing the database from becoming the bottleneck.",
-  revenueTarget: 1700,
-  startingEdges: [],
+  monthlyBudget: 220,
+  objectiveText: "Redesign within the $220/mo budget to handle 180 req/s.",
+  startingEdges: [
+    { id: "edge-u-lb", source: "users-1", target: "lb-1" },
+    { id: "edge-lb-s1", source: "lb-1", target: "server-1" },
+    { id: "edge-lb-s2", source: "lb-1", target: "server-2" },
+    { id: "edge-lb-s3", source: "lb-1", target: "server-3" },
+    { id: "edge-s1-c", source: "server-1", target: "cache-1" },
+    { id: "edge-s2-c", source: "server-2", target: "cache-1" },
+    { id: "edge-s3-c", source: "server-3", target: "cache-1" },
+    { id: "edge-c-d", source: "cache-1", target: "db-1" },
+  ],
   startingNodes: [
     {
       componentType: "users",
       id: "users-1",
       label: "Users",
-      position: { x: 96, y: 160 },
+      position: { x: 80, y: 260 },
+    },
+    {
+      componentType: "load-balancer",
+      id: "lb-1",
+      label: "Load Balancer",
+      position: { x: 260, y: 260 },
+    },
+    {
+      componentType: "server-large",
+      id: "server-1",
+      label: "Large Server",
+      position: { x: 440, y: 80 },
+    },
+    {
+      componentType: "server-large",
+      id: "server-2",
+      label: "Large Server",
+      position: { x: 440, y: 260 },
+    },
+    {
+      componentType: "server-large",
+      id: "server-3",
+      label: "Large Server",
+      position: { x: 440, y: 440 },
+    },
+    {
+      componentType: "cache",
+      id: "cache-1",
+      label: "Cache",
+      position: { x: 640, y: 260 },
+    },
+    {
+      componentType: "db-large",
+      id: "db-1",
+      label: "Large DB",
+      position: { x: 820, y: 260 },
     },
   ],
-  timeout: 90,
-  title: "Database Bottleneck",
-  trafficSchedule: [
-    { opsPerSec: 80, startTime: 0 },
-    { opsPerSec: 200, startTime: 25 },
-    { opsPerSec: 320, startTime: 50 },
-  ],
+  timeout: 60,
+  title: "Right-Sizing",
+  trafficPeak: 180,
+  trafficStart: 180,
+  trafficTarget: 180,
 };
 
 export { level5 };

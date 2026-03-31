@@ -1,47 +1,74 @@
 import type { LevelDefinition } from "./types.js";
 
 const level6: LevelDefinition = {
-  availableComponents: ["users", "server", "load-balancer", "db", "cache"],
+  availableComponents: ["server", "server-large", "load-balancer", "db", "db-large", "cache"],
   cacheHitRate: 0.7,
   coachMessages: [
     {
-      atSecond: 4,
-      text: "Place a Cache between your servers and the database. 70% of reads are cache hits.",
-    },
-    {
-      atSecond: 27,
-      text: "With the cache in place, only 30% of reads reach the database — well within its 100 ops/s limit.",
-    },
-    {
-      atSecond: 52,
-      text: "400 ops/s! The cache is absorbing 280 ops/s so the database only sees 120.",
+      atSecond: 2,
+      text: "Multiple nodes are overloaded. Expand capacity across the whole system — and stay within budget.",
     },
   ],
   componentUnlocks: [],
   feedbackText: [
-    "Excellent! The cache absorbed 70% of reads, letting your database breathe.",
-    "This pattern — read offloading — is one of the most common optimisations in real systems.",
+    "You scaled every layer of the stack: compute, load balancing, caching, and the database.",
+    "Designing a system where every layer has enough capacity is called full-stack scaling.",
   ],
   id: 6,
   lockedNodeIds: ["users-1"],
-  objectiveText: "Add a cache in front of the database so most reads never reach the DB.",
-  revenueTarget: 1900,
-  startingEdges: [],
+  monthlyBudget: 300,
+  objectiveText: "The whole system is struggling under high traffic. Scale it to handle 220 req/s.",
+  startingEdges: [
+    { id: "edge-u-lb", source: "users-1", target: "lb-1" },
+    { id: "edge-lb-s1", source: "lb-1", target: "server-1" },
+    { id: "edge-lb-s2", source: "lb-1", target: "server-2" },
+    { id: "edge-s1-c", source: "server-1", target: "cache-1" },
+    { id: "edge-s2-c", source: "server-2", target: "cache-1" },
+    { id: "edge-c-d", source: "cache-1", target: "db-1" },
+  ],
   startingNodes: [
     {
       componentType: "users",
       id: "users-1",
       label: "Users",
-      position: { x: 96, y: 160 },
+      position: { x: 80, y: 200 },
+    },
+    {
+      componentType: "load-balancer",
+      id: "lb-1",
+      label: "Load Balancer",
+      position: { x: 260, y: 200 },
+    },
+    {
+      componentType: "server",
+      id: "server-1",
+      label: "Small Server",
+      position: { x: 440, y: 80 },
+    },
+    {
+      componentType: "server",
+      id: "server-2",
+      label: "Small Server",
+      position: { x: 440, y: 320 },
+    },
+    {
+      componentType: "cache",
+      id: "cache-1",
+      label: "Cache",
+      position: { x: 640, y: 200 },
+    },
+    {
+      componentType: "db",
+      id: "db-1",
+      label: "Small DB",
+      position: { x: 820, y: 200 },
     },
   ],
   timeout: 90,
-  title: "Read Offloading",
-  trafficSchedule: [
-    { opsPerSec: 100, startTime: 0 },
-    { opsPerSec: 250, startTime: 25 },
-    { opsPerSec: 400, startTime: 50 },
-  ],
+  title: "Full Scale",
+  trafficPeak: 220,
+  trafficStart: 220,
+  trafficTarget: 220,
 };
 
 export { level6 };

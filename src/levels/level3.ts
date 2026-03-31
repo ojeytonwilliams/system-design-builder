@@ -1,49 +1,67 @@
 import type { LevelDefinition } from "./types.js";
 
 const level3: LevelDefinition = {
-  availableComponents: ["users", "server", "db"],
+  availableComponents: ["server", "server-large", "load-balancer", "db", "db-large"],
   cacheHitRate: 0,
   coachMessages: [
     {
-      atSecond: 5,
-      text: "Traffic will soon exceed one server's capacity. Try adding a second server.",
-    },
-    {
-      atSecond: 22,
-      text: "Your server is already at capacity. A second server would share this load.",
-    },
-    { atSecond: 46, text: "Traffic is now at 250 ops/s — you need both servers to keep up." },
-  ],
-  componentUnlocks: [
-    {
-      components: ["load-balancer"],
-      trigger: { count: 2, type: "SERVERS_PLACED" },
+      atSecond: 2,
+      text: "Your database is the bottleneck. Upgrade to a Large DB to handle more queries.",
     },
   ],
+  componentUnlocks: [],
   feedbackText: [
-    "Two servers doubled your capacity.",
-    "Notice that a Load Balancer just appeared in your palette — you unlocked it by placing two servers.",
+    "Upgrading to a larger database gave it enough capacity to keep up with traffic.",
+    "Scaling up a database to handle more queries is called vertical database scaling.",
   ],
   id: 3,
   lockedNodeIds: ["users-1"],
-  objectiveText: "Scale out by adding a second server before traffic overwhelms one machine.",
-  revenueTarget: 1500,
-  startingEdges: [],
+  monthlyBudget: 180,
+  objectiveText: "The database is overloaded. Upgrade it to handle 140 req/s.",
+  startingEdges: [
+    { id: "edge-u-lb", source: "users-1", target: "lb-1" },
+    { id: "edge-lb-s1", source: "lb-1", target: "server-1" },
+    { id: "edge-lb-s2", source: "lb-1", target: "server-2" },
+    { id: "edge-s1-d", source: "server-1", target: "db-1" },
+    { id: "edge-s2-d", source: "server-2", target: "db-1" },
+  ],
   startingNodes: [
     {
       componentType: "users",
       id: "users-1",
       label: "Users",
-      position: { x: 96, y: 160 },
+      position: { x: 80, y: 200 },
+    },
+    {
+      componentType: "load-balancer",
+      id: "lb-1",
+      label: "Load Balancer",
+      position: { x: 260, y: 200 },
+    },
+    {
+      componentType: "server",
+      id: "server-1",
+      label: "Small Server",
+      position: { x: 440, y: 80 },
+    },
+    {
+      componentType: "server",
+      id: "server-2",
+      label: "Small Server",
+      position: { x: 440, y: 320 },
+    },
+    {
+      componentType: "db",
+      id: "db-1",
+      label: "Small DB",
+      position: { x: 640, y: 200 },
     },
   ],
-  timeout: 90,
-  title: "Add Another Server",
-  trafficSchedule: [
-    { opsPerSec: 80, startTime: 0 },
-    { opsPerSec: 150, startTime: 20 },
-    { opsPerSec: 250, startTime: 45 },
-  ],
+  timeout: 60,
+  title: "DB Bottleneck",
+  trafficPeak: 140,
+  trafficStart: 140,
+  trafficTarget: 140,
 };
 
 export { level3 };

@@ -3,8 +3,10 @@ import type { ComponentType } from "./component-library.js";
 const TYPE_LABELS: Record<ComponentType, string> = {
   cache: "Cache",
   db: "Database",
+  "db-large": "Large Database",
   "load-balancer": "Load Balancer",
   server: "Server",
+  "server-large": "Large Server",
   users: "Traffic Source",
 };
 

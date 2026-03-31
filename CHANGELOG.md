@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.0.0] - 2026-03-31
+
+### Phases 10–13 — Resources Panel, Budget System, Traffic Redesign & Failing Start States
+
+- **Resources panel**: Renamed "Palette" to "Resources"; each entry now shows monthly cost (`$20/mo`), capacity (`50 req/s`), and a plain-English description. Users node removed from the panel.
+- **Two server sizes**: Added Small Server (50 req/s, $20/mo) and Large Server (150 req/s, $80/mo) as distinct component types, along with Small DB (30 req/s, $15/mo) and Large DB (90 req/s, $50/mo).
+- **Per-level budget**: Each level now defines a monthly infrastructure budget displayed in the top bar. Placing a component deducts its cost; budget enforcement blocks placement with a coach message when funds are exhausted.
+- **Linear traffic ramp**: Replaced scripted traffic schedules with a `trafficStart → trafficPeak` linear ramp over the level timeout. Engine function `getLinearTrafficRate` computes the current rate each second.
+- **req/s win condition**: Removed revenue-based win; the level is won when the system sustains `trafficTarget` req/s for a continuous 10-second window with zero dropped requests.
+- **Live req/s display**: Top bar now shows current req/s and traffic target at all times.
+- **Budget-efficiency star score**: End-of-level screen awards 1–3 stars based on remaining budget headroom (≥50% = 3★, ≥20% = 2★, <20% = 1★).
+- **Failing start states**: All 6 levels redesigned to begin in a broken, overloaded state; players diagnose and fix the architecture rather than building from scratch.
+- **Design-mode overload preview**: Static capacity check at `trafficStart` rate marks overloaded nodes in red before simulation begins.
+- **Coach messages updated**: All level coach messages now describe the failing component and suggest a corrective action.
+
 ## [1.10.0] - 2026-03-30
 
 ### Phase 9 — Responsive Layout

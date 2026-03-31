@@ -1,10 +1,11 @@
-import { computeRevenue, computeTrafficFlow, getTrafficRate, hasRunnablePath } from "./engine.js";
-import type { GraphEdge, GraphNode, TrafficScheduleEntry } from "./types.js";
+import { computeTrafficFlow, getLinearTrafficRate, hasRunnablePath } from "./engine.js";
+import type { GraphEdge, GraphNode } from "./types.js";
 
 const CACHE_HIT_RATE_NONE = 0;
-const SERVER_CAPACITY = 100;
-const DB_CAPACITY = 100;
+const SERVER_CAPACITY = 50;
+const DB_CAPACITY = 30;
 const CACHE_CAPACITY = 200;
+const LARGE_SERVER_CAPACITY = 150;
 
 const usersNode = (id = "users-1"): GraphNode => ({
   capacity: Infinity,
@@ -16,6 +17,12 @@ const serverNode = (id = "server-1", capacity = SERVER_CAPACITY): GraphNode => (
   capacity,
   id,
   type: "server",
+});
+
+const largeServerNode = (id = "server-lg-1", capacity = LARGE_SERVER_CAPACITY): GraphNode => ({
+  capacity,
+  id,
+  type: "server-large",
 });
 
 const dbNode = (id = "db-1", capacity = DB_CAPACITY): GraphNode => ({
@@ -46,11 +53,6 @@ const flowConfig = (trafficRate: number, cacheHitRate = CACHE_HIT_RATE_NONE) => 
   trafficRate,
 });
 
-const revenueConfig = (edges: GraphEdge[], cacheHitRate = CACHE_HIT_RATE_NONE) => ({
-  cacheHitRate,
-  edges,
-});
-
 describe("traffic flow", () => {
   describe("single users node", () => {
     it("users emits at the given traffic rate", () => {
@@ -75,36 +77,55 @@ describe("traffic flow", () => {
       const nodes = [usersNode(), serverNode()];
       const edges = [edge("users-1", "server-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(50));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(30));
 
-      expect(result["server-1"]?.incomingOps).toBe(50);
+      expect(result["server-1"]?.incomingOps).toBe(30);
     });
 
     it("server handles traffic up to its capacity", () => {
-      const nodes = [usersNode(), serverNode("server-1", 80)];
+      const nodes = [usersNode(), serverNode("server-1", 40)];
       const edges = [edge("users-1", "server-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(150));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(80));
 
-      expect(result["server-1"]?.handledOps).toBe(80);
+      expect(result["server-1"]?.handledOps).toBe(40);
     });
 
     it("server drops traffic that exceeds its capacity", () => {
-      const nodes = [usersNode(), serverNode("server-1", 80)];
+      const nodes = [usersNode(), serverNode("server-1", 40)];
       const edges = [edge("users-1", "server-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(150));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(80));
 
-      expect(result["server-1"]?.droppedOps).toBe(70);
+      expect(result["server-1"]?.droppedOps).toBe(40);
     });
 
     it("server has zero dropped ops when traffic is within capacity", () => {
       const nodes = [usersNode(), serverNode()];
       const edges = [edge("users-1", "server-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(50));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(30));
 
       expect(result["server-1"]?.droppedOps).toBe(0);
+    });
+
+    it("large server handles traffic up to its higher capacity", () => {
+      const nodes = [usersNode(), largeServerNode()];
+      const edges = [edge("users-1", "server-lg-1")];
+
+      const result = computeTrafficFlow(nodes, edges, flowConfig(120));
+
+      expect(result["server-lg-1"]?.handledOps).toBe(120);
+      expect(result["server-lg-1"]?.droppedOps).toBe(0);
+    });
+
+    it("large server drops traffic exceeding its capacity", () => {
+      const nodes = [usersNode(), largeServerNode()];
+      const edges = [edge("users-1", "server-lg-1")];
+
+      const result = computeTrafficFlow(nodes, edges, flowConfig(200));
+
+      expect(result["server-lg-1"]?.droppedOps).toBe(50);
     });
   });
 
@@ -113,25 +134,25 @@ describe("traffic flow", () => {
       const nodes = [usersNode(), serverNode(), dbNode()];
       const edges = [edge("users-1", "server-1"), edge("server-1", "db-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(50));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(20));
 
-      expect(result["db-1"]?.incomingOps).toBe(50);
+      expect(result["db-1"]?.incomingOps).toBe(20);
     });
 
     it("the db only receives handled (not dropped) ops from server", () => {
-      const nodes = [usersNode(), serverNode("server-1", 80), dbNode()];
+      const nodes = [usersNode(), serverNode("server-1", 40), dbNode()];
       const edges = [edge("users-1", "server-1"), edge("server-1", "db-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(150));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(80));
 
-      expect(result["db-1"]?.incomingOps).toBe(80);
+      expect(result["db-1"]?.incomingOps).toBe(40);
     });
 
     it("disconnected node has zero incoming ops", () => {
       const nodes = [usersNode(), serverNode(), dbNode()];
       const edges = [edge("users-1", "server-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(100));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(30));
 
       expect(result["db-1"]?.incomingOps).toBe(0);
     });
@@ -191,9 +212,9 @@ describe("traffic flow", () => {
       ];
       const hitRate = 0.4;
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(100, hitRate));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(20, hitRate));
 
-      expect(result["db-1"]?.incomingOps).toBeCloseTo(60);
+      expect(result["db-1"]?.incomingOps).toBeCloseTo(12);
     });
 
     it("intercepts all traffic when hit rate is 1.0", () => {
@@ -204,7 +225,7 @@ describe("traffic flow", () => {
         edge("cache-1", "db-1"),
       ];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(100, 1.0));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(20, 1.0));
 
       expect(result["db-1"]?.incomingOps).toBe(0);
     });
@@ -217,9 +238,9 @@ describe("traffic flow", () => {
         edge("cache-1", "db-1"),
       ];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(100, 0));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(20, 0));
 
-      expect(result["db-1"]?.incomingOps).toBe(100);
+      expect(result["db-1"]?.incomingOps).toBe(20);
     });
 
     it("cache can become overloaded when incoming ops exceed its capacity", () => {
@@ -235,92 +256,59 @@ describe("traffic flow", () => {
   });
 });
 
-describe("revenue", () => {
-  it("earns $0.10 per handled op at the sink node", () => {
-    const nodes = [usersNode(), serverNode()];
-    const edges = [edge("users-1", "server-1")];
-    const snapshot = computeTrafficFlow(nodes, edges, flowConfig(100));
-
-    const revenue = computeRevenue(snapshot, nodes, revenueConfig(edges));
-
-    expect(revenue).toBeCloseTo(10);
+describe("linear traffic rate", () => {
+  it("returns the start rate at elapsed time 0", () => {
+    expect(
+      getLinearTrafficRate({ elapsed: 0, timeout: 60, trafficPeak: 100, trafficStart: 20 }),
+    ).toBe(20);
   });
 
-  it("earns zero revenue with no connections", () => {
-    const nodes = [usersNode()];
-    const snapshot = computeTrafficFlow(nodes, [], flowConfig(100));
-
-    const revenue = computeRevenue(snapshot, nodes, revenueConfig([]));
-
-    expect(revenue).toBe(0);
+  it("returns the peak rate at elapsed time equal to timeout", () => {
+    expect(
+      getLinearTrafficRate({ elapsed: 60, timeout: 60, trafficPeak: 100, trafficStart: 20 }),
+    ).toBe(100);
   });
 
-  it("dropped ops at the sink earn no revenue", () => {
-    const nodes = [usersNode(), serverNode("server-1", 50)];
-    const edges = [edge("users-1", "server-1")];
-    const snapshot = computeTrafficFlow(nodes, edges, flowConfig(100));
-
-    const revenue = computeRevenue(snapshot, nodes, revenueConfig(edges));
-
-    expect(revenue).toBeCloseTo(5);
+  it("returns an interpolated rate at the midpoint", () => {
+    expect(
+      getLinearTrafficRate({ elapsed: 30, timeout: 60, trafficPeak: 100, trafficStart: 0 }),
+    ).toBeCloseTo(50);
   });
 
-  it("counts revenue from both cache hits and db handled ops", () => {
-    const nodes = [usersNode(), serverNode(), cacheNode(), dbNode()];
-    const edges = [
-      edge("users-1", "server-1"),
-      edge("server-1", "cache-1"),
-      edge("cache-1", "db-1"),
-    ];
-    const hitRate = 0.5;
-    const snapshot = computeTrafficFlow(nodes, edges, flowConfig(100, hitRate));
-
-    const revenue = computeRevenue(snapshot, nodes, revenueConfig(edges, hitRate));
-
-    // Cache handles 100 ops: 50 hits (complete at cache) + 50 misses → db handles 50
-    // Total completed = 50 + 50 = 100 ops → $10
-    expect(revenue).toBeCloseTo(10);
+  it("returns the peak rate when elapsed time exceeds timeout", () => {
+    expect(
+      getLinearTrafficRate({ elapsed: 90, timeout: 60, trafficPeak: 100, trafficStart: 20 }),
+    ).toBe(100);
   });
 
-  it("load balancer nodes do not contribute to revenue", () => {
-    const nodes = [usersNode(), lbNode(), serverNode()];
-    const edges = [edge("users-1", "lb-1"), edge("lb-1", "server-1")];
-    const snapshot = computeTrafficFlow(nodes, edges, flowConfig(100));
-
-    const revenue = computeRevenue(snapshot, nodes, revenueConfig(edges));
-
-    // Only server-1 (the sink) earns revenue
-    expect(revenue).toBeCloseTo(10);
-  });
-});
-
-describe("traffic rate schedule", () => {
-  const schedule: TrafficScheduleEntry[] = [
-    { opsPerSec: 50, startTime: 0 },
-    { opsPerSec: 100, startTime: 10 },
-    { opsPerSec: 200, startTime: 20 },
-  ];
-
-  it("returns the rate from the first schedule entry at time 0", () => {
-    expect(getTrafficRate(schedule, 0)).toBe(50);
+  it("returns the start rate when start equals peak (constant traffic)", () => {
+    expect(
+      getLinearTrafficRate({ elapsed: 30, timeout: 60, trafficPeak: 80, trafficStart: 80 }),
+    ).toBe(80);
   });
 
-  it("returns updated rate when elapsed time reaches a new schedule entry", () => {
-    expect(getTrafficRate(schedule, 10)).toBe(100);
-  });
+  it("increases monotonically over time", () => {
+    const r1 = getLinearTrafficRate({
+      elapsed: 10,
+      timeout: 60,
+      trafficPeak: 100,
+      trafficStart: 0,
+    });
+    const r2 = getLinearTrafficRate({
+      elapsed: 20,
+      timeout: 60,
+      trafficPeak: 100,
+      trafficStart: 0,
+    });
+    const r3 = getLinearTrafficRate({
+      elapsed: 30,
+      timeout: 60,
+      trafficPeak: 100,
+      trafficStart: 0,
+    });
 
-  it("returns the latest applicable rate between schedule entries", () => {
-    expect(getTrafficRate(schedule, 15)).toBe(100);
-  });
-
-  it("returns the highest rate at the final schedule entry", () => {
-    expect(getTrafficRate(schedule, 30)).toBe(200);
-  });
-
-  it("returns 0 when elapsed time is before the first entry", () => {
-    const lateSchedule: TrafficScheduleEntry[] = [{ opsPerSec: 50, startTime: 5 }];
-
-    expect(getTrafficRate(lateSchedule, 3)).toBe(0);
+    expect(r1).toBeLessThan(r2);
+    expect(r2).toBeLessThan(r3);
   });
 });
 

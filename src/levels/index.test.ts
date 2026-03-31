@@ -11,9 +11,9 @@ describe("level definitions", () => {
     });
   });
 
-  it("each level has at least one traffic schedule entry", () => {
+  it("each level has a positive trafficTarget", () => {
     LEVELS.forEach((level) => {
-      expect(level.trafficSchedule.length).toBeGreaterThan(0);
+      expect(level.trafficTarget).toBeGreaterThan(0);
     });
   });
 
@@ -23,9 +23,9 @@ describe("level definitions", () => {
     });
   });
 
-  it("each level has a positive revenueTarget", () => {
+  it("each level has a positive monthlyBudget", () => {
     LEVELS.forEach((level) => {
-      expect(level.revenueTarget).toBeGreaterThan(0);
+      expect(level.monthlyBudget).toBeGreaterThan(0);
     });
   });
 
@@ -53,18 +53,18 @@ describe("level definitions", () => {
     });
   });
 
-  it("level 1 starts with no authored edges", () => {
+  it("level 1 has authored edges in the starting layout", () => {
     const level = getLevelById(1);
 
-    expect(level?.startingEdges).toHaveLength(0);
+    expect(level?.startingEdges.length).toBeGreaterThan(0);
   });
 
-  it("level 1 has users, server, and db available", () => {
+  it("level 1 has server and db available but not users", () => {
     const level = getLevelById(1);
 
-    expect(level?.availableComponents).toContain("users");
     expect(level?.availableComponents).toContain("server");
     expect(level?.availableComponents).toContain("db");
+    expect(level?.availableComponents).not.toContain("users");
   });
 
   it("level 6 has cache available", () => {

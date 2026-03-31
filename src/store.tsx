@@ -2,40 +2,38 @@ import { createContext, useCallback, useContext, useMemo, useReducer } from "rea
 import type { ReactNode } from "react";
 import type { SimulationMode, TrafficSnapshot } from "./simulation/types.js";
 
-const INITIAL_REVENUE = 500;
-
 interface SimulationState {
+  currentTrafficRate: number;
   mode: SimulationMode;
   nodeStates: TrafficSnapshot;
-  revenue: number;
 }
 
 interface SimulationContextValue extends SimulationState {
   endSimulation: () => void;
   startSimulation: () => void;
-  tick: (snapshot: TrafficSnapshot, earned: number) => void;
+  tick: (snapshot: TrafficSnapshot, trafficRate: number) => void;
 }
 
 type Action =
   | { type: "END_SIMULATION" }
-  | { earned: number; snapshot: TrafficSnapshot; type: "TICK" }
+  | { snapshot: TrafficSnapshot; trafficRate: number; type: "TICK" }
   | { type: "START_SIMULATION" };
 
 const initialState: SimulationState = {
+  currentTrafficRate: 0,
   mode: "DESIGN",
   nodeStates: {},
-  revenue: INITIAL_REVENUE,
 };
 
 const reducer = (state: SimulationState, action: Action): SimulationState => {
   switch (action.type) {
     case "START_SIMULATION":
-      return { mode: "SIMULATE", nodeStates: {}, revenue: INITIAL_REVENUE };
+      return { currentTrafficRate: 0, mode: "SIMULATE", nodeStates: {} };
     case "TICK":
       return {
         ...state,
+        currentTrafficRate: action.trafficRate,
         nodeStates: action.snapshot,
-        revenue: state.revenue + action.earned,
       };
     case "END_SIMULATION":
       return { ...state, mode: "DESIGN" };
@@ -55,8 +53,8 @@ const SimulationProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: "END_SIMULATION" });
   }, []);
 
-  const tick = useCallback((snapshot: TrafficSnapshot, earned: number) => {
-    dispatch({ earned, snapshot, type: "TICK" });
+  const tick = useCallback((snapshot: TrafficSnapshot, trafficRate: number) => {
+    dispatch({ snapshot, trafficRate, type: "TICK" });
   }, []);
 
   const value = useMemo<SimulationContextValue>(
@@ -82,5 +80,5 @@ const useSimulation = (): SimulationContextValue => {
   return ctx;
 };
 
-export { INITIAL_REVENUE, SimulationProvider, useSimulation };
+export { SimulationProvider, useSimulation };
 export type { SimulationContextValue, SimulationState };

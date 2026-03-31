@@ -1,11 +1,14 @@
 import type { ComponentType } from "./component-library.js";
 import type { DragEvent } from "react";
 
-interface PaletteItemProps {
+interface ResourceItemProps {
+  capacity: number;
   componentType: ComponentType;
+  description: string;
   icon?: string;
   isDisabled?: boolean;
   label: string;
+  monthlyCost: number;
   onPlaceComponent?: (componentType: ComponentType) => void;
 }
 
@@ -15,13 +18,16 @@ const handleDragStart = (componentType: ComponentType) => (event: DragEvent<HTML
   event.dataTransfer.setData("text/plain", componentType);
 };
 
-const PaletteItem = ({
+const ResourceItem = ({
+  capacity,
   componentType,
+  description,
   icon,
   isDisabled = false,
   label,
+  monthlyCost,
   onPlaceComponent,
-}: PaletteItemProps) => {
+}: ResourceItemProps) => {
   let cursor = "grab";
   let opacity = 1;
 
@@ -38,36 +44,49 @@ const PaletteItem = ({
     onPlaceComponent(componentType);
   };
 
+  const capacityText = Number.isFinite(capacity) ? `${capacity} req/s` : "∞ req/s";
+
   return (
     <button
       data-component-type={componentType}
-      data-testid={`palette-item-${componentType}`}
+      data-testid={`resource-item-${componentType}`}
       disabled={isDisabled}
       draggable={!isDisabled}
       onClick={handleClick}
       onDragStart={handleDragStart(componentType)}
       style={{
-        alignItems: "center",
+        alignItems: "flex-start",
         background: "#ffffff",
         border: "1px solid #d7d4ca",
         borderRadius: "0.875rem",
         color: "#1a2744",
         cursor,
         display: "flex",
-        gap: "0.75rem",
-        justifyContent: "flex-start",
+        flexDirection: "column",
+        gap: "0.25rem",
         opacity,
         padding: "0.75rem 0.875rem",
+        textAlign: "left",
         width: "100%",
       }}
       type="button"
     >
-      <span aria-hidden="true" style={{ fontSize: "1.25rem", lineHeight: 1 }}>
-        {icon}
-      </span>
-      <span style={{ fontSize: "0.95rem", fontWeight: 600 }}>{label}</span>
+      <div style={{ alignItems: "center", display: "flex", gap: "0.5rem", width: "100%" }}>
+        {icon !== undefined && (
+          <span aria-hidden="true" style={{ fontSize: "1.1rem", lineHeight: 1 }}>
+            {icon}
+          </span>
+        )}
+        <span style={{ flex: 1, fontSize: "0.9rem", fontWeight: 600 }}>{label}</span>
+        <span style={{ color: "#4f8f73", fontSize: "0.8rem", fontWeight: 700 }}>
+          ${monthlyCost}/mo
+        </span>
+      </div>
+      <div style={{ color: "#6b7280", fontSize: "0.75rem" }}>{capacityText}</div>
+      <div style={{ color: "#4f5b6b", fontSize: "0.75rem", lineHeight: 1.4 }}>{description}</div>
     </button>
   );
 };
 
-export { PaletteItem };
+export { ResourceItem };
+export type { ResourceItemProps };

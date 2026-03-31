@@ -1,12 +1,7 @@
 import type { ComponentType } from "../components/component-library.js";
-import type { TrafficScheduleEntry } from "../simulation/types.js";
 
 interface CapacityReachedTrigger {
   type: "CAPACITY_REACHED";
-}
-
-interface LevelCompleteTrigger {
-  type: "LEVEL_COMPLETE";
 }
 
 interface OverloadSustainedTrigger {
@@ -19,11 +14,7 @@ interface ServersPlacedTrigger {
   type: "SERVERS_PLACED";
 }
 
-type UnlockTrigger =
-  | CapacityReachedTrigger
-  | LevelCompleteTrigger
-  | OverloadSustainedTrigger
-  | ServersPlacedTrigger;
+type UnlockTrigger = CapacityReachedTrigger | OverloadSustainedTrigger | ServersPlacedTrigger;
 
 interface CoachMessage {
   atSecond: number;
@@ -61,25 +52,26 @@ interface LevelDefinition {
   feedbackText: string[];
   id: number;
   lockedNodeIds: string[];
+  monthlyBudget: number;
   objectiveText: string;
-  revenueTarget: number;
   startingEdges: StartingEdge[];
   startingNodes: StartingNode[];
   timeout: number;
   title: string;
-  trafficSchedule: TrafficScheduleEntry[];
+  trafficPeak: number;
+  trafficStart: number;
+  trafficTarget: number;
 }
 
 export type {
   CapacityReachedTrigger,
   CoachMessage,
   ComponentUnlock,
-  LevelCompleteTrigger,
   LevelDefinition,
   OverloadSustainedTrigger,
+  ServersPlacedTrigger,
   StartingEdge,
   StartingNode,
   StartingNodePosition,
-  ServersPlacedTrigger,
   UnlockTrigger,
 };

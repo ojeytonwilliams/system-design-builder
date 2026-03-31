@@ -1,28 +1,25 @@
-import { INITIAL_REVENUE } from "../store.js";
-
 const STAR_FILLED = "★";
 const STAR_EMPTY = "☆";
-const EFFICIENCY_THREE_STARS = 1.5;
+const THREE_STAR_THRESHOLD = 0.5;
+const TWO_STAR_THRESHOLD = 0.2;
 
 interface EndOfLevelScreenProps {
   feedbackLines: string[];
+  monthlyBudget: number;
   onContinue: () => void;
   onReplay: () => void;
-  revenue: number;
-  revenueTarget: number;
+  remainingBudget: number;
   title: string;
 }
 
-const computeStars = (revenue: number, revenueTarget: number): 1 | 2 | 3 => {
-  const earned = revenue - INITIAL_REVENUE;
-  const required = revenueTarget - INITIAL_REVENUE;
-  const efficiency = required > 0 ? earned / required : 0;
+const computeStars = (remainingBudget: number, monthlyBudget: number): 1 | 2 | 3 => {
+  const headroom = monthlyBudget > 0 ? remainingBudget / monthlyBudget : 0;
 
-  if (efficiency >= EFFICIENCY_THREE_STARS) {
+  if (headroom >= THREE_STAR_THRESHOLD) {
     return 3;
   }
 
-  if (efficiency >= 1) {
+  if (headroom >= TWO_STAR_THRESHOLD) {
     return 2;
   }
 
@@ -56,14 +53,13 @@ const StarRow = ({ stars }: { stars: 1 | 2 | 3 }) => {
 
 const EndOfLevelScreen = ({
   feedbackLines,
+  monthlyBudget,
   onContinue,
   onReplay,
-  revenue,
-  revenueTarget,
+  remainingBudget,
   title,
 }: EndOfLevelScreenProps) => {
-  const stars = computeStars(revenue, revenueTarget);
-  const earned = (revenue - INITIAL_REVENUE).toFixed(2);
+  const stars = computeStars(remainingBudget, monthlyBudget);
 
   return (
     <div
@@ -114,7 +110,7 @@ const EndOfLevelScreen = ({
         </p>
         <StarRow stars={stars} />
         <p style={{ color: "#4f5b6b", fontSize: "0.875rem", margin: "0.5rem 0 1.25rem" }}>
-          Revenue earned: <strong>${earned}</strong>
+          Budget remaining: <strong>${remainingBudget}</strong> / ${monthlyBudget}/mo
         </p>
         <div
           style={{

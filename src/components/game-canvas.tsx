@@ -56,6 +56,11 @@ const CANVAS_COMPONENT_LIBRARY = {
     icon: "🛢️",
     label: "DB",
   },
+  "db-large": {
+    accentColor: "#3a6e8a",
+    icon: "🛢️",
+    label: "Large DB",
+  },
   "load-balancer": {
     accentColor: "#7f6bd8",
     icon: "⇄",
@@ -65,6 +70,11 @@ const CANVAS_COMPONENT_LIBRARY = {
     accentColor: "#4f8f73",
     icon: "🖥️",
     label: "Server",
+  },
+  "server-large": {
+    accentColor: "#2d6b50",
+    icon: "🖥️",
+    label: "Large Server",
   },
   users: {
     accentColor: "#e5634d",

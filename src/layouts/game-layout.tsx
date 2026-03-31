@@ -2,6 +2,7 @@
 import type { Edge } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Coach } from "../components/coach.js";
+import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
 import { EndOfLevelScreen } from "../components/end-of-level-screen.js";
 import { EventLog } from "../components/event-log.js";
@@ -10,44 +11,27 @@ import { GameCanvas } from "../components/game-canvas.js";
 import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
 import { Inspector } from "../components/inspector.js";
 import { LevelStrip } from "../components/level-strip.js";
-import { Palette } from "../components/palette.js";
+import { Resources } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
 import { LEVELS, getLevelById } from "../levels/index.js";
 import { level1 } from "../levels/level1.js";
 import type { LevelDefinition, StartingEdge, StartingNode } from "../levels/types.js";
 import { getFirstIncompleteLevel, loadProgress, saveProgress } from "../persistence.js";
-import {
-  computeRevenue,
-  computeTrafficFlow,
-  getTrafficRate,
-  hasRunnablePath,
-} from "../simulation/engine.js";
+import { computeTrafficFlow, getLinearTrafficRate, hasRunnablePath } from "../simulation/engine.js";
 import type { GraphEdge, GraphNode, LevelConfig } from "../simulation/types.js";
 import { computeAvailableComponents, updateOverloadDurations } from "../simulation/unlocks.js";
 import type { OverloadDurations } from "../simulation/unlocks.js";
 import { SimulationProvider, useSimulation } from "../store.js";
 
-const DEFAULT_CAPACITIES: Record<ComponentType, number> = {
-  cache: 200,
-  db: 100,
-  "load-balancer": Infinity,
-  server: 100,
-  users: Infinity,
-};
+const WIN_SUSTAIN_SECONDS = 10;
 
 const LATENCY_MS: Record<ComponentType, number> = {
   cache: 5,
-  db: 50,
+  db: 15,
+  "db-large": 10,
   "load-balancer": 2,
   server: 10,
-  users: 0,
-};
-
-const COST_PER_HOUR: Record<ComponentType, number> = {
-  cache: 30,
-  db: 100,
-  "load-balancer": 20,
-  server: 50,
+  "server-large": 8,
   users: 0,
 };
 
@@ -58,7 +42,7 @@ interface GameLayoutProps {
 }
 
 const toGraphNode = (canvasNode: ArchitectureCanvasNode): GraphNode => ({
-  capacity: DEFAULT_CAPACITIES[canvasNode.data.componentType] ?? Infinity,
+  capacity: COMPONENT_LIBRARY[canvasNode.data.componentType].capacity,
   id: canvasNode.id,
   type: canvasNode.data.componentType,
 });
@@ -83,6 +67,9 @@ const levelEdgeToCanvasEdge = (startingEdge: StartingEdge): Edge => ({
   type: "architecture-edge",
 });
 
+const computeTotalMonthlyCost = (nodes: ArchitectureCanvasNode[]): number =>
+  nodes.reduce((sum, node) => sum + COMPONENT_LIBRARY[node.data.componentType].monthlyCost, 0);
+
 interface GameLayoutContentProps {
   initialEdges: Edge[];
   initialNodes: ArchitectureCanvasNode[];
@@ -92,24 +79,16 @@ interface GameLayoutContentProps {
 const EMPTY_OVERLOAD_DURATIONS: OverloadDurations = new Map();
 const MOBILE_LAYOUT_BREAKPOINT = 768;
 
-const getComponentName = (componentType: ComponentType): string => {
-  if (componentType === "db") {
-    return "DB";
-  }
-
-  if (componentType === "load-balancer") {
-    return "Load Balancer";
-  }
-
-  return componentType.charAt(0).toUpperCase() + componentType.slice(1);
-};
+const getComponentName = (componentType: ComponentType): string =>
+  COMPONENT_LIBRARY[componentType].label;
 
 const GameLayoutContent = ({
   initialEdges,
   initialNodes,
   levelConfig: propLevelConfig,
 }: GameLayoutContentProps) => {
-  const { endSimulation, mode, nodeStates, revenue, startSimulation, tick } = useSimulation();
+  const { currentTrafficRate, endSimulation, mode, nodeStates, startSimulation, tick } =
+    useSimulation();
 
   const [currentLevelId, setCurrentLevelId] = useState<number>(() =>
     getFirstIncompleteLevel(loadProgress().completedLevels, LEVELS.length),
@@ -141,14 +120,17 @@ const GameLayoutContent = ({
   const hasSeenOverloadThisLevelRef = useRef(false);
   const hasSnapshotOverloadRef = useRef(false);
   const previousAvailableComponentsRef = useRef<ComponentType[]>(currentLevel.availableComponents);
+  const sustainedNoDropSecondsRef = useRef(0);
 
   const effectiveLevelConfig = useMemo<LevelConfig>(
     () =>
       propLevelConfig ?? {
         cacheHitRate: currentLevel.cacheHitRate,
-        revenueTarget: currentLevel.revenueTarget,
+        monthlyBudget: currentLevel.monthlyBudget,
         timeout: currentLevel.timeout,
-        trafficSchedule: currentLevel.trafficSchedule,
+        trafficPeak: currentLevel.trafficPeak,
+        trafficStart: currentLevel.trafficStart,
+        trafficTarget: currentLevel.trafficTarget,
       },
     [propLevelConfig, currentLevel],
   );
@@ -166,19 +148,15 @@ const GameLayoutContent = ({
     ) => ({
       graphNodes: nodes.map(toGraphNode),
       overloadDurations: durations,
-      revenue,
-      revenueTarget: effectiveLevelConfig.revenueTarget,
       snapshot,
     }),
-    [revenue, effectiveLevelConfig.revenueTarget],
+    [],
   );
 
   const [availableComponents, setAvailableComponents] = useState<ComponentType[]>(() =>
     computeAvailableComponents(currentLevel.availableComponents, currentLevel.componentUnlocks, {
       graphNodes: initialCanvasNodes.map(toGraphNode),
       overloadDurations: EMPTY_OVERLOAD_DURATIONS,
-      revenue: 0,
-      revenueTarget: effectiveLevelConfig.revenueTarget,
       snapshot: {},
     }),
   );
@@ -222,6 +200,24 @@ const GameLayoutContent = ({
     [],
   );
 
+  // Compute design-mode overload preview from starting traffic rate
+  const designModeOverloadedNodeIds = useMemo(() => {
+    if (mode === "SIMULATE") {
+      return [];
+    }
+
+    const graphNodes = graphState.nodes.map(toGraphNode);
+    const graphEdges = graphState.edges.map(toGraphEdge);
+    const previewSnapshot = computeTrafficFlow(graphNodes, graphEdges, {
+      cacheHitRate: effectiveLevelConfig.cacheHitRate,
+      trafficRate: effectiveLevelConfig.trafficStart,
+    });
+
+    return Object.entries(previewSnapshot)
+      .filter(([, state]) => state.droppedOps > 0)
+      .map(([nodeId]) => nodeId);
+  }, [mode, graphState, effectiveLevelConfig]);
+
   useEffect(() => {
     const syncLayout = () => {
       setIsCompactLayout(window.innerWidth <= MOBILE_LAYOUT_BREAKPOINT);
@@ -255,12 +251,9 @@ const GameLayoutContent = ({
       setGraphState({ edges, nodes });
       graphRef.current = { edges, nodes };
 
-      // Re-evaluate SERVERS_PLACED unlock even in design mode
       const unlockInput = {
         graphNodes: nodes.map(toGraphNode),
         overloadDurations: EMPTY_OVERLOAD_DURATIONS,
-        revenue: 0,
-        revenueTarget: effectiveLevelConfig.revenueTarget,
         snapshot: {},
       };
 
@@ -272,7 +265,7 @@ const GameLayoutContent = ({
         ),
       );
     },
-    [appendEvent, currentLevel, effectiveLevelConfig.revenueTarget],
+    [appendEvent, currentLevel],
   );
 
   const handleSelectedNodeChange = useCallback((nodeId: string | null) => {
@@ -289,8 +282,6 @@ const GameLayoutContent = ({
         {
           graphNodes: newNodes.map(toGraphNode),
           overloadDurations: EMPTY_OVERLOAD_DURATIONS,
-          revenue: 0,
-          revenueTarget: level.revenueTarget,
           snapshot: {},
         },
       );
@@ -310,6 +301,7 @@ const GameLayoutContent = ({
       shownCoachMessageRef.current = new Set();
       hasSeenOverloadThisLevelRef.current = false;
       hasSnapshotOverloadRef.current = false;
+      sustainedNoDropSecondsRef.current = 0;
       endSimulation();
       setAvailableComponents(newAvailableComponents);
       previousAvailableComponentsRef.current = level.availableComponents;
@@ -322,10 +314,14 @@ const GameLayoutContent = ({
     graphState.edges.map(toGraphEdge),
   );
 
+  const totalMonthlyCost = computeTotalMonthlyCost(graphState.nodes);
+  const remainingBudget = effectiveLevelConfig.monthlyBudget - totalMonthlyCost;
+
   const handleToggleTraffic = useCallback(() => {
     if (mode === "SIMULATE") {
       endSimulation();
     } else if (isRunnable) {
+      sustainedNoDropSecondsRef.current = 0;
       startSimulation();
     }
   }, [mode, startSimulation, endSimulation, isRunnable]);
@@ -352,9 +348,22 @@ const GameLayoutContent = ({
     [loadLevel],
   );
 
-  const handlePlaceComponent = useCallback((componentType: ComponentType) => {
-    setQueuedComponentType(componentType);
-  }, []);
+  const handlePlaceComponent = useCallback(
+    (componentType: ComponentType) => {
+      const addedCost = COMPONENT_LIBRARY[componentType].monthlyCost;
+
+      if (totalMonthlyCost + addedCost > effectiveLevelConfig.monthlyBudget) {
+        setCoachMessage(
+          `Over budget — this component costs $${addedCost}/mo but you only have $${effectiveLevelConfig.monthlyBudget - totalMonthlyCost} remaining.`,
+        );
+
+        return;
+      }
+
+      setQueuedComponentType(componentType);
+    },
+    [effectiveLevelConfig.monthlyBudget, totalMonthlyCost],
+  );
 
   const handleComponentPlaced = useCallback(() => {
     setQueuedComponentType(null);
@@ -390,7 +399,12 @@ const GameLayoutContent = ({
         return;
       }
 
-      const rate = getTrafficRate(effectiveLevelConfig.trafficSchedule, elapsedSeconds);
+      const rate = getLinearTrafficRate({
+        elapsed: elapsedSeconds,
+        timeout: effectiveLevelConfig.timeout,
+        trafficPeak: effectiveLevelConfig.trafficPeak,
+        trafficStart: effectiveLevelConfig.trafficStart,
+      });
       const graphNodes = graphRef.current.nodes.map(toGraphNode);
       const graphEdges = graphRef.current.edges.map(toGraphEdge);
       const snapshot = computeTrafficFlow(graphNodes, graphEdges, {
@@ -417,10 +431,14 @@ const GameLayoutContent = ({
 
       hasSnapshotOverloadRef.current = hasOverload;
 
-      const earned = computeRevenue(snapshot, graphNodes, {
-        cacheHitRate: effectiveLevelConfig.cacheHitRate,
-        edges: graphEdges,
-      });
+      // Win condition: sustain target req/s with zero drops for WIN_SUSTAIN_SECONDS
+      const atOrAboveTarget = rate >= effectiveLevelConfig.trafficTarget;
+
+      if (atOrAboveTarget && !hasOverload) {
+        sustainedNoDropSecondsRef.current += 1;
+      } else {
+        sustainedNoDropSecondsRef.current = 0;
+      }
 
       // Update overload durations and available components
       setOverloadDurations((prev) => {
@@ -438,12 +456,9 @@ const GameLayoutContent = ({
         return next;
       });
 
-      tick(snapshot, earned);
+      tick(snapshot, rate);
 
-      // Check win condition after tick
-      const newRevenue = revenue + earned;
-
-      if (newRevenue >= effectiveLevelConfig.revenueTarget) {
+      if (sustainedNoDropSecondsRef.current >= WIN_SUSTAIN_SECONDS) {
         endSimulation();
         setShowEndScreen(true);
 
@@ -463,16 +478,18 @@ const GameLayoutContent = ({
     endSimulation,
     tick,
     effectiveLevelConfig,
-    revenue,
     completedLevels,
     currentLevelId,
     currentLevel,
     buildUnlockInput,
   ]);
 
-  const overloadedNodeIds = Object.entries(nodeStates)
+  const simulationOverloadedNodeIds = Object.entries(nodeStates)
     .filter(([, state]) => state.droppedOps > 0)
     .map(([nodeId]) => nodeId);
+
+  const overloadedNodeIds =
+    mode === "SIMULATE" ? simulationOverloadedNodeIds : designModeOverloadedNodeIds;
 
   useEffect(() => {
     const unlockedComponents = availableComponents.filter(
@@ -506,12 +523,12 @@ const GameLayoutContent = ({
   if (selectedNode !== undefined) {
     selectedNodeLabel = selectedNode.data.label;
     selectedComponentType = selectedNode.data.componentType;
-    maxCapacity = DEFAULT_CAPACITIES[selectedNode.data.componentType];
+    maxCapacity = COMPONENT_LIBRARY[selectedNode.data.componentType].capacity;
     latencyMs = LATENCY_MS[selectedNode.data.componentType];
-    cost = COST_PER_HOUR[selectedNode.data.componentType];
+    cost = COMPONENT_LIBRARY[selectedNode.data.componentType].monthlyCost;
 
     const selectedNodeState = nodeStates[selectedNode.id];
-    const selectedNodeCapacity = DEFAULT_CAPACITIES[selectedNode.data.componentType] ?? Infinity;
+    const selectedNodeCapacity = COMPONENT_LIBRARY[selectedNode.data.componentType].capacity;
 
     if (selectedNodeState !== undefined) {
       opsPerSec = selectedNodeState.incomingOps;
@@ -538,14 +555,17 @@ const GameLayoutContent = ({
       }}
     >
       <TopBar
+        currentReqPerSec={currentTrafficRate}
         levelNumber={currentLevel.id}
         levelTitle={currentLevel.title}
         mode={mode}
+        monthlyBudget={effectiveLevelConfig.monthlyBudget}
         objectiveText={currentLevel.objectiveText}
         onStartTraffic={handleToggleTraffic}
-        revenue={revenue}
-        revenueTarget={effectiveLevelConfig.revenueTarget}
+        remainingBudget={remainingBudget}
         startTrafficDisabled={!isRunnable}
+        totalMonthlyCost={totalMonthlyCost}
+        trafficTarget={effectiveLevelConfig.trafficTarget}
       />
       <LevelStrip
         completedLevelIds={completedLevels}
@@ -564,10 +584,10 @@ const GameLayoutContent = ({
       >
         {!isCompactLayout && (
           <section
-            aria-label="Palette"
-            style={{ flexShrink: 0, overflowY: "auto", width: "14rem" }}
+            aria-label="Resources"
+            style={{ flexShrink: 0, overflowY: "auto", width: "16rem" }}
           >
-            <Palette
+            <Resources
               availableComponents={availableComponents}
               isDisabled={isLocked}
               onPlaceComponent={handlePlaceComponent}
@@ -614,8 +634,8 @@ const GameLayoutContent = ({
           <EventLog entries={eventEntries} />
         </aside>
         {isCompactLayout && (
-          <section aria-label="Palette" style={{ flexShrink: 0, width: "100%" }}>
-            <Palette
+          <section aria-label="Resources" style={{ flexShrink: 0, width: "100%" }}>
+            <Resources
               availableComponents={availableComponents}
               isCompact
               isDisabled={isLocked}
@@ -627,10 +647,10 @@ const GameLayoutContent = ({
       {showEndScreen && (
         <EndOfLevelScreen
           feedbackLines={currentLevel.feedbackText}
+          monthlyBudget={effectiveLevelConfig.monthlyBudget}
           onContinue={handleContinue}
           onReplay={handleReplay}
-          revenue={revenue}
-          revenueTarget={effectiveLevelConfig.revenueTarget}
+          remainingBudget={remainingBudget}
           title={currentLevel.title}
         />
       )}

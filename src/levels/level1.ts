@@ -1,36 +1,52 @@
 import type { LevelDefinition } from "./types.js";
 
 const level1: LevelDefinition = {
-  availableComponents: ["users", "server", "db"],
+  availableComponents: ["server", "db"],
   cacheHitRate: 0,
   coachMessages: [
-    { atSecond: 3, text: "Drag a Server and a DB onto the canvas, then connect them to Users." },
-    { atSecond: 20, text: "Traffic is flowing! Watch the revenue counter climb." },
+    {
+      atSecond: 2,
+      text: "Your server is overloaded — 80 req/s is more than its 50 req/s limit. Swap it for a Large Server.",
+    },
   ],
   componentUnlocks: [],
   feedbackText: [
-    "Nice work! You routed user traffic through a server to a database.",
-    "A single server handles this load just fine — for now.",
+    "Swapping to a larger server gave you more capacity to handle the traffic.",
+    "Choosing bigger hardware to handle more load is called vertical scaling.",
   ],
   id: 1,
   lockedNodeIds: ["users-1"],
-  objectiveText: "Place a Server and DB, then connect Users → Server → DB.",
-  revenueTarget: 800,
-  startingEdges: [],
+  monthlyBudget: 100,
+  objectiveText: "Your server is overloaded. Fix the architecture to handle 80 req/s.",
+  startingEdges: [
+    { id: "edge-u-s", source: "users-1", target: "server-1" },
+    { id: "edge-s-d", source: "server-1", target: "db-1" },
+  ],
   startingNodes: [
     {
       componentType: "users",
       id: "users-1",
       label: "Users",
-      position: { x: 96, y: 160 },
+      position: { x: 80, y: 160 },
+    },
+    {
+      componentType: "server",
+      id: "server-1",
+      label: "Small Server",
+      position: { x: 280, y: 160 },
+    },
+    {
+      componentType: "db",
+      id: "db-1",
+      label: "Small DB",
+      position: { x: 480, y: 160 },
     },
   ],
-  timeout: 90,
+  timeout: 60,
   title: "First Request",
-  trafficSchedule: [
-    { opsPerSec: 30, startTime: 0 },
-    { opsPerSec: 60, startTime: 45 },
-  ],
+  trafficPeak: 80,
+  trafficStart: 80,
+  trafficTarget: 80,
 };
 
 export { level1 };

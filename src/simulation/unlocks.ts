@@ -4,11 +4,11 @@ import type { GraphNode, TrafficSnapshot } from "./types.js";
 
 type OverloadDurations = Map<string, number>;
 
+const SERVER_TYPES = new Set<ComponentType>(["server", "server-large"]);
+
 interface EvaluateUnlockInput {
   graphNodes: GraphNode[];
   overloadDurations: OverloadDurations;
-  revenue: number;
-  revenueTarget: number;
   snapshot: TrafficSnapshot;
 }
 
@@ -38,13 +38,10 @@ const evaluateUnlockTrigger = (trigger: UnlockTrigger, input: EvaluateUnlockInpu
       );
 
     case "SERVERS_PLACED": {
-      const count = input.graphNodes.filter((n) => n.type === "server").length;
+      const count = input.graphNodes.filter((n) => SERVER_TYPES.has(n.type)).length;
 
       return count >= trigger.count;
     }
-
-    case "LEVEL_COMPLETE":
-      return input.revenue >= input.revenueTarget;
   }
 };
 

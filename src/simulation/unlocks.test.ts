@@ -9,22 +9,20 @@ import type { GraphNode, TrafficSnapshot } from "./types.js";
 const emptyInput: EvaluateUnlockInput = {
   graphNodes: [],
   overloadDurations: new Map(),
-  revenue: 0,
-  revenueTarget: 1000,
   snapshot: {},
 };
 
 const overloadedSnapshot: TrafficSnapshot = {
-  "server-1": { droppedOps: 10, handledOps: 100, incomingOps: 110 },
+  "server-1": { droppedOps: 10, handledOps: 50, incomingOps: 60 },
 };
 
 const normalSnapshot: TrafficSnapshot = {
-  "server-1": { droppedOps: 0, handledOps: 80, incomingOps: 80 },
+  "server-1": { droppedOps: 0, handledOps: 40, incomingOps: 40 },
 };
 
 const twoServerNodes: GraphNode[] = [
-  { capacity: 100, id: "server-1", type: "server" },
-  { capacity: 100, id: "server-2", type: "server" },
+  { capacity: 50, id: "server-1", type: "server" },
+  { capacity: 50, id: "server-2", type: "server" },
 ];
 
 describe(evaluateUnlockTrigger, () => {
@@ -91,15 +89,25 @@ describe(evaluateUnlockTrigger, () => {
     it("returns true when more than the required number of servers are present", () => {
       const threeServers: GraphNode[] = [
         ...twoServerNodes,
-        { capacity: 100, id: "server-3", type: "server" },
+        { capacity: 50, id: "server-3", type: "server" },
       ];
       const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: threeServers };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(true);
     });
 
+    it("counts server-large nodes toward the server count", () => {
+      const mixedServers: GraphNode[] = [
+        { capacity: 50, id: "server-1", type: "server" },
+        { capacity: 150, id: "server-lg-1", type: "server-large" },
+      ];
+      const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: mixedServers };
+
+      expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(true);
+    });
+
     it("returns false when fewer than the required number of servers are present", () => {
-      const oneServer: GraphNode[] = [{ capacity: 100, id: "server-1", type: "server" }];
+      const oneServer: GraphNode[] = [{ capacity: 50, id: "server-1", type: "server" }];
       const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: oneServer };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(false);
@@ -107,32 +115,12 @@ describe(evaluateUnlockTrigger, () => {
 
     it("does not count non-server nodes toward the server count", () => {
       const mixedNodes: GraphNode[] = [
-        { capacity: 100, id: "server-1", type: "server" },
-        { capacity: 100, id: "db-1", type: "db" },
+        { capacity: 50, id: "server-1", type: "server" },
+        { capacity: 30, id: "db-1", type: "db" },
       ];
       const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: mixedNodes };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(false);
-    });
-  });
-
-  describe("level complete", () => {
-    it("returns true when revenue meets the target", () => {
-      const input: EvaluateUnlockInput = { ...emptyInput, revenue: 1000, revenueTarget: 1000 };
-
-      expect(evaluateUnlockTrigger({ type: "LEVEL_COMPLETE" }, input)).toBe(true);
-    });
-
-    it("returns true when revenue exceeds the target", () => {
-      const input: EvaluateUnlockInput = { ...emptyInput, revenue: 1200, revenueTarget: 1000 };
-
-      expect(evaluateUnlockTrigger({ type: "LEVEL_COMPLETE" }, input)).toBe(true);
-    });
-
-    it("returns false when revenue is below the target", () => {
-      const input: EvaluateUnlockInput = { ...emptyInput, revenue: 900, revenueTarget: 1000 };
-
-      expect(evaluateUnlockTrigger({ type: "LEVEL_COMPLETE" }, input)).toBe(false);
     });
   });
 });
@@ -171,9 +159,9 @@ describe(updateOverloadDurations, () => {
 
 describe(computeAvailableComponents, () => {
   it("returns the base components when no unlocks are triggered", () => {
-    const result = computeAvailableComponents(["users", "server", "db"], [], emptyInput);
+    const result = computeAvailableComponents(["server", "db"], [], emptyInput);
 
-    expect(result).toStrictEqual(["users", "server", "db"]);
+    expect(result).toStrictEqual(["server", "db"]);
   });
 
   it("appends unlocked components when the trigger fires", () => {
@@ -185,7 +173,7 @@ describe(computeAvailableComponents, () => {
       },
     ];
 
-    const result = computeAvailableComponents(["users", "server", "db"], componentUnlocks, input);
+    const result = computeAvailableComponents(["server", "db"], componentUnlocks, input);
 
     expect(result).toContain("load-balancer");
   });
@@ -198,11 +186,7 @@ describe(computeAvailableComponents, () => {
       },
     ];
 
-    const result = computeAvailableComponents(
-      ["users", "server", "db"],
-      componentUnlocks,
-      emptyInput,
-    );
+    const result = computeAvailableComponents(["server", "db"], componentUnlocks, emptyInput);
 
     expect(result).not.toContain("load-balancer");
   });
@@ -216,7 +200,7 @@ describe(computeAvailableComponents, () => {
       },
     ];
 
-    const result = computeAvailableComponents(["users", "server", "db"], componentUnlocks, input);
+    const result = computeAvailableComponents(["server", "db"], componentUnlocks, input);
 
     const serverCount = result.filter((c) => c === "server").length;
 

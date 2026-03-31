@@ -1,27 +1,31 @@
 import type { SimulationMode } from "../simulation/types.js";
 
-const INITIAL_BALANCE = 500;
-
 interface TopBarProps {
+  currentReqPerSec?: number;
   levelNumber?: number;
   levelTitle?: string;
   mode?: SimulationMode;
+  monthlyBudget?: number;
   objectiveText?: string;
   onStartTraffic?: () => void;
-  revenue?: number;
-  revenueTarget?: number;
+  remainingBudget?: number;
   startTrafficDisabled?: boolean;
+  totalMonthlyCost?: number;
+  trafficTarget?: number;
 }
 
 const TopBar = ({
+  currentReqPerSec = 0,
   levelNumber,
   levelTitle,
   mode = "DESIGN",
+  monthlyBudget,
   objectiveText,
   onStartTraffic,
-  revenue = INITIAL_BALANCE,
-  revenueTarget,
+  remainingBudget: _remainingBudget,
   startTrafficDisabled = false,
+  totalMonthlyCost,
+  trafficTarget,
 }: TopBarProps) => {
   const isSimulating = mode === "SIMULATE";
   let buttonLabel = "Start Traffic";
@@ -46,6 +50,8 @@ const TopBar = ({
         style={{
           alignItems: "center",
           display: "flex",
+          flexWrap: "wrap",
+          gap: "0.75rem",
           justifyContent: "space-between",
           padding: "0.75rem 1.25rem",
         }}
@@ -55,12 +61,30 @@ const TopBar = ({
             ? `Level ${levelNumber}: ${levelTitle}`
             : "System Design Builder"}
         </span>
-        <span style={{ fontVariantNumeric: "tabular-nums" }}>${revenue.toFixed(2)}</span>
-        {revenueTarget !== undefined && (
-          <span data-testid="revenue-target" style={{ fontSize: "0.85rem", opacity: 0.75 }}>
-            Target: ${revenueTarget.toFixed(0)}
+
+        <span
+          data-testid="current-req-per-sec"
+          style={{ fontSize: "1.1rem", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}
+        >
+          {Math.round(currentReqPerSec)} req/s
+        </span>
+
+        {trafficTarget !== undefined && (
+          <span data-testid="traffic-target" style={{ fontSize: "0.85rem", opacity: 0.75 }}>
+            Target: {trafficTarget} req/s
           </span>
         )}
+
+        {monthlyBudget !== undefined && (
+          <span
+            data-testid="budget-display"
+            style={{ fontSize: "0.85rem", fontVariantNumeric: "tabular-nums", opacity: 0.9 }}
+          >
+            {totalMonthlyCost === undefined ? "?" : `$${totalMonthlyCost}`}/${`$${monthlyBudget}`}
+            /mo
+          </span>
+        )}
+
         <button
           disabled={isButtonDisabled}
           onClick={onStartTraffic}

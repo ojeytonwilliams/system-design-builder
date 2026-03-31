@@ -328,3 +328,123 @@
     - Drag-and-drop placement works correctly on touch devices.
     - Connection port targets meet the 44×44px minimum touch target size.
     - No horizontal scrollbar appears at any tested viewport size.
+
+---
+
+## Phase 10: Resources Panel
+
+- [x] CODE: Rename palette to resources panel and enrich component entries
+  - Feature: Replace the palette with a Resources panel that shows each component's monthly cost, capacity (req/s), and a one-line description. Remove the Users node from the panel.
+  - Files: `src/components/Palette.*` (rename to `Resources.*`), component type definitions, level data
+  - Acceptance:
+    - Panel is labelled "Resources" in the UI — no instance of "Palette" visible to the player.
+    - Each entry shows: icon, component name, monthly cost (e.g. `$20/mo`), capacity (e.g. `50 req/s`), and a one-line plain-English description.
+    - The Users node does not appear in the Resources panel.
+    - Components not yet unlocked for the current level are hidden.
+    - All existing drag-to-canvas placement behaviour is preserved.
+
+- [x] CODE: Add Large Server as a distinct component type
+  - Feature: Introduce a Large Server component alongside the existing (renamed) Small Server. Both appear in the Resources panel with their respective costs and capacities.
+  - Files: component type definitions, `src/levels/types.*`, level data, simulation engine
+  - Acceptance:
+    - Small Server: 50 req/s capacity, $20/mo.
+    - Large Server: 150 req/s capacity, $80/mo.
+    - Both can be placed, connected, deleted, and inspected independently.
+    - The simulation engine applies the correct capacity for each server type.
+    - Inspector panel shows the correct capacity and monthly cost for each type.
+
+- [x] CODE: Add Large DB as a distinct component type
+  - Feature: Introduce a Large DB component alongside the existing Small DB. Both appear in the Resources panel.
+  - Files: component type definitions, level data, simulation engine
+  - Acceptance:
+    - Small DB: 30 req/s capacity, $15/mo.
+    - Large DB: 90 req/s capacity, $50/mo.
+    - Both can be placed, connected, deleted, and inspected independently.
+    - Simulation engine applies correct capacity per type.
+
+---
+
+## Phase 11: Budget System
+
+- [x] CODE: Implement per-level monthly infrastructure budget
+  - Feature: Each level defines a monthly budget. Placing a component deducts its monthly cost; removing a component refunds it. Placement is blocked when the budget would be exceeded.
+  - Files: `src/store.*`, `src/levels/types.*`, level data, `src/components/TopBar.*`
+  - Acceptance:
+    - Each level record includes a `monthlyBudget` field.
+    - Placing a component deducts its `monthlyCost` from the remaining budget immediately.
+    - Removing a component restores its cost to the remaining budget.
+    - Attempting to place a component that would exceed the budget is blocked; a short message explains why.
+    - Remaining budget and total monthly cost are displayed in the top bar at all times.
+    - Budget resets correctly when a level is loaded, continued, or replayed.
+
+---
+
+## Phase 12: Traffic & Win Condition Redesign
+
+- [x] CODE: Replace scripted traffic schedule with linear ramp
+  - Feature: Traffic grows linearly from a level-defined starting rate to a peak rate over the simulation duration, replacing the previous scripted schedule.
+  - Files: `src/simulation/engine.*`, `src/levels/types.*`, level data
+  - Acceptance:
+    - Each level record includes `trafficStart` (req/s) and `trafficPeak` (req/s) fields (replacing the old script array).
+    - Traffic increases at a constant rate per second: `(peak − start) / timeoutSeconds`.
+    - The Users node emits at the current linear rate each tick.
+
+- [x] CODE: Display live req/sec prominently in top bar
+  - Feature: The current live traffic rate (req/s) and the level's traffic target are always visible in the top bar during simulation and design modes.
+  - Files: `src/components/TopBar.*`, `src/store.*`
+  - Acceptance:
+    - Top bar shows current req/s (live, updating each simulation tick) and traffic target (req/s) side by side.
+    - In design mode, current req/s shows 0 (simulation not running).
+    - The display is readable and prominent — not buried in secondary panels.
+
+- [x] CODE: Implement req/sec-based win condition
+  - Feature: Replace the revenue-target win condition with a traffic-target win condition: the level is won when the system sustains the target req/s for a continuous 10-second window with zero dropped requests.
+  - Files: `src/simulation/engine.*`, `src/store.*`, `src/levels/types.*`, level data
+  - Acceptance:
+    - Each level record includes a `trafficTarget` (req/s) field replacing `revenueTarget`.
+    - The engine tracks a continuous "no-drop window" counter; it resets to 0 whenever any request is dropped.
+    - When the no-drop window reaches 10 seconds at or above `trafficTarget` req/s, the win condition is triggered.
+    - End-of-level screen is shown on win; canvas is returned to design mode on timeout without win.
+    - Revenue tracking and $0.10/request mechanic are removed from the engine and store.
+
+- [x] CODE: Update end-of-level score to use budget efficiency
+  - Feature: Replace the revenue-based score with a score derived from budget efficiency (budget remaining as a percentage of total budget).
+  - Files: `src/components/EndOfLevelScreen.*`, `src/store.*`
+  - Acceptance:
+    - Score is calculated as `(remainingBudget / totalBudget) × 100` (or star equivalent).
+    - Score is shown on the end-of-level screen.
+    - Feedback still names the concept the player demonstrated.
+
+---
+
+## Phase 13: Failing Start States & Level Redesign
+
+- [x] CODE: Update all 6 level definitions with failing preset layouts
+  - Feature: Redesign all 6 level starting layouts so each level begins in a failing state. Replace revenue targets with traffic targets and scripted schedules with linear ramp data. Add monthly budget per level.
+  - Files: `src/levels/level1.*` … `src/levels/level6.*`, `src/levels/types.*`
+  - Acceptance:
+    - Level 1: Users → Small Server → Small DB. Server overloaded at peak. Budget $100/mo. Target: 80 req/s. Concept: vertical scaling.
+    - Level 2: Users → Small Server × 2 → Small DB (no load balancer, traffic split manually). One server overloaded. Budget $130/mo. Target: 100 req/s. Concept: load balancing.
+    - Level 3: Users → Load Balancer → Small Server × 2 → Small DB. DB overloaded. Budget $150/mo. Target: 120 req/s. Concept: DB capacity.
+    - Level 4: Large DB still saturated; Cache not present. Budget $180/mo. Target: 150 req/s. Concept: caching.
+    - Level 5: Cache present but budget tight; mix of oversized and undersized components. Budget $200/mo. Target: 180 req/s. Concept: budget optimisation and right-sizing.
+    - Level 6: Full architecture under high traffic — multiple overloaded nodes. Budget $250/mo. Target: 220 req/s. Concept: holistic architecture.
+    - Every level's starting layout is visibly overloaded when the player first opens it (before pressing Start Traffic, the simulation runs in a "preview" state or the coach message describes the failure).
+    - Each level's budget allows at least one valid solving architecture.
+    - Users node is pre-placed and marked as non-deletable/non-movable in all levels.
+
+- [x] CODE: Show overload state in design mode (preview)
+  - Feature: When a level loads, run a brief static capacity check so overloaded nodes are already shown in red before the player presses Start Traffic.
+  - Files: `src/simulation/engine.*`, `src/components/GameCanvas.*`, node components
+  - Acceptance:
+    - On level load, the engine computes expected load at `trafficStart` req/s and marks nodes as overloaded if they would be immediately saturated.
+    - Overloaded nodes show coral/red fill in design mode, not just during simulation.
+    - Resolving the overload in design mode (e.g. swapping a component) immediately updates the preview state.
+
+- [x] CODE: Update coach messages for failing-start pedagogy
+  - Feature: Update all level coach messages to describe what is failing and what the player should do, rather than describing what to build from scratch.
+  - Files: level data (coach messages), `src/components/Coach.*`
+  - Acceptance:
+    - Opening message for each level names the failing component and suggests an action (e.g. "Your server is overloaded. Swap it for a larger one.").
+    - Coach messages do not instruct the player to build from a blank canvas.
+    - Tone remains calm, specific, and educational.

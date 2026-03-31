@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { INITIAL_REVENUE, SimulationProvider, useSimulation } from "./store.js";
+import { SimulationProvider, useSimulation } from "./store.js";
 import type { TrafficSnapshot } from "./simulation/types.js";
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -17,10 +17,10 @@ describe("simulation store", () => {
       expect(result.current.mode).toBe("DESIGN");
     });
 
-    it("starts with the initial revenue balance", () => {
+    it("starts with zero current traffic rate", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
-      expect(result.current.revenue).toBe(INITIAL_REVENUE);
+      expect(result.current.currentTrafficRate).toBe(0);
     });
 
     it("starts with empty node states", () => {
@@ -41,39 +41,38 @@ describe("simulation store", () => {
       expect(result.current.mode).toBe("SIMULATE");
     });
 
-    it("resets revenue to the initial balance", () => {
+    it("resets current traffic rate to zero", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
       act(() => {
-        result.current.tick(emptySnapshot, 100);
+        result.current.tick(emptySnapshot, 50);
         result.current.startSimulation();
       });
 
-      expect(result.current.revenue).toBe(INITIAL_REVENUE);
+      expect(result.current.currentTrafficRate).toBe(0);
     });
   });
 
   describe("tick", () => {
-    it("adds earned revenue to the balance", () => {
+    it("updates the current traffic rate", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
       act(() => {
-        result.current.tick(emptySnapshot, 10);
+        result.current.tick(emptySnapshot, 80);
       });
 
-      expect(result.current.revenue).toBe(INITIAL_REVENUE + 10);
+      expect(result.current.currentTrafficRate).toBe(80);
     });
 
-    it("accumulates revenue across multiple ticks", () => {
+    it("replaces the previous traffic rate on each tick", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
       act(() => {
-        result.current.tick(emptySnapshot, 10);
-        result.current.tick(emptySnapshot, 10);
-        result.current.tick(emptySnapshot, 10);
+        result.current.tick(emptySnapshot, 40);
+        result.current.tick(emptySnapshot, 70);
       });
 
-      expect(result.current.revenue).toBe(INITIAL_REVENUE + 30);
+      expect(result.current.currentTrafficRate).toBe(70);
     });
 
     it("updates node states with the provided snapshot", () => {
@@ -83,7 +82,7 @@ describe("simulation store", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
       act(() => {
-        result.current.tick(snapshot, 5);
+        result.current.tick(snapshot, 50);
       });
 
       expect(result.current.nodeStates["server-1"]?.handledOps).toBe(50);
@@ -102,22 +101,21 @@ describe("simulation store", () => {
       expect(result.current.mode).toBe("DESIGN");
     });
 
-    it("preserves the final revenue balance", () => {
+    it("preserves the final traffic rate after simulation ends", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
       act(() => {
         result.current.startSimulation();
-        result.current.tick(emptySnapshot, 25);
+        result.current.tick(emptySnapshot, 90);
         result.current.endSimulation();
       });
 
-      expect(result.current.revenue).toBe(INITIAL_REVENUE + 25);
+      expect(result.current.currentTrafficRate).toBe(90);
     });
   });
 
   describe("useSimulation outside provider", () => {
     it("throws when used outside SimulationProvider", () => {
-      // Suppress console.error from React's error boundary during test
       vi.spyOn(console, "error").mockReturnValue(undefined);
 
       expect(() => renderHook(() => useSimulation())).toThrow(

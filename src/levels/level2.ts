@@ -1,39 +1,60 @@
 import type { LevelDefinition } from "./types.js";
 
 const level2: LevelDefinition = {
-  availableComponents: ["users", "server", "db"],
+  availableComponents: ["server", "server-large", "load-balancer", "db"],
   cacheHitRate: 0,
   coachMessages: [
-    { atSecond: 5, text: "Traffic is rising. Keep an eye on your server's load." },
     {
-      atSecond: 32,
-      text: "Your server is overloaded — it can only handle 100 ops/s. Requests are being dropped!",
+      atSecond: 2,
+      text: "One server is over capacity. A Load Balancer can spread traffic across both servers evenly.",
     },
   ],
   componentUnlocks: [],
   feedbackText: [
-    "You made it, but requests were dropped when traffic peaked.",
-    "Next challenge: what if you could split the load across two servers?",
+    "Adding a Load Balancer split the traffic evenly across your two servers.",
+    "Distributing requests across multiple machines is called load balancing.",
   ],
   id: 2,
   lockedNodeIds: ["users-1"],
-  objectiveText: "Build a stable Users → Server → DB path that survives the traffic spike.",
-  revenueTarget: 1100,
-  startingEdges: [],
+  monthlyBudget: 150,
+  objectiveText: "One server is over capacity. Add a Load Balancer to spread the traffic.",
+  startingEdges: [
+    { id: "edge-u-s1", source: "users-1", target: "server-1" },
+    { id: "edge-u-s2", source: "users-1", target: "server-2" },
+    { id: "edge-s1-d", source: "server-1", target: "db-1" },
+    { id: "edge-s2-d", source: "server-2", target: "db-1" },
+  ],
   startingNodes: [
     {
       componentType: "users",
       id: "users-1",
       label: "Users",
-      position: { x: 96, y: 160 },
+      position: { x: 80, y: 200 },
+    },
+    {
+      componentType: "server",
+      id: "server-1",
+      label: "Small Server",
+      position: { x: 320, y: 80 },
+    },
+    {
+      componentType: "server",
+      id: "server-2",
+      label: "Small Server",
+      position: { x: 320, y: 320 },
+    },
+    {
+      componentType: "db",
+      id: "db-1",
+      label: "Small DB",
+      position: { x: 560, y: 200 },
     },
   ],
-  timeout: 90,
+  timeout: 60,
   title: "Over Capacity",
-  trafficSchedule: [
-    { opsPerSec: 60, startTime: 0 },
-    { opsPerSec: 110, startTime: 30 },
-  ],
+  trafficPeak: 120,
+  trafficStart: 120,
+  trafficTarget: 120,
 };
 
 export { level2 };
