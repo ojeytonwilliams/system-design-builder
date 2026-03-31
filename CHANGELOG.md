@@ -1,5 +1,64 @@
 # Changelog
 
+## [1.10.0] - 2026-03-30
+
+### Phase 9 — Responsive Layout
+
+**Responsive gameplay shell (`src/layouts/game-layout.tsx`)**
+
+- Added viewport-aware reflow (`MOBILE_LAYOUT_BREAKPOINT = 768`) with `resize` listener.
+- Desktop keeps side palette + canvas + right rail; narrow screens reflow to stacked layout with palette moved to a compact bottom strip.
+- Added `data-testid="game-layout-shell"` and enforced `overflowX: hidden` to prevent horizontal page scrolling.
+
+**Touch-friendly placement + port targets (`src/components/palette*.tsx`, `src/components/game-canvas.tsx`)**
+
+- `PaletteItem` now supports click/tap placement via `onPlaceComponent` callback in addition to drag-and-drop.
+- `GameLayout` queues tap placement requests and passes them to `GameCanvas`.
+- `GameCanvas` supports `componentToPlace` + `onComponentPlaced` to place nodes without drag gestures.
+- Increased connection handle hit targets to `44x44` (`PORT_HIT_SIZE`) to satisfy touch target minimums.
+
+#### Tests
+
+- `src/components/game-canvas.test.tsx`: added queued-placement test and explicit `44x44` port-hit target assertion.
+- `src/components/palette-item.test.tsx`: added click-to-place callback test.
+- `src/layouts/game-layout.test.tsx`: added narrow-screen reflow/accessibility assertion.
+
+## [1.9.0] - 2026-03-30
+
+### Phase 8 — Coach and Onboarding
+
+**Coach panel (`src/components/coach.tsx`)**
+
+- Added `Coach` component with concise instructional message surface (`aria-label="Coach"`).
+- Shows mission text at level start (`Mission: <objective>`).
+- Updates from scheduled level coach timeline messages during simulation ticks.
+- Updates on first overload occurrence and on concept unlock events.
+
+**Event Log (`src/components/event-log.tsx`)**
+
+- Added `EventLog` component (`aria-label="Event Log"`) with chronological entries and scrollable list.
+- Logs key runtime transitions:
+  - component placed
+  - connection created
+  - concept unlocked
+  - overload started
+  - overload resolved
+
+**Layout integration (`src/layouts/game-layout.tsx`)**
+
+- Wired `Coach` and `EventLog` into the right rail under `Inspector`.
+- Added event generation for graph deltas, unlock transitions, and overload transitions.
+- Added level-load resets for coach/event state so each level starts cleanly.
+
+#### Tests
+
+- Added `src/components/coach.test.tsx` and `src/components/event-log.test.tsx`.
+- Extended `src/layouts/game-layout.test.tsx` with coverage for:
+  - opening mission coach message
+  - unlock-driven coach updates
+  - overload coach guidance
+  - event log entries for placement/connection/unlock/overload start+resolve
+
 ## [1.7.0] - 2026-03-30
 
 ### Phase 7 — Level System

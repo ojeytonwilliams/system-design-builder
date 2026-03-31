@@ -46,11 +46,9 @@ After a phase of the todo.md is completed, look at each of the phase's todo item
 
 Once all the phase's todo items are checked, run `pnpm test`, `pnpm lint` and `pnpm check`. Fix any errors before proceeding.
 
-Once the checks are passing, increment the package.json version respecting semver. Then create a CHANGELOG.md entry with the new version and current date e.g. ## [1.2.3] - 2026-03-19
+Once the checks are passing, increment the package.json version respecting semver. Then create a CHANGELOG.md entry with the new version and current date e.g. ## [1.2.3] - 2026-03-19. Populate the CHANGELOG.md entry by summarizing the features implemented in the phase.
 
-Use `git diff` to see the changes. Summarize them in the CHANGELOG.md entry.
-
-Commit the changes with a conventional commit including a brief summary in the commit body.
+Commit the changes with a conventional commit including an even briefer summary in the commit body.
 
 ## Forbidden Behaviour
 

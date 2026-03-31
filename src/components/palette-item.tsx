@@ -6,6 +6,7 @@ interface PaletteItemProps {
   icon?: string;
   isDisabled?: boolean;
   label: string;
+  onPlaceComponent?: (componentType: ComponentType) => void;
 }
 
 const handleDragStart = (componentType: ComponentType) => (event: DragEvent<HTMLButtonElement>) => {
@@ -14,7 +15,13 @@ const handleDragStart = (componentType: ComponentType) => (event: DragEvent<HTML
   event.dataTransfer.setData("text/plain", componentType);
 };
 
-const PaletteItem = ({ componentType, icon, isDisabled = false, label }: PaletteItemProps) => {
+const PaletteItem = ({
+  componentType,
+  icon,
+  isDisabled = false,
+  label,
+  onPlaceComponent,
+}: PaletteItemProps) => {
   let cursor = "grab";
   let opacity = 1;
 
@@ -23,12 +30,21 @@ const PaletteItem = ({ componentType, icon, isDisabled = false, label }: Palette
     opacity = 0.5;
   }
 
+  const handleClick = () => {
+    if (isDisabled || onPlaceComponent === undefined) {
+      return;
+    }
+
+    onPlaceComponent(componentType);
+  };
+
   return (
     <button
       data-component-type={componentType}
       data-testid={`palette-item-${componentType}`}
       disabled={isDisabled}
       draggable={!isDisabled}
+      onClick={handleClick}
       onDragStart={handleDragStart(componentType)}
       style={{
         alignItems: "center",

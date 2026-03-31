@@ -43,6 +43,7 @@ const OVERLOAD_PULSE_KEYFRAMES = `
 `;
 const NODE_WIDTH = 88;
 const NODE_MIN_HEIGHT = 96;
+const PORT_HIT_SIZE = 44;
 const CANVAS_COMPONENT_LIBRARY = {
   cache: {
     accentColor: "#d9a65b",
@@ -113,11 +114,13 @@ interface NodeContextMenu {
 type ContextMenuState = EdgeContextMenu | NodeContextMenu;
 
 interface GameCanvasProps {
+  componentToPlace?: ComponentType | null;
   initialContextMenu?: ContextMenuState;
   initialEdges?: Edge[];
   initialNodes?: ArchitectureCanvasNode[];
   isLocked?: boolean;
   lockedNodeIds?: string[];
+  onComponentPlaced?: () => void;
   onSelectedNodeChange?: (nodeId: string | null) => void;
   onStateChange?: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
   overloadedNodeIds?: string[];
@@ -125,6 +128,15 @@ interface GameCanvasProps {
 
 const DEFAULT_OVERLOADED_NODE_IDS: string[] = [];
 const DEFAULT_LOCKED_NODE_IDS: string[] = [];
+const DEFAULT_DROP_POSITION: Point = { x: 160, y: 160 };
+
+const HANDLE_STYLE: CSSProperties = {
+  background: "radial-gradient(circle, #7b8cb2 0 4px, transparent 5px)",
+  border: "none",
+  height: `${PORT_HIT_SIZE}px`,
+  opacity: 1,
+  width: `${PORT_HIT_SIZE}px`,
+};
 
 const canvasDropzoneStyles: CSSProperties = {
   background: "radial-gradient(circle at 1px 1px, rgba(26, 39, 68, 0.11) 1px, transparent 0)",
@@ -165,7 +177,7 @@ const withDefaultNodeShape = (node: ArchitectureCanvasNode): ArchitectureCanvasN
 
 const withDefaultEdgeShape = (edge: Edge): Edge => ({
   ...edge,
-  animated: true,
+  animated: false,
   type: "architecture-edge",
 });
 
@@ -256,8 +268,18 @@ const ArchitectureNode = ({ data, id }: NodeProps<ArchitectureCanvasNode>) => {
   if (!isUsersNode) {
     targetHandles = (
       <>
-        <Handle data-testid={`handle-${id}-target-left`} position={Position.Left} type="target" />
-        <Handle data-testid={`handle-${id}-target-top`} position={Position.Top} type="target" />
+        <Handle
+          data-testid={`handle-${id}-target-left`}
+          position={Position.Left}
+          style={HANDLE_STYLE}
+          type="target"
+        />
+        <Handle
+          data-testid={`handle-${id}-target-top`}
+          position={Position.Top}
+          style={HANDLE_STYLE}
+          type="target"
+        />
       </>
     );
   }
@@ -286,8 +308,18 @@ const ArchitectureNode = ({ data, id }: NodeProps<ArchitectureCanvasNode>) => {
         width: `${NODE_WIDTH}px`,
       }}
     >
-      <Handle data-testid={`handle-${id}-source-right`} position={Position.Right} type="source" />
-      <Handle data-testid={`handle-${id}-source-bottom`} position={Position.Bottom} type="source" />
+      <Handle
+        data-testid={`handle-${id}-source-right`}
+        position={Position.Right}
+        style={HANDLE_STYLE}
+        type="source"
+      />
+      <Handle
+        data-testid={`handle-${id}-source-bottom`}
+        position={Position.Bottom}
+        style={HANDLE_STYLE}
+        type="source"
+      />
       {targetHandles}
       <span
         aria-hidden="true"
@@ -361,11 +393,13 @@ const nodeTypes = { architecture: ArchitectureNode };
 const edgeTypes = { "architecture-edge": ArchitectureEdge };
 
 const GameCanvas = ({
+  componentToPlace,
   initialContextMenu,
   initialEdges = [],
   initialNodes = [],
   isLocked = false,
   lockedNodeIds = DEFAULT_LOCKED_NODE_IDS,
+  onComponentPlaced,
   onSelectedNodeChange,
   onStateChange,
   overloadedNodeIds = DEFAULT_OVERLOADED_NODE_IDS,
@@ -442,6 +476,26 @@ const GameCanvas = ({
   useEffect(() => {
     onStateChange?.(nodes, edges);
   }, [nodes, edges, onStateChange]);
+
+  useEffect(() => {
+    if (componentToPlace === null || componentToPlace === undefined || isLocked) {
+      return;
+    }
+
+    setNodes((currentNodes) => {
+      const nextNode: ArchitectureCanvasNode = {
+        data: createNodeData(componentToPlace),
+        id: getNextNodeId(componentToPlace, currentNodes),
+        position: snapPositionToGrid(DEFAULT_DROP_POSITION),
+        type: "architecture",
+      };
+
+      return [...setSelectedNode(currentNodes, null), nextNode];
+    });
+    setSelectedNodeId(null);
+    setContextMenu(null);
+    onComponentPlaced?.();
+  }, [componentToPlace, isLocked, onComponentPlaced]);
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -562,7 +616,7 @@ const GameCanvas = ({
       }
 
       setEdges((currentEdges) =>
-        addEdge({ ...connection, animated: true, type: "architecture-edge" }, currentEdges),
+        addEdge({ ...connection, animated: false, type: "architecture-edge" }, currentEdges),
       );
     },
     [nodes],

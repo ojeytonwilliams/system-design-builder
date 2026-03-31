@@ -49,6 +49,15 @@ describe("game canvas", () => {
     expect(screen.getByText("Server")).toBeInTheDocument();
   });
 
+  it("places a queued component when componentToPlace is provided", () => {
+    const onComponentPlaced = vi.fn();
+
+    render(<GameCanvas componentToPlace="server" onComponentPlaced={onComponentPlaced} />);
+
+    expect(screen.getByTestId("canvas-node-server-1")).toBeInTheDocument();
+    expect(onComponentPlaced).toHaveBeenCalledOnce();
+  });
+
   it("removes a selected node and its connected edges when Delete is pressed", () => {
     render(
       <GameCanvas
@@ -131,6 +140,61 @@ const INITIAL_NODES_TWO = [
 ] as const;
 
 describe("connection ports", () => {
+  it("keeps enlarged hitboxes on edges without manual side offsets", () => {
+    const { container } = render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+      />,
+    );
+
+    const leftTarget = container.querySelector('[data-testid="handle-server-1-target-left"]');
+    const topTarget = container.querySelector('[data-testid="handle-server-1-target-top"]');
+    const rightSource = container.querySelector('[data-testid="handle-server-1-source-right"]');
+    const bottomSource = container.querySelector('[data-testid="handle-server-1-source-bottom"]');
+
+    expect(leftTarget).toHaveStyle({ left: "" });
+    expect(topTarget).toHaveStyle({ top: "" });
+    expect(rightSource).toHaveStyle({ right: "" });
+    expect(bottomSource).toHaveStyle({ bottom: "" });
+  });
+
+  it("keeps handle markers visible while preserving large hitboxes", () => {
+    const { container } = render(<GameCanvas initialNodes={[...INITIAL_NODES_TWO]} />);
+
+    const sourceHandle = container.querySelector('[data-testid="handle-server-1-source-right"]');
+
+    expect(sourceHandle).toHaveStyle({
+      background: "radial-gradient(circle, #7b8cb2 0 4px, transparent 5px)",
+      opacity: "1",
+    });
+  });
+
+  it("uses at least 44x44px port hit targets", () => {
+    const { container } = render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+      />,
+    );
+
+    const sourceHandle = container.querySelector('[data-testid="handle-server-1-source-right"]');
+
+    expect(sourceHandle).toHaveStyle({ height: "44px", width: "44px" });
+  });
+
   it("renders source handles on server nodes", () => {
     const { container } = render(
       <GameCanvas

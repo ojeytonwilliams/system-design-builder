@@ -32,4 +32,15 @@ describe("palette item", () => {
 
     expect(setData).toHaveBeenCalledWith("application/component-type", "server");
   });
+
+  it("calls onPlaceComponent when clicked", () => {
+    const onPlaceComponent = vi.fn();
+
+    render(
+      <PaletteItem componentType="server" label="Server" onPlaceComponent={onPlaceComponent} />,
+    );
+    fireEvent.click(screen.getByTestId("palette-item-server"));
+
+    expect(onPlaceComponent).toHaveBeenCalledWith("server");
+  });
 });

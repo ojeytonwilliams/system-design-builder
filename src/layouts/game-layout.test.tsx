@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { GameLayout } from "./game-layout.js";
 import { loadProgress } from "../persistence.js";
 import type { LevelConfig } from "../simulation/types.js";
@@ -48,6 +48,27 @@ const overloadNodes: ArchitectureCanvasNode[] = [
     data: { componentType: "server", label: "Server" },
     id: "server-1",
     position: { x: 96, y: 0 },
+    type: "architecture",
+  },
+];
+
+const unlockedLevel3Nodes: ArchitectureCanvasNode[] = [
+  {
+    data: { componentType: "users", label: "Users" },
+    id: "users-1",
+    position: { x: 0, y: 0 },
+    type: "architecture",
+  },
+  {
+    data: { componentType: "server", label: "Server" },
+    id: "server-1",
+    position: { x: 96, y: 0 },
+    type: "architecture",
+  },
+  {
+    data: { componentType: "server", label: "Server" },
+    id: "server-2",
+    position: { x: 192, y: 0 },
     type: "architecture",
   },
 ];
@@ -338,7 +359,9 @@ describe("level context UI", () => {
   it("shows the level objective text", () => {
     render(<GameLayout />);
 
-    expect(screen.getByText(/place a server and db/i)).toBeInTheDocument();
+    expect(
+      screen.getByText("Place a Server and DB, then connect Users → Server → DB."),
+    ).toBeInTheDocument();
   });
 });
 
@@ -386,5 +409,119 @@ describe("level progression strip", () => {
     fireEvent.click(screen.getByTestId("level-strip-level-1"));
 
     expect(screen.getByText(/first request/i)).toBeInTheDocument();
+  });
+});
+
+describe("coach panel", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+  });
+
+  it("shows an opening mission message when a level starts", () => {
+    render(<GameLayout />);
+
+    expect(screen.getByRole("heading", { name: /coach/i })).toBeInTheDocument();
+    expect(screen.getByText(/mission: place a server and db/i)).toBeInTheDocument();
+  });
+
+  it("updates coach message when an unlock trigger fires", () => {
+    localStorage.setItem("sdb_progress", JSON.stringify({ completedLevels: [1, 2], version: 1 }));
+
+    render(<GameLayout initialNodes={unlockedLevel3Nodes} />);
+
+    const coachRegion = screen.getByRole("region", { name: /coach/i });
+
+    expect(within(coachRegion).getByText(/unlocked: load balancer/i)).toBeInTheDocument();
+  });
+
+  it("shows a coaching message the first time overload occurs in a level", () => {
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={overloadLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByText(/overload detected/i)).toBeInTheDocument();
+  });
+});
+
+describe("event log", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    localStorage.clear();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    localStorage.clear();
+  });
+
+  it("logs placement, connections, and concept unlocks in chronological order", () => {
+    localStorage.setItem("sdb_progress", JSON.stringify({ completedLevels: [1, 2], version: 1 }));
+
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={unlockedLevel3Nodes}
+        levelConfig={resolvingOverloadLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(screen.getByRole("heading", { name: /event log/i })).toBeInTheDocument();
+    expect(screen.getByText(/component placed: users/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/component placed: server/i)).toHaveLength(2);
+    expect(screen.getByText(/connection created/i)).toBeInTheDocument();
+    expect(screen.getByText(/concept unlocked/i)).toBeInTheDocument();
+  });
+
+  it("logs overload start and resolution events", () => {
+    render(
+      <GameLayout
+        initialEdges={overloadEdges}
+        initialNodes={overloadNodes}
+        levelConfig={resolvingOverloadLevelConfig}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+
+    expect(screen.getByText(/overload started/i)).toBeInTheDocument();
+    expect(screen.getByText(/overload resolved/i)).toBeInTheDocument();
+  });
+});
+
+describe("responsive layout", () => {
+  it("reflows controls for narrow screens and keeps each panel accessible", () => {
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 375, writable: true });
+    fireEvent(window, new Event("resize"));
+
+    render(<GameLayout />);
+
+    expect(screen.getByRole("region", { name: /palette/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /inspector/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /coach/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /event log/i })).toBeInTheDocument();
+    expect(screen.getByTestId("game-layout-shell")).toHaveStyle({ overflowX: "hidden" });
   });
 });

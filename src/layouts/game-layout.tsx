@@ -1,8 +1,11 @@
 // oxlint-disable import/max-dependencies
 import type { Edge } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Coach } from "../components/coach.js";
 import type { ComponentType } from "../components/component-library.js";
 import { EndOfLevelScreen } from "../components/end-of-level-screen.js";
+import { EventLog } from "../components/event-log.js";
+import type { EventLogEntry } from "../components/event-log.js";
 import { GameCanvas } from "../components/game-canvas.js";
 import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
 import { Inspector } from "../components/inspector.js";
@@ -73,7 +76,7 @@ const levelNodeToCanvasNode = (node: StartingNode): ArchitectureCanvasNode => ({
 });
 
 const levelEdgeToCanvasEdge = (startingEdge: StartingEdge): Edge => ({
-  animated: true,
+  animated: false,
   id: startingEdge.id,
   source: startingEdge.source,
   target: startingEdge.target,
@@ -87,6 +90,19 @@ interface GameLayoutContentProps {
 }
 
 const EMPTY_OVERLOAD_DURATIONS: OverloadDurations = new Map();
+const MOBILE_LAYOUT_BREAKPOINT = 768;
+
+const getComponentName = (componentType: ComponentType): string => {
+  if (componentType === "db") {
+    return "DB";
+  }
+
+  if (componentType === "load-balancer") {
+    return "Load Balancer";
+  }
+
+  return componentType.charAt(0).toUpperCase() + componentType.slice(1);
+};
 
 const GameLayoutContent = ({
   initialEdges,
@@ -116,6 +132,15 @@ const GameLayoutContent = ({
     () => initialCanvasNodes,
   );
   const [levelStartEdges, setLevelStartEdges] = useState<Edge[]>(() => initialCanvasEdges);
+  const [coachMessage, setCoachMessage] = useState(`Mission: ${currentLevel.objectiveText}`);
+  const [eventEntries, setEventEntries] = useState<EventLogEntry[]>([]);
+  const [isCompactLayout, setIsCompactLayout] = useState(false);
+  const [queuedComponentType, setQueuedComponentType] = useState<ComponentType | null>(null);
+  const eventCounterRef = useRef(0);
+  const shownCoachMessageRef = useRef<Set<number>>(new Set());
+  const hasSeenOverloadThisLevelRef = useRef(false);
+  const hasSnapshotOverloadRef = useRef(false);
+  const previousAvailableComponentsRef = useRef<ComponentType[]>(currentLevel.availableComponents);
 
   const effectiveLevelConfig = useMemo<LevelConfig>(
     () =>
@@ -150,7 +175,7 @@ const GameLayoutContent = ({
 
   const [availableComponents, setAvailableComponents] = useState<ComponentType[]>(() =>
     computeAvailableComponents(currentLevel.availableComponents, currentLevel.componentUnlocks, {
-      graphNodes: initialNodes.map(toGraphNode),
+      graphNodes: initialCanvasNodes.map(toGraphNode),
       overloadDurations: EMPTY_OVERLOAD_DURATIONS,
       revenue: 0,
       revenueTarget: effectiveLevelConfig.revenueTarget,
@@ -163,8 +188,70 @@ const GameLayoutContent = ({
     nodes: initialCanvasNodes,
   });
 
+  const appendEvent = useCallback((text: string) => {
+    eventCounterRef.current += 1;
+
+    setEventEntries((currentEntries) => [
+      ...currentEntries,
+      { id: `event-${eventCounterRef.current}`, text },
+    ]);
+  }, []);
+
+  const buildInitialGraphEvents = useCallback(
+    (nodes: ArchitectureCanvasNode[], edges: Edge[]): EventLogEntry[] => {
+      const entries: EventLogEntry[] = [];
+
+      nodes.forEach((node) => {
+        eventCounterRef.current += 1;
+        entries.push({
+          id: `event-${eventCounterRef.current}`,
+          text: `Component placed: ${getComponentName(node.data.componentType)}`,
+        });
+      });
+
+      edges.forEach((edge) => {
+        eventCounterRef.current += 1;
+        entries.push({
+          id: `event-${eventCounterRef.current}`,
+          text: `Connection created: ${edge.source} → ${edge.target}`,
+        });
+      });
+
+      return entries;
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const syncLayout = () => {
+      setIsCompactLayout(window.innerWidth <= MOBILE_LAYOUT_BREAKPOINT);
+    };
+
+    syncLayout();
+    window.addEventListener("resize", syncLayout);
+
+    return () => {
+      window.removeEventListener("resize", syncLayout);
+    };
+  }, []);
+
   const handleGraphChange = useCallback(
     (nodes: ArchitectureCanvasNode[], edges: Edge[]) => {
+      const previousNodeIds = new Set(graphRef.current.nodes.map((node) => node.id));
+      const previousEdgeIds = new Set(graphRef.current.edges.map((edge) => edge.id));
+
+      nodes.forEach((node) => {
+        if (!previousNodeIds.has(node.id)) {
+          appendEvent(`Component placed: ${getComponentName(node.data.componentType)}`);
+        }
+      });
+
+      edges.forEach((edge) => {
+        if (!previousEdgeIds.has(edge.id)) {
+          appendEvent(`Connection created: ${edge.source} → ${edge.target}`);
+        }
+      });
+
       setGraphState({ edges, nodes });
       graphRef.current = { edges, nodes };
 
@@ -185,7 +272,7 @@ const GameLayoutContent = ({
         ),
       );
     },
-    [currentLevel, effectiveLevelConfig.revenueTarget],
+    [appendEvent, currentLevel, effectiveLevelConfig.revenueTarget],
   );
 
   const handleSelectedNodeChange = useCallback((nodeId: string | null) => {
@@ -196,6 +283,18 @@ const GameLayoutContent = ({
     (level: LevelDefinition) => {
       const newNodes = level.startingNodes.map(levelNodeToCanvasNode);
       const newEdges = level.startingEdges.map(levelEdgeToCanvasEdge);
+      const newAvailableComponents = computeAvailableComponents(
+        level.availableComponents,
+        level.componentUnlocks,
+        {
+          graphNodes: newNodes.map(toGraphNode),
+          overloadDurations: EMPTY_OVERLOAD_DURATIONS,
+          revenue: 0,
+          revenueTarget: level.revenueTarget,
+          snapshot: {},
+        },
+      );
+
       setCurrentLevelId(level.id);
       setLevelStartNodes(newNodes);
       setLevelStartEdges(newEdges);
@@ -205,18 +304,17 @@ const GameLayoutContent = ({
       setSelectedNodeId(null);
       setOverloadDurations(new Map());
       setShowEndScreen(false);
+      setCoachMessage(`Mission: ${level.objectiveText}`);
+      setEventEntries(buildInitialGraphEvents(newNodes, newEdges));
+      setQueuedComponentType(null);
+      shownCoachMessageRef.current = new Set();
+      hasSeenOverloadThisLevelRef.current = false;
+      hasSnapshotOverloadRef.current = false;
       endSimulation();
-      setAvailableComponents(
-        computeAvailableComponents(level.availableComponents, level.componentUnlocks, {
-          graphNodes: newNodes.map(toGraphNode),
-          overloadDurations: EMPTY_OVERLOAD_DURATIONS,
-          revenue: 0,
-          revenueTarget: level.revenueTarget,
-          snapshot: {},
-        }),
-      );
+      setAvailableComponents(newAvailableComponents);
+      previousAvailableComponentsRef.current = level.availableComponents;
     },
-    [endSimulation],
+    [buildInitialGraphEvents, endSimulation],
   );
 
   const isRunnable = hasRunnablePath(
@@ -254,6 +352,18 @@ const GameLayoutContent = ({
     [loadLevel],
   );
 
+  const handlePlaceComponent = useCallback((componentType: ComponentType) => {
+    setQueuedComponentType(componentType);
+  }, []);
+
+  const handleComponentPlaced = useCallback(() => {
+    setQueuedComponentType(null);
+  }, []);
+
+  useEffect(() => {
+    setEventEntries(buildInitialGraphEvents(graphRef.current.nodes, graphRef.current.edges));
+  }, [buildInitialGraphEvents]);
+
   // Simulation tick loop
   useEffect(() => {
     if (mode !== "SIMULATE") {
@@ -264,6 +374,15 @@ const GameLayoutContent = ({
 
     const interval = setInterval(() => {
       elapsedSeconds++;
+
+      currentLevel.coachMessages.forEach((message, index) => {
+        if (elapsedSeconds < message.atSecond || shownCoachMessageRef.current.has(index)) {
+          return;
+        }
+
+        shownCoachMessageRef.current.add(index);
+        setCoachMessage(message.text);
+      });
 
       if (elapsedSeconds >= effectiveLevelConfig.timeout) {
         endSimulation();
@@ -278,6 +397,26 @@ const GameLayoutContent = ({
         cacheHitRate: effectiveLevelConfig.cacheHitRate,
         trafficRate: rate,
       });
+      const hasOverload = Object.values(snapshot).some((state) => state.droppedOps > 0);
+      const hadOverload = hasSnapshotOverloadRef.current;
+
+      if (!hadOverload && hasOverload) {
+        appendEvent("Overload started");
+
+        if (!hasSeenOverloadThisLevelRef.current) {
+          setCoachMessage(
+            "Overload detected. Add capacity or spread traffic to reduce dropped requests.",
+          );
+          hasSeenOverloadThisLevelRef.current = true;
+        }
+      }
+
+      if (hadOverload && !hasOverload) {
+        appendEvent("Overload resolved");
+      }
+
+      hasSnapshotOverloadRef.current = hasOverload;
+
       const earned = computeRevenue(snapshot, graphNodes, {
         cacheHitRate: effectiveLevelConfig.cacheHitRate,
         edges: graphEdges,
@@ -319,6 +458,7 @@ const GameLayoutContent = ({
       clearInterval(interval);
     };
   }, [
+    appendEvent,
     mode,
     endSimulation,
     tick,
@@ -333,6 +473,20 @@ const GameLayoutContent = ({
   const overloadedNodeIds = Object.entries(nodeStates)
     .filter(([, state]) => state.droppedOps > 0)
     .map(([nodeId]) => nodeId);
+
+  useEffect(() => {
+    const unlockedComponents = availableComponents.filter(
+      (componentType) => !previousAvailableComponentsRef.current.includes(componentType),
+    );
+
+    unlockedComponents.forEach((componentType) => {
+      const componentName = getComponentName(componentType);
+      appendEvent(`Concept unlocked: ${componentName}`);
+      setCoachMessage(`Unlocked: ${componentName}. Try using it to improve your architecture.`);
+    });
+
+    previousAvailableComponentsRef.current = availableComponents;
+  }, [appendEvent, availableComponents]);
 
   let selectedNode = graphState.nodes.find((node) => node.id === selectedNodeId);
 
@@ -373,12 +527,14 @@ const GameLayoutContent = ({
 
   return (
     <div
+      data-testid="game-layout-shell"
       style={{
         background: "#f5f5f0",
         display: "flex",
         flexDirection: "column",
         fontFamily: "system-ui, sans-serif",
         height: "100dvh",
+        overflowX: "hidden",
       }}
     >
       <TopBar
@@ -401,39 +557,72 @@ const GameLayoutContent = ({
         style={{
           display: "flex",
           flex: 1,
+          flexDirection: isCompactLayout ? "column" : "row",
+          minHeight: 0,
           overflow: "hidden",
         }}
       >
-        <section aria-label="Palette" style={{ flexShrink: 0, overflowY: "auto", width: "14rem" }}>
-          <Palette availableComponents={availableComponents} isDisabled={isLocked} />
-        </section>
+        {!isCompactLayout && (
+          <section
+            aria-label="Palette"
+            style={{ flexShrink: 0, overflowY: "auto", width: "14rem" }}
+          >
+            <Palette
+              availableComponents={availableComponents}
+              isDisabled={isLocked}
+              onPlaceComponent={handlePlaceComponent}
+            />
+          </section>
+        )}
         <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           <GameCanvas
+            componentToPlace={queuedComponentType}
             key={canvasKey}
             initialEdges={levelStartEdges}
             initialNodes={levelStartNodes}
             isLocked={isLocked}
             lockedNodeIds={currentLevel.lockedNodeIds}
+            onComponentPlaced={handleComponentPlaced}
             onSelectedNodeChange={handleSelectedNodeChange}
             onStateChange={handleGraphChange}
             overloadedNodeIds={overloadedNodeIds}
           />
         </main>
-        <section
-          aria-label="Inspector"
-          style={{ flexShrink: 0, overflowY: "auto", width: "16rem" }}
+        <aside
+          style={{
+            borderLeft: isCompactLayout ? "none" : "1px solid #d0cfc8",
+            display: "flex",
+            flexDirection: "column",
+            flexShrink: 0,
+            overflowY: "auto",
+            width: isCompactLayout ? "100%" : "16rem",
+          }}
         >
-          <Inspector
-            componentType={selectedComponentType}
-            cost={cost}
-            isOverloaded={isSelectedNodeOverloaded}
-            latencyMs={latencyMs}
-            loadPercent={loadPercent}
-            maxCapacity={maxCapacity}
-            opsPerSec={opsPerSec}
-            selectedNodeLabel={selectedNodeLabel}
-          />
-        </section>
+          <section aria-label="Inspector" style={{ flexShrink: 0 }}>
+            <Inspector
+              componentType={selectedComponentType}
+              cost={cost}
+              isOverloaded={isSelectedNodeOverloaded}
+              latencyMs={latencyMs}
+              loadPercent={loadPercent}
+              maxCapacity={maxCapacity}
+              opsPerSec={opsPerSec}
+              selectedNodeLabel={selectedNodeLabel}
+            />
+          </section>
+          <Coach message={coachMessage} />
+          <EventLog entries={eventEntries} />
+        </aside>
+        {isCompactLayout && (
+          <section aria-label="Palette" style={{ flexShrink: 0, width: "100%" }}>
+            <Palette
+              availableComponents={availableComponents}
+              isCompact
+              isDisabled={isLocked}
+              onPlaceComponent={handlePlaceComponent}
+            />
+          </section>
+        )}
       </div>
       {showEndScreen && (
         <EndOfLevelScreen

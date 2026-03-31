@@ -297,7 +297,7 @@
 
 ## Phase 8: Coach and Onboarding
 
-- [ ] CODE: Build Coach panel
+- [x] CODE: Build Coach panel
   - Feature: Display short, contextual guidance messages in the Coach panel during play.
   - Files: `src/components/Coach.*`
   - Acceptance:
@@ -307,7 +307,7 @@
     - Messages are one or two lines; no walls of text.
     - Tone is calm and instructive.
 
-- [ ] CODE: Build Event Log
+- [x] CODE: Build Event Log
   - Feature: Display a running log of key state changes (node placed, overload started, unlock triggered, etc.).
   - Files: `src/components/EventLog.*`
   - Acceptance:
@@ -319,7 +319,7 @@
 
 ## Phase 9: Responsive Layout
 
-- [ ] CODE: Ensure responsive layout across breakpoints
+- [x] CODE: Ensure responsive layout across breakpoints
   - Feature: Game is fully playable on desktop and mobile in portrait and landscape.
   - Files: layout components, global styles
   - Acceptance:
