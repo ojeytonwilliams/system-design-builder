@@ -1,0 +1,2 @@
+patchedDependencies:
+  "@pixi/react": patches/@pixi__react.patch

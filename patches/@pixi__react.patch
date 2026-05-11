@@ -1,0 +1,79 @@
+diff --git a/lib/helpers/resolveUpdatePriority.js b/lib/helpers/resolveUpdatePriority.js
+index 09791a7cab815548e628e69756b0e5a2be85dd7e..7cda894b8347bd96ccd8653c38be14b85fd30cfb 100644
+--- a/lib/helpers/resolveUpdatePriority.js
++++ b/lib/helpers/resolveUpdatePriority.js
+@@ -1,6 +1,6 @@
+ 'use strict';
+ 
+-var constants = require('react-reconciler/constants');
++var constants = require('react-reconciler/constants.js');
+ var store = require('../store.js');
+ var log = require('./log.js');
+ 
+diff --git a/lib/helpers/resolveUpdatePriority.js.map b/lib/helpers/resolveUpdatePriority.js.map
+index 6931c59d838e3bb1235ee66041e9d4fdec2740ce..bf9332c87f6a81fcede557f499499882a528a2b0 100644
+--- a/lib/helpers/resolveUpdatePriority.js.map
++++ b/lib/helpers/resolveUpdatePriority.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"resolveUpdatePriority.js","sources":["../../src/helpers/resolveUpdatePriority.ts"],"sourcesContent":["import {\n    ContinuousEventPriority,\n    DefaultEventPriority,\n    DiscreteEventPriority,\n} from 'react-reconciler/constants';\nimport { store } from '../store';\nimport { log } from './log';\n\nexport function resolveUpdatePriority()\n{\n    log('info', 'lifecycle::resolveUpdatePriority');\n\n    if (store.currentUpdatePriority)\n    {\n        return store.currentUpdatePriority;\n    }\n\n    const globalScope = (typeof self !== 'undefined' && self) || (typeof window !== 'undefined' && window);\n\n    if (!globalScope)\n    {\n        return DefaultEventPriority;\n    }\n\n    const name = globalScope.event?.type;\n\n    switch (name)\n    {\n        case 'click':\n        case 'contextmenu':\n        case 'dblclick':\n        case 'pointercancel':\n        case 'pointerdown':\n        case 'pointerup':\n            return DiscreteEventPriority;\n        case 'pointermove':\n        case 'pointerout':\n        case 'pointerover':\n        case 'pointerenter':\n        case 'pointerleave':\n        case 'wheel':\n            return ContinuousEventPriority;\n        default:\n            return DefaultEventPriority;\n    }\n}\n"],"names":["log","store","DefaultEventPriority","DiscreteEventPriority","ContinuousEventPriority"],"mappings":";;;;;;;AAQO,SAAS,qBAChB,GAAA;AACI,EAAAA,OAAA,CAAI,QAAQ,kCAAkC,CAAA;AAE9C,EAAA,IAAIC,YAAM,qBACV,EAAA;AACI,IAAA,OAAOA,WAAM,CAAA,qBAAA;AAAA;AAGjB,EAAA,MAAM,cAAe,OAAO,IAAA,KAAS,eAAe,IAAU,IAAA,OAAO,WAAW,WAAe,IAAA,MAAA;AAE/F,EAAA,IAAI,CAAC,WACL,EAAA;AACI,IAAO,OAAAC,8BAAA;AAAA;AAGX,EAAM,MAAA,IAAA,GAAO,YAAY,KAAO,EAAA,IAAA;AAEhC,EAAA,QAAQ,IACR;AAAA,IACI,KAAK,OAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,UAAA;AAAA,IACL,KAAK,eAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,WAAA;AACD,MAAO,OAAAC,+BAAA;AAAA,IACX,KAAK,aAAA;AAAA,IACL,KAAK,YAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,cAAA;AAAA,IACL,KAAK,cAAA;AAAA,IACL,KAAK,OAAA;AACD,MAAO,OAAAC,iCAAA;AAAA,IACX;AACI,MAAO,OAAAF,8BAAA;AAAA;AAEnB;;;;"}
+\ No newline at end of file
++{"version":3,"file":"resolveUpdatePriority.js","sources":["../../src/helpers/resolveUpdatePriority.ts"],"sourcesContent":["import {\n    ContinuousEventPriority,\n    DefaultEventPriority,\n    DiscreteEventPriority,\n} from 'react-reconciler/constants.js';\nimport { store } from '../store';\nimport { log } from './log';\n\nexport function resolveUpdatePriority()\n{\n    log('info', 'lifecycle::resolveUpdatePriority');\n\n    if (store.currentUpdatePriority)\n    {\n        return store.currentUpdatePriority;\n    }\n\n    const globalScope = (typeof self !== 'undefined' && self) || (typeof window !== 'undefined' && window);\n\n    if (!globalScope)\n    {\n        return DefaultEventPriority;\n    }\n\n    const name = globalScope.event?.type;\n\n    switch (name)\n    {\n        case 'click':\n        case 'contextmenu':\n        case 'dblclick':\n        case 'pointercancel':\n        case 'pointerdown':\n        case 'pointerup':\n            return DiscreteEventPriority;\n        case 'pointermove':\n        case 'pointerout':\n        case 'pointerover':\n        case 'pointerenter':\n        case 'pointerleave':\n        case 'wheel':\n            return ContinuousEventPriority;\n        default:\n            return DefaultEventPriority;\n    }\n}\n"],"names":["log","store","DefaultEventPriority","DiscreteEventPriority","ContinuousEventPriority"],"mappings":";;;;;;;AAQO,SAAS,qBAChB,GAAA;AACI,EAAAA,OAAA,CAAI,QAAQ,kCAAkC,CAAA;AAE9C,EAAA,IAAIC,YAAM,qBACV,EAAA;AACI,IAAA,OAAOA,WAAM,CAAA,qBAAA;AAAA;AAGjB,EAAA,MAAM,cAAe,OAAO,IAAA,KAAS,eAAe,IAAU,IAAA,OAAO,WAAW,WAAe,IAAA,MAAA;AAE/F,EAAA,IAAI,CAAC,WACL,EAAA;AACI,IAAO,OAAAC,8BAAA;AAAA;AAGX,EAAM,MAAA,IAAA,GAAO,YAAY,KAAO,EAAA,IAAA;AAEhC,EAAA,QAAQ,IACR;AAAA,IACI,KAAK,OAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,UAAA;AAAA,IACL,KAAK,eAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,WAAA;AACD,MAAO,OAAAC,+BAAA;AAAA,IACX,KAAK,aAAA;AAAA,IACL,KAAK,YAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,cAAA;AAAA,IACL,KAAK,cAAA;AAAA,IACL,KAAK,OAAA;AACD,MAAO,OAAAC,iCAAA;AAAA,IACX;AACI,MAAO,OAAAF,8BAAA;AAAA;AAEnB;;;;"}
+\ No newline at end of file
+diff --git a/lib/helpers/resolveUpdatePriority.mjs b/lib/helpers/resolveUpdatePriority.mjs
+index d7289126d9ca40bbbdbaa86b7ab54d16fd518cbc..6ab59562ab207b2f6901369330f252ef1d2ee6b9 100644
+--- a/lib/helpers/resolveUpdatePriority.mjs
++++ b/lib/helpers/resolveUpdatePriority.mjs
+@@ -1,4 +1,4 @@
+-import { DefaultEventPriority, ContinuousEventPriority, DiscreteEventPriority } from 'react-reconciler/constants';
++import { DefaultEventPriority, ContinuousEventPriority, DiscreteEventPriority } from 'react-reconciler/constants.js';
+ import { store } from '../store.mjs';
+ import { log } from './log.mjs';
+ 
+diff --git a/lib/helpers/resolveUpdatePriority.mjs.map b/lib/helpers/resolveUpdatePriority.mjs.map
+index b206a6e02e07e70ec9c6f72e0ae5f5bdaf6811de..dca3ce43e6d1340701e88e2738000fbfb1f099c4 100644
+--- a/lib/helpers/resolveUpdatePriority.mjs.map
++++ b/lib/helpers/resolveUpdatePriority.mjs.map
+@@ -1 +1 @@
+-{"version":3,"file":"resolveUpdatePriority.mjs","sources":["../../src/helpers/resolveUpdatePriority.ts"],"sourcesContent":["import {\n    ContinuousEventPriority,\n    DefaultEventPriority,\n    DiscreteEventPriority,\n} from 'react-reconciler/constants';\nimport { store } from '../store';\nimport { log } from './log';\n\nexport function resolveUpdatePriority()\n{\n    log('info', 'lifecycle::resolveUpdatePriority');\n\n    if (store.currentUpdatePriority)\n    {\n        return store.currentUpdatePriority;\n    }\n\n    const globalScope = (typeof self !== 'undefined' && self) || (typeof window !== 'undefined' && window);\n\n    if (!globalScope)\n    {\n        return DefaultEventPriority;\n    }\n\n    const name = globalScope.event?.type;\n\n    switch (name)\n    {\n        case 'click':\n        case 'contextmenu':\n        case 'dblclick':\n        case 'pointercancel':\n        case 'pointerdown':\n        case 'pointerup':\n            return DiscreteEventPriority;\n        case 'pointermove':\n        case 'pointerout':\n        case 'pointerover':\n        case 'pointerenter':\n        case 'pointerleave':\n        case 'wheel':\n            return ContinuousEventPriority;\n        default:\n            return DefaultEventPriority;\n    }\n}\n"],"names":[],"mappings":";;;;;AAQO,SAAS,qBAChB,GAAA;AACI,EAAA,GAAA,CAAI,QAAQ,kCAAkC,CAAA;AAE9C,EAAA,IAAI,MAAM,qBACV,EAAA;AACI,IAAA,OAAO,KAAM,CAAA,qBAAA;AAAA;AAGjB,EAAA,MAAM,cAAe,OAAO,IAAA,KAAS,eAAe,IAAU,IAAA,OAAO,WAAW,WAAe,IAAA,MAAA;AAE/F,EAAA,IAAI,CAAC,WACL,EAAA;AACI,IAAO,OAAA,oBAAA;AAAA;AAGX,EAAM,MAAA,IAAA,GAAO,YAAY,KAAO,EAAA,IAAA;AAEhC,EAAA,QAAQ,IACR;AAAA,IACI,KAAK,OAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,UAAA;AAAA,IACL,KAAK,eAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,WAAA;AACD,MAAO,OAAA,qBAAA;AAAA,IACX,KAAK,aAAA;AAAA,IACL,KAAK,YAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,cAAA;AAAA,IACL,KAAK,cAAA;AAAA,IACL,KAAK,OAAA;AACD,MAAO,OAAA,uBAAA;AAAA,IACX;AACI,MAAO,OAAA,oBAAA;AAAA;AAEnB;;;;"}
+\ No newline at end of file
++{"version":3,"file":"resolveUpdatePriority.mjs","sources":["../../src/helpers/resolveUpdatePriority.ts"],"sourcesContent":["import {\n    ContinuousEventPriority,\n    DefaultEventPriority,\n    DiscreteEventPriority,\n} from 'react-reconciler/constants.js';\nimport { store } from '../store';\nimport { log } from './log';\n\nexport function resolveUpdatePriority()\n{\n    log('info', 'lifecycle::resolveUpdatePriority');\n\n    if (store.currentUpdatePriority)\n    {\n        return store.currentUpdatePriority;\n    }\n\n    const globalScope = (typeof self !== 'undefined' && self) || (typeof window !== 'undefined' && window);\n\n    if (!globalScope)\n    {\n        return DefaultEventPriority;\n    }\n\n    const name = globalScope.event?.type;\n\n    switch (name)\n    {\n        case 'click':\n        case 'contextmenu':\n        case 'dblclick':\n        case 'pointercancel':\n        case 'pointerdown':\n        case 'pointerup':\n            return DiscreteEventPriority;\n        case 'pointermove':\n        case 'pointerout':\n        case 'pointerover':\n        case 'pointerenter':\n        case 'pointerleave':\n        case 'wheel':\n            return ContinuousEventPriority;\n        default:\n            return DefaultEventPriority;\n    }\n}\n"],"names":[],"mappings":";;;;;AAQO,SAAS,qBAChB,GAAA;AACI,EAAA,GAAA,CAAI,QAAQ,kCAAkC,CAAA;AAE9C,EAAA,IAAI,MAAM,qBACV,EAAA;AACI,IAAA,OAAO,KAAM,CAAA,qBAAA;AAAA;AAGjB,EAAA,MAAM,cAAe,OAAO,IAAA,KAAS,eAAe,IAAU,IAAA,OAAO,WAAW,WAAe,IAAA,MAAA;AAE/F,EAAA,IAAI,CAAC,WACL,EAAA;AACI,IAAO,OAAA,oBAAA;AAAA;AAGX,EAAM,MAAA,IAAA,GAAO,YAAY,KAAO,EAAA,IAAA;AAEhC,EAAA,QAAQ,IACR;AAAA,IACI,KAAK,OAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,UAAA;AAAA,IACL,KAAK,eAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,WAAA;AACD,MAAO,OAAA,qBAAA;AAAA,IACX,KAAK,aAAA;AAAA,IACL,KAAK,YAAA;AAAA,IACL,KAAK,aAAA;AAAA,IACL,KAAK,cAAA;AAAA,IACL,KAAK,cAAA;AAAA,IACL,KAAK,OAAA;AACD,MAAO,OAAA,uBAAA;AAAA,IACX;AACI,MAAO,OAAA,oBAAA;AAAA;AAEnB;;;;"}
+\ No newline at end of file
+diff --git a/lib/store.js b/lib/store.js
+index 805305cef325c0fafe5a7ca9452beda0719ff38b..c556115c599be3a90e542d14874f96d831ba6ea4 100644
+--- a/lib/store.js
++++ b/lib/store.js
+@@ -1,6 +1,6 @@
+ 'use strict';
+ 
+-var constants = require('react-reconciler/constants');
++var constants = require('react-reconciler/constants.js');
+ 
+ "use strict";
+ const store = {
+diff --git a/lib/store.js.map b/lib/store.js.map
+index ef9b7d80253d5227b7bf3c3cdea70fb5f3cd8a0b..64a25beded90f5c35ef845704504896cebc41eec 100644
+--- a/lib/store.js.map
++++ b/lib/store.js.map
+@@ -1 +1 @@
+-{"version":3,"file":"store.js","sources":["../src/store.ts"],"sourcesContent":["import { DefaultEventPriority } from 'react-reconciler/constants';\nimport { type Root } from './typedefs/Root';\n\nconst store: {\n    currentUpdatePriority: number,\n    debug: boolean,\n    unmountQueue: Set<Root>,\n} = {\n    currentUpdatePriority: DefaultEventPriority,\n    debug: false,\n    unmountQueue: new Set(),\n};\n\nexport { store };\n"],"names":["DefaultEventPriority"],"mappings":";;;;;AAGA,MAAM,KAIF,GAAA;AAAA,EACA,qBAAuB,EAAAA,8BAAA;AAAA,EACvB,KAAO,EAAA,KAAA;AAAA,EACP,YAAA,sBAAkB,GAAI;AAC1B;;;;"}
+\ No newline at end of file
++{"version":3,"file":"store.js","sources":["../src/store.ts"],"sourcesContent":["import { DefaultEventPriority } from 'react-reconciler/constants.js';\nimport { type Root } from './typedefs/Root';\n\nconst store: {\n    currentUpdatePriority: number,\n    debug: boolean,\n    unmountQueue: Set<Root>,\n} = {\n    currentUpdatePriority: DefaultEventPriority,\n    debug: false,\n    unmountQueue: new Set(),\n};\n\nexport { store };\n"],"names":["DefaultEventPriority"],"mappings":";;;;;AAGA,MAAM,KAIF,GAAA;AAAA,EACA,qBAAuB,EAAAA,8BAAA;AAAA,EACvB,KAAO,EAAA,KAAA;AAAA,EACP,YAAA,sBAAkB,GAAI;AAC1B;;;;"}
+\ No newline at end of file
+diff --git a/lib/store.mjs b/lib/store.mjs
+index c0869003fd4e88054f1e22b7fff418922fde1e80..f09c663c6212b1de7933c9a1ab6052df63aac12a 100644
+--- a/lib/store.mjs
++++ b/lib/store.mjs
+@@ -1,4 +1,4 @@
+-import { DefaultEventPriority } from 'react-reconciler/constants';
++import { DefaultEventPriority } from 'react-reconciler/constants.js';
+ 
+ "use strict";
+ const store = {
+diff --git a/lib/store.mjs.map b/lib/store.mjs.map
+index 59a0c6fc167f433aab9815b046e8d4549da32c16..7f4688e5db29c271b10eb5e7af11f3ac024d383d 100644
+--- a/lib/store.mjs.map
++++ b/lib/store.mjs.map
+@@ -1 +1 @@
+-{"version":3,"file":"store.mjs","sources":["../src/store.ts"],"sourcesContent":["import { DefaultEventPriority } from 'react-reconciler/constants';\nimport { type Root } from './typedefs/Root';\n\nconst store: {\n    currentUpdatePriority: number,\n    debug: boolean,\n    unmountQueue: Set<Root>,\n} = {\n    currentUpdatePriority: DefaultEventPriority,\n    debug: false,\n    unmountQueue: new Set(),\n};\n\nexport { store };\n"],"names":[],"mappings":";;;AAGA,MAAM,KAIF,GAAA;AAAA,EACA,qBAAuB,EAAA,oBAAA;AAAA,EACvB,KAAO,EAAA,KAAA;AAAA,EACP,YAAA,sBAAkB,GAAI;AAC1B;;;;"}
+\ No newline at end of file
++{"version":3,"file":"store.mjs","sources":["../src/store.ts"],"sourcesContent":["import { DefaultEventPriority } from 'react-reconciler/constants.js';\nimport { type Root } from './typedefs/Root';\n\nconst store: {\n    currentUpdatePriority: number,\n    debug: boolean,\n    unmountQueue: Set<Root>,\n} = {\n    currentUpdatePriority: DefaultEventPriority,\n    debug: false,\n    unmountQueue: new Set(),\n};\n\nexport { store };\n"],"names":[],"mappings":";;;AAGA,MAAM,KAIF,GAAA;AAAA,EACA,qBAAuB,EAAA,oBAAA;AAAA,EACvB,KAAO,EAAA,KAAA;AAAA,EACP,YAAA,sBAAkB,GAAI;AAC1B;;;;"}

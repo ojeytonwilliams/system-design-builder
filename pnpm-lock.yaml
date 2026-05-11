@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@pixi/react':
+    hash: be09d00e801c5362704614cb4432b542b8fbc697a41d5248e216b9f64432328c
+    path: patches/@pixi__react.patch
+
 importers:
 
   .:
@@ -13,7 +18,7 @@ importers:
         version: 5.0.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(jiti@2.6.1)(lightningcss@1.32.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(yaml@2.8.2)
       '@pixi/react':
         specifier: 8.0.5
-        version: 8.0.5(@types/react@19.2.14)(pixi.js@8.18.1)(react@19.2.4)
+        version: 8.0.5(patch_hash=be09d00e801c5362704614cb4432b542b8fbc697a41d5248e216b9f64432328c)(@types/react@19.2.14)(pixi.js@8.18.1)(react@19.2.4)
       '@xyflow/react':
         specifier: ^12.10.2
         version: 12.10.2(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -3527,7 +3532,7 @@ snapshots:
 
   '@pixi/colord@2.9.6': {}
 
-  '@pixi/react@8.0.5(@types/react@19.2.14)(pixi.js@8.18.1)(react@19.2.4)':
+  '@pixi/react@8.0.5(patch_hash=be09d00e801c5362704614cb4432b542b8fbc697a41d5248e216b9f64432328c)(@types/react@19.2.14)(pixi.js@8.18.1)(react@19.2.4)':
     dependencies:
       its-fine: 2.0.0(@types/react@19.2.14)(react@19.2.4)
       pixi.js: 8.18.1
