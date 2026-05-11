@@ -314,6 +314,7 @@ const drawArrowHead = (g: Graphics, from: Point, { color, to }: { color: number;
 };
 
 interface HandleProps {
+  isPendingConnection: boolean;
   kind: "source" | "target";
   onHandleClick: (side: HandleSide, kind: "source" | "target") => void;
   side: HandleSide;
@@ -321,7 +322,7 @@ interface HandleProps {
   y: number;
 }
 
-const HandleGraphic = ({ x, y, side, kind, onHandleClick }: HandleProps) => {
+const HandleGraphic = ({ x, y, side, kind, isPendingConnection, onHandleClick }: HandleProps) => {
   const draw = useCallback((g: Graphics) => {
     g.clear();
     g.circle(0, 0, HANDLE_RADIUS);
@@ -345,9 +346,11 @@ const HandleGraphic = ({ x, y, side, kind, onHandleClick }: HandleProps) => {
         }
       }}
       onPointerUp={(e: FederatedPointerEvent) => {
-        e.stopPropagation();
-        if (kind === "target") {
-          onHandleClick(side, kind);
+        if (isPendingConnection) {
+          e.stopPropagation();
+          if (kind === "target") {
+            onHandleClick(side, kind);
+          }
         }
       }}
       x={x}
@@ -360,6 +363,7 @@ interface PixiNodeProps {
   containerRefs: { current: Map<string, Container> };
   isLocked: boolean;
   isOverloaded: boolean;
+  isPendingConnection: boolean;
   isSelected: boolean;
   node: PixiNode;
   onContextMenu: (nodeId: string, e: FederatedPointerEvent) => void;
@@ -374,6 +378,7 @@ const PixiNodeGraphic = ({
   isSelected,
   isOverloaded,
   isLocked,
+  isPendingConnection,
   onSelect,
   onPointerDown,
   onHandleClick,
@@ -505,6 +510,7 @@ const PixiNodeGraphic = ({
         y={60}
       />
       <HandleGraphic
+        isPendingConnection={isPendingConnection}
         kind="source"
         onHandleClick={handleHandleClick}
         side="right"
@@ -512,6 +518,7 @@ const PixiNodeGraphic = ({
         y={NODE_MIN_HEIGHT / 2}
       />
       <HandleGraphic
+        isPendingConnection={isPendingConnection}
         kind="source"
         onHandleClick={handleHandleClick}
         side="bottom"
@@ -521,6 +528,7 @@ const PixiNodeGraphic = ({
       {!isUsersNode && (
         <>
           <HandleGraphic
+            isPendingConnection={isPendingConnection}
             kind="target"
             onHandleClick={handleHandleClick}
             side="left"
@@ -528,6 +536,7 @@ const PixiNodeGraphic = ({
             y={NODE_MIN_HEIGHT / 2}
           />
           <HandleGraphic
+            isPendingConnection={isPendingConnection}
             kind="target"
             onHandleClick={handleHandleClick}
             side="top"
@@ -889,6 +898,7 @@ const PixiCanvasContent = ({
             containerRefs={nodeContainerRefs}
             isLocked={isLocked || lockedNodeIds.includes(node.id)}
             isOverloaded={overloadedNodeIds.includes(node.id)}
+            isPendingConnection={pendingEdge !== null}
             isSelected={selectedNodeId === node.id}
             node={node}
             onContextMenu={onNodeContextMenu}
@@ -1119,6 +1129,7 @@ const GameCanvas = ({
   const onHandleClick = useCallback(
     (nodeId: string, side: HandleSide, kind: "source" | "target") => {
       if (kind === "source") {
+        draggingRef.current = null;
         const node = nodesRef.current.find((n) => n.id === nodeId);
         if (node === undefined) {
           return;

@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.3.1] - 2026-05-11
+
+### Bug fixes — Pixi canvas interaction
+
+- **Dashed edge rendering**: Replaced a non-existent `setStrokeDash` API call with a `drawDashedBezier` utility that samples the cubic bezier into line segments and alternates draw/skip based on the dash pattern and animated offset.
+- **SSR hydration mismatch**: Deferred `localStorage` reads to `useEffect` so the server render and initial client render both start with Level 1, eliminating the hydration mismatch.
+- **Pixi app initialisation guard**: `useApplication()` returns `isInitialised`; the stage event-listener effect now bails out until `isInitialised` flips to `true` and `app.screen` is available.
+- **Maximum update depth during drag**: Replaced `setNodes` on every `pointermove` with direct Pixi container mutation; container refs are stored in a `Map` and the snapped position is committed to React state only on `pointerup`.
+- **Live edge redraw during drag**: New `EdgesLayer` sub-component owns `useTick` and re-renders edges each animation frame by reading live container positions, without triggering `PixiNodeGraphic` re-renders that would reset the dragged container.
+- **Duplicate node IDs**: Fixed ID collision when a level pre-places a node whose id clashes with a freshly dropped component (e.g. `db-1` alongside `componentType: db-large`) by iterating the full set of used IDs instead of counting by component type.
+- **Stale closure in connection handler**: `onHandleClick` now reads `nodes` and `pendingEdge` from refs so the callback is stable (empty deps) and never holds a stale closure over React state.
+- **Drag-to-connect gesture**: Source handles trigger on `pointerdown`; target handles trigger on `pointerup`; drag-to-connect and click-to-connect both work.
+- **Node drag when clicking a handle**: `draggingRef` is cleared at the start of `onHandleClick` (source branch) to cancel the drag accidentally started during Pixi's capturing phase before `stopPropagation` takes effect.
+- **Releasing dragged nodes over target handles**: Target handle `onPointerUp` only stops propagation when a connection is in progress (`isPendingConnection`); otherwise the event bubbles to commit the drag.
+- **Duplicate event-log keys**: The event id is captured before entering the React state updater, so rapid back-to-back calls no longer share the same counter value.
+
 ## [2.3.0] - 2026-05-11
 
 ### Phases 3–5 — Interaction, simulation visuals, and test rewrite
