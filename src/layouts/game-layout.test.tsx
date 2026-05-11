@@ -2,8 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { GameLayout } from "./game-layout.js";
 import { loadProgress } from "../persistence.js";
 import type { LevelConfig } from "../simulation/types.js";
-import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
-import type { Edge } from "@xyflow/react";
+import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
 
 // Win after 10 sustained seconds: traffic=40 < server capacity=50, no drops
 const winLevelConfig: LevelConfig = {

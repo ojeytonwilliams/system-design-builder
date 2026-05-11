@@ -44,7 +44,8 @@
     positives (e.g. 0 in a loop or 2 as a divisor) and I don't want to configure
     it */
     "no-magic-numbers": "off",
-    "max-lines": ["error", { "max": 1000 }],
+    /* max-lines is a useful indicator, but cannot be acted upon by an AI unless we're refactoring */
+    "max-lines": "off",
     /* Before/after hooks have their place*/
     "no-hooks": "off",
     /* A fairly common pattern is to declare a variable in describe block and

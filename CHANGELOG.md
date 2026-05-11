@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.0] - 2026-05-11
+
+### Phase 1 — Pixi scaffold with dot grid background
+
+- **PixiJS application**: Replaced the `<ReactFlow>` wrapper with a `@pixi/react` `<Application>` that mounts when the dropzone has non-zero dimensions (tracked via `ResizeObserver`), filling its container and resizing automatically.
+- **Pixi component registration**: `extend({ Container, Graphics, Text })` registers Pixi JSX element types at module load time.
+- **Local type definitions**: Defined `PixiNode` and `PixiEdge` types locally in `game-canvas.tsx`; `PixiEdge` is re-exported as `Edge` for backwards compatibility. Updated `game-layout.tsx` and its test to import `Edge` from `game-canvas.js` rather than `@xyflow/react`.
+- **Dot grid background**: A `<pixiGraphics>` draw callback renders a regular grid of dots (`BACKGROUND_GAP = 24px`, radius `0.8px`, colour `#1a2744` at 18% opacity); the grid redraws whenever stage dimensions change.
+
 ## [2.0.0] - 2026-03-31
 
 ### Phases 10–13 — Resources Panel, Budget System, Traffic Redesign & Failing Start States

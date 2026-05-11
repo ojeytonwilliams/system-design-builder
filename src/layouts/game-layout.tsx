@@ -1,5 +1,4 @@
 // oxlint-disable import/max-dependencies
-import type { Edge } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Coach } from "../components/coach.js";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
@@ -8,7 +7,7 @@ import { EndOfLevelScreen } from "../components/end-of-level-screen.js";
 import { EventLog } from "../components/event-log.js";
 import type { EventLogEntry } from "../components/event-log.js";
 import { GameCanvas } from "../components/game-canvas.js";
-import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
+import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
 import { Inspector } from "../components/inspector.js";
 import { LevelStrip } from "../components/level-strip.js";
 import { Resources } from "../components/palette.js";

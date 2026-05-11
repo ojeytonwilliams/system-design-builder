@@ -17,12 +17,6 @@ describe("game canvas", () => {
     });
   });
 
-  it("renders a React Flow dotted background", () => {
-    const { container } = render(<GameCanvas />);
-
-    expect(container.querySelector(".react-flow__background")).toBeInTheDocument();
-  });
-
   it("drops a palette item onto the canvas and renders its label", () => {
     render(<GameCanvas />);
     const dropzone = screen.getByTestId("game-canvas-dropzone");
@@ -140,61 +134,6 @@ const INITIAL_NODES_TWO = [
 ] as const;
 
 describe("connection ports", () => {
-  it("keeps enlarged hitboxes on edges without manual side offsets", () => {
-    const { container } = render(
-      <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server", label: "Server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
-      />,
-    );
-
-    const leftTarget = container.querySelector('[data-testid="handle-server-1-target-left"]');
-    const topTarget = container.querySelector('[data-testid="handle-server-1-target-top"]');
-    const rightSource = container.querySelector('[data-testid="handle-server-1-source-right"]');
-    const bottomSource = container.querySelector('[data-testid="handle-server-1-source-bottom"]');
-
-    expect(leftTarget).toHaveStyle({ left: "" });
-    expect(topTarget).toHaveStyle({ top: "" });
-    expect(rightSource).toHaveStyle({ right: "" });
-    expect(bottomSource).toHaveStyle({ bottom: "" });
-  });
-
-  it("keeps handle markers visible while preserving large hitboxes", () => {
-    const { container } = render(<GameCanvas initialNodes={[...INITIAL_NODES_TWO]} />);
-
-    const sourceHandle = container.querySelector('[data-testid="handle-server-1-source-right"]');
-
-    expect(sourceHandle).toHaveStyle({
-      background: "radial-gradient(circle, #7b8cb2 0 4px, transparent 5px)",
-      opacity: "1",
-    });
-  });
-
-  it("uses at least 44x44px port hit targets", () => {
-    const { container } = render(
-      <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server", label: "Server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
-      />,
-    );
-
-    const sourceHandle = container.querySelector('[data-testid="handle-server-1-source-right"]');
-
-    expect(sourceHandle).toHaveStyle({ height: "44px", width: "44px" });
-  });
-
   it("renders source handles on server nodes", () => {
     const { container } = render(
       <GameCanvas
@@ -357,27 +296,6 @@ describe("overloaded node state", () => {
     );
 
     expect(screen.getByTestId("canvas-node-server-1")).toHaveAttribute("data-overloaded", "true");
-  });
-
-  it("applies coral overload fill and pulse animation to overloaded nodes", () => {
-    render(
-      <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server", label: "Server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
-        overloadedNodeIds={["server-1"]}
-      />,
-    );
-
-    expect(screen.getByTestId("canvas-node-server-1")).toHaveStyle({
-      animation: "overload-pulse 1.2s ease-in-out infinite",
-      background: "rgb(255, 228, 221)",
-    });
   });
 
   it("enters overloaded state immediately when node id is added", () => {
