@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.3.0] - 2026-05-11
+
+### Phases 3–5 — Interaction, simulation visuals, and test rewrite
+
+- **Drop zone + queued placement**: Preserved `onDragOver`/`onDrop` and the `componentToPlace` `useEffect`; nodes snap to 48px grid on drop; `onComponentPlaced` fires after placement; `isLocked` blocks new drops.
+- **Node dragging with grid snap**: `pointerdown`/`pointerup` on node containers commits final snapped position to state via `snapPositionToGrid`; locked nodes are non-draggable.
+- **Two-phase connection**: Clicking a source handle sets `pendingEdge` state and renders a `LiveEdgeGraphic` dashed preview; clicking a valid target handle commits the edge; Escape or canvas click cancels.
+- **Node and edge selection**: Clicking a node sets `selectedNodeId` and calls `onSelectedNodeChange`; clicking an edge marks it `selected`; clicking the background or pressing Escape clears all selection.
+- **Context menu DOM overlay**: Right-click on a non-locked node/edge shows an absolutely positioned "Remove" button; removing a node also deletes its connected edges; locked nodes suppress the context menu.
+- **Keyboard shortcuts**: Delete removes the selected node (and its edges) or selected edge; Escape clears selection and cancels any pending connection; listener cleaned up on unmount.
+- **Animated dashed edges**: `useTick` advances `dashOffset` each frame when `isSimulating`; edges draw with a `[6, 6]` moving dash pattern; solid lines when not simulating.
+- **Overloaded node glow**: Nodes in `overloadedNodeIds` render an extra behind-border rounded rect at `alpha: 0.5` in `#e5634d`; glow removed when no longer overloaded.
+- **Test rewrite**: All 33 tests use DOM mirror `data-testid` elements and callback-level assertions; no React Flow-specific DOM dependencies; all tests pass in jsdom without a canvas package.
+
 ## [2.2.0] - 2026-05-11
 
 ### Phase 2 — Static graph: nodes and edges rendered without interaction

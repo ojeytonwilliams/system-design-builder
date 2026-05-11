@@ -50,21 +50,21 @@
 
 ## Phase 3: Interaction — Drag, drop, connect, delete
 
-- [ ] CODE: HTML5 drop zone and `componentToPlace` placement
+- [x] CODE: HTML5 drop zone and `componentToPlace` placement
   - Feature: Preserve the existing `onDragOver`/`onDrop` handler on the dropzone `<div>` exactly as in the current implementation; also preserve the `useEffect` that watches `componentToPlace` and adds a node at `DEFAULT_DROP_POSITION` when set; call `onComponentPlaced()` after placement
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
     - Dragging a palette item onto the canvas and dropping it adds a new node snapped to the 48px grid
     - Dropping while `isLocked` is true does not add a node
     - Passing `componentToPlace="server"` via prop places a node and fires `onComponentPlaced`
-- [ ] CODE: Node dragging with grid snap
+- [x] CODE: Node dragging with grid snap
   - Feature: On `pointerdown` on a non-locked node container, record a `draggingRef` with node id and pointer offset; on stage-level `globalpointermove` update the node's Pixi container position directly via a ref for smooth dragging; on `pointerup` commit the final position to React state via `snapPositionToGrid`; nodes in `lockedNodeIds` are not draggable
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
     - Dragging a node moves it smoothly and snaps to 48px grid on release
     - Locked nodes (`lockedNodeIds`) cannot be dragged
     - `onStateChange` is called with the updated node position after snap
-- [ ] CODE: Two-phase connection with live edge preview
+- [x] CODE: Two-phase connection with live edge preview
   - Feature: On click of a source handle set `pendingEdge` state with `{ sourceNodeId, sourceHandle, x, y }`; update `x/y` on stage pointer move; render a `LiveEdgeGraphic` (dashed bezier from source handle to mouse position); on click of a target handle validate with `isConnectionValid`, append the new edge to state, and clear `pendingEdge`; clicking the pane or pressing Escape cancels
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
@@ -72,14 +72,14 @@
     - Clicking a valid target handle creates an edge and clears the preview
     - Attempting to connect to a users node cancels with no edge created
     - Clicking the canvas background cancels the pending connection
-- [ ] CODE: Node and edge selection
+- [x] CODE: Node and edge selection
   - Feature: Clicking a node sets `selectedNodeId` state and calls `onSelectedNodeChange`; clicking an edge marks it as `selected: true` in edge state and deselects nodes; clicking the canvas background clears both; Escape also clears
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
     - Clicking a node selects it (orange fill) and deselects any previously selected node
     - Clicking an edge selects it (orange stroke) and deselects the node
     - Clicking the background clears all selection
-- [ ] CODE: Context menu DOM overlay
+- [x] CODE: Context menu DOM overlay
   - Feature: On right-click of a node (not in `lockedNodeIds`) set `contextMenu` state with `{ kind: "node", nodeId, x, y }` (screen coords); on right-click of an edge set `{ kind: "edge", edgeId, x, y }`; render an absolutely positioned `<div>` with a "Remove" button; clicking Remove calls `removeNodeAndConnections` or filters out the edge, then clears context menu
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
@@ -87,7 +87,7 @@
     - Clicking Remove deletes the node and all its connected edges
     - Right-clicking a locked node does not show the context menu
     - Right-clicking an edge shows a "Remove" button that deletes only that edge
-- [ ] CODE: Keyboard shortcuts
+- [x] CODE: Keyboard shortcuts
   - Feature: `window.addEventListener("keydown", handleKeyDown)` in a `useEffect`; Delete key removes the selected node (if not locked) and its edges, or removes the selected edge; Escape clears selection and cancels any pending connection; clean up listener on unmount
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
@@ -98,13 +98,13 @@
 
 ## Phase 4: Simulation visuals — Animated edges and overload glow
 
-- [ ] CODE: Animated dashed edges during simulation
+- [x] CODE: Animated dashed edges during simulation
   - Feature: When `isSimulating` is true, use `useTick` to advance a `dashOffsetRef` each frame and redraw each edge's `<pixiGraphics>` with a moving dash pattern (`dash: [6, 6]`, offset advancing at ~0.8 units per delta); when `isSimulating` becomes false, redraw edges as solid lines
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
     - Edge lines animate with moving dashes when simulation starts
     - Edges return to solid lines when simulation stops
-- [ ] CODE: Overloaded node glow effect
+- [x] CODE: Overloaded node glow effect
   - Feature: When a node's id appears in `overloadedNodeIds`, draw an extra `<pixiGraphics>` rounded rect behind the node with a stroke 6px wider than the border at `alpha: 0.5` and colour `#e5634d`, replicating the current CSS `overload-pulse` box-shadow; remove the extra stroke when the node is no longer overloaded
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
@@ -113,7 +113,7 @@
 
 ## Phase 5: Cleanup — Tests and dependency removal
 
-- [ ] CODE: Rewrite `game-canvas.test.tsx`
+- [x] CODE: Rewrite `game-canvas.test.tsx`
   - Feature: Replace all React Flow-specific assertions (`.react-flow__background`, DOM handle element pixel dimensions, `data-overloaded` on DOM nodes) with behaviour-level assertions via `onStateChange`, `onSelectedNodeChange`, and `onComponentPlaced` callbacks; keep all `isConnectionValid` and `snapPositionToGrid` tests unchanged; mock or stub `@pixi/react` `Application` for jsdom compatibility
   - Files: `src/components/game-canvas.test.tsx`
   - Acceptance:
