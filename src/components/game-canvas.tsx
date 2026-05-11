@@ -238,8 +238,12 @@ const withDefaultEdgeShape = (edge: Edge): Edge => ({
 });
 
 const getNextNodeId = (componentType: ComponentType, nodes: PixiNode[]): string => {
-  const count = nodes.filter((n) => n.data.componentType === componentType).length;
-  return `${componentType}-${count + 1}`;
+  const usedIds = new Set(nodes.map((n) => n.id));
+  let i = 1;
+  while (usedIds.has(`${componentType}-${i}`)) {
+    i++;
+  }
+  return `${componentType}-${i}`;
 };
 
 const removeNodeAndConnections = (nodeId: string, nodes: PixiNode[], edges: Edge[]) => ({
@@ -333,10 +337,18 @@ const HandleGraphic = ({ x, y, side, kind, onHandleClick }: HandleProps) => {
       eventMode="static"
       onClick={(e: FederatedPointerEvent) => {
         e.stopPropagation();
-        onHandleClick(side, kind);
       }}
       onPointerDown={(e: FederatedPointerEvent) => {
         e.stopPropagation();
+        if (kind === "source") {
+          onHandleClick(side, kind);
+        }
+      }}
+      onPointerUp={(e: FederatedPointerEvent) => {
+        e.stopPropagation();
+        if (kind === "target") {
+          onHandleClick(side, kind);
+        }
       }}
       x={x}
       y={y}
@@ -705,7 +717,71 @@ const LiveEdgeGraphic = ({ pendingEdge, nodes }: LiveEdgeGraphicProps) => {
   return <pixiGraphics draw={draw} />;
 };
 
+interface EdgesLayerProps {
+  draggingRef: { current: DragState | null };
+  edges: PixiEdge[];
+  isSimulating: boolean;
+  nodeContainerRefs: { current: Map<string, Container> };
+  nodes: PixiNode[];
+  onEdgeClick: (edgeId: string) => void;
+  onEdgeContextMenu: (edgeId: string, e: FederatedPointerEvent) => void;
+  pendingEdge: PendingEdge | null;
+}
+
+const EdgesLayer = ({
+  nodes,
+  edges,
+  isSimulating,
+  draggingRef,
+  nodeContainerRefs,
+  pendingEdge,
+  onEdgeClick,
+  onEdgeContextMenu,
+}: EdgesLayerProps) => {
+  const [dashOffset, setDashOffset] = useState(0);
+  const [, setDragFrame] = useState(0);
+
+  useTick((delta) => {
+    if (draggingRef.current !== null) {
+      setDragFrame((f) => f + 1);
+    }
+    if (isSimulating) {
+      setDashOffset((prev) => (prev - delta.deltaTime * 0.8) % 12);
+    }
+  });
+
+  const dragId = draggingRef.current?.nodeId;
+  const liveNodes =
+    dragId === undefined
+      ? nodes
+      : nodes.map((n) => {
+          if (n.id !== dragId) {
+            return n;
+          }
+          const c = nodeContainerRefs.current.get(n.id);
+          return c === undefined ? n : { ...n, position: { x: c.x, y: c.y } };
+        });
+
+  return (
+    <pixiContainer>
+      {edges.map((edge) => (
+        <PixiEdgeGraphic
+          key={edge.id}
+          dashOffset={dashOffset}
+          edge={edge}
+          isSimulating={isSimulating}
+          nodes={liveNodes}
+          onEdgeClick={onEdgeClick}
+          onEdgeContextMenu={onEdgeContextMenu}
+        />
+      ))}
+      {pendingEdge !== null && <LiveEdgeGraphic nodes={liveNodes} pendingEdge={pendingEdge} />}
+    </pixiContainer>
+  );
+};
+
 interface PixiCanvasContentProps {
+  draggingRef: { current: DragState | null };
   edges: PixiEdge[];
   isLocked: boolean;
   isSimulating: boolean;
@@ -734,6 +810,7 @@ const PixiCanvasContent = ({
   stageWidth,
   stageHeight,
   isSimulating,
+  draggingRef,
   nodeContainerRefs,
   overloadedNodeIds,
   selectedNodeId,
@@ -750,17 +827,9 @@ const PixiCanvasContent = ({
   onStagePointerUp,
   onPaneClick,
 }: PixiCanvasContentProps) => {
-  const [dashOffset, setDashOffset] = useState(0);
   const { app, isInitialised } = useApplication() as ReturnType<typeof useApplication> & {
     isInitialised: boolean;
   };
-
-  useTick((delta) => {
-    if (!isSimulating) {
-      return;
-    }
-    setDashOffset((prev) => (prev - delta.deltaTime * 0.8) % 12);
-  });
 
   useEffect(() => {
     if (!isInitialised) {
@@ -803,20 +872,16 @@ const PixiCanvasContent = ({
   return (
     <pixiContainer>
       <pixiGraphics draw={drawDotGrid} />
-      <pixiContainer>
-        {edges.map((edge) => (
-          <PixiEdgeGraphic
-            key={edge.id}
-            dashOffset={dashOffset}
-            edge={edge}
-            isSimulating={isSimulating}
-            nodes={nodes}
-            onEdgeClick={onEdgeClick}
-            onEdgeContextMenu={onEdgeContextMenu}
-          />
-        ))}
-        {pendingEdge !== null && <LiveEdgeGraphic nodes={nodes} pendingEdge={pendingEdge} />}
-      </pixiContainer>
+      <EdgesLayer
+        draggingRef={draggingRef}
+        edges={edges}
+        isSimulating={isSimulating}
+        nodeContainerRefs={nodeContainerRefs}
+        nodes={nodes}
+        onEdgeClick={onEdgeClick}
+        onEdgeContextMenu={onEdgeContextMenu}
+        pendingEdge={pendingEdge}
+      />
       <pixiContainer>
         {nodes.map((node) => (
           <PixiNodeGraphic
@@ -860,7 +925,11 @@ const GameCanvas = ({
   const [stageSize, setStageSize] = useState({ height: 0, width: 0 });
   const draggingRef = useRef<DragState | null>(null),
     dropzoneRef = useRef<HTMLDivElement>(null),
-    nodeContainerRefs = useRef<Map<string, Container>>(new Map());
+    nodeContainerRefs = useRef<Map<string, Container>>(new Map()),
+    nodesRef = useRef(nodes),
+    pendingEdgeRef = useRef(pendingEdge);
+  nodesRef.current = nodes;
+  pendingEdgeRef.current = pendingEdge;
 
   useEffect(() => {
     const el = dropzoneRef.current;
@@ -1050,7 +1119,7 @@ const GameCanvas = ({
   const onHandleClick = useCallback(
     (nodeId: string, side: HandleSide, kind: "source" | "target") => {
       if (kind === "source") {
-        const node = nodes.find((n) => n.id === nodeId);
+        const node = nodesRef.current.find((n) => n.id === nodeId);
         if (node === undefined) {
           return;
         }
@@ -1058,11 +1127,12 @@ const GameCanvas = ({
         setPendingEdge({ sourceHandle: side, sourceNodeId: nodeId, x: pos.x, y: pos.y });
         return;
       }
-      if (pendingEdge === null) {
+      const pending = pendingEdgeRef.current;
+      if (pending === null) {
         return;
       }
-      const sourceNode = nodes.find((n) => n.id === pendingEdge.sourceNodeId);
-      const targetNode = nodes.find((n) => n.id === nodeId);
+      const sourceNode = nodesRef.current.find((n) => n.id === pending.sourceNodeId);
+      const targetNode = nodesRef.current.find((n) => n.id === nodeId);
       if (sourceNode === undefined || targetNode === undefined) {
         setPendingEdge(null);
         return;
@@ -1071,14 +1141,14 @@ const GameCanvas = ({
         setPendingEdge(null);
         return;
       }
-      const edgeId = `edge-${pendingEdge.sourceNodeId}-${nodeId}-${Date.now()}`;
+      const edgeId = `edge-${pending.sourceNodeId}-${nodeId}-${Date.now()}`;
       setEdges((current) => [
         ...current,
-        { animated: false, id: edgeId, source: pendingEdge.sourceNodeId, target: nodeId },
+        { animated: false, id: edgeId, source: pending.sourceNodeId, target: nodeId },
       ]);
       setPendingEdge(null);
     },
-    [nodes, pendingEdge],
+    [],
   );
 
   const onEdgeClick = useCallback((edgeId: string) => {
@@ -1171,6 +1241,7 @@ const GameCanvas = ({
         {stageSize.width > 0 && stageSize.height > 0 && (
           <Application background={0xf8f5ec} resizeTo={dropzoneRef}>
             <PixiCanvasContent
+              draggingRef={draggingRef}
               edges={edges}
               isLocked={isLocked}
               isSimulating={isSimulating}

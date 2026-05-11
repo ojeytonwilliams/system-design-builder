@@ -169,11 +169,9 @@ const GameLayoutContent = ({
 
   const appendEvent = useCallback((text: string) => {
     eventCounterRef.current += 1;
+    const id = `event-${eventCounterRef.current}`;
 
-    setEventEntries((currentEntries) => [
-      ...currentEntries,
-      { id: `event-${eventCounterRef.current}`, text },
-    ]);
+    setEventEntries((currentEntries) => [...currentEntries, { id, text }]);
   }, []);
 
   const buildInitialGraphEvents = useCallback(
