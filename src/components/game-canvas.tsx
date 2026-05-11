@@ -345,6 +345,7 @@ const HandleGraphic = ({ x, y, side, kind, onHandleClick }: HandleProps) => {
 };
 
 interface PixiNodeProps {
+  containerRefs: { current: Map<string, Container> };
   isLocked: boolean;
   isOverloaded: boolean;
   isSelected: boolean;
@@ -357,6 +358,7 @@ interface PixiNodeProps {
 
 const PixiNodeGraphic = ({
   node,
+  containerRefs,
   isSelected,
   isOverloaded,
   isLocked,
@@ -365,6 +367,16 @@ const PixiNodeGraphic = ({
   onHandleClick,
   onContextMenu,
 }: PixiNodeProps) => {
+  const handleRef = useCallback(
+    (c: Container | null) => {
+      if (c === null) {
+        containerRefs.current.delete(node.id);
+      } else {
+        containerRefs.current.set(node.id, c);
+      }
+    },
+    [node.id, containerRefs],
+  );
   const def = CANVAS_COMPONENT_LIBRARY[node.data.componentType];
   const { accentColor } = def;
 
@@ -455,6 +467,7 @@ const PixiNodeGraphic = ({
 
   return (
     <pixiContainer
+      ref={handleRef as unknown as never}
       cursor={isLocked ? "default" : "grab"}
       eventMode="static"
       onClick={handleClick}
@@ -697,6 +710,7 @@ interface PixiCanvasContentProps {
   isLocked: boolean;
   isSimulating: boolean;
   lockedNodeIds: string[];
+  nodeContainerRefs: { current: Map<string, Container> };
   nodes: PixiNode[];
   onEdgeClick: (edgeId: string) => void;
   onEdgeContextMenu: (edgeId: string, e: FederatedPointerEvent) => void;
@@ -720,6 +734,7 @@ const PixiCanvasContent = ({
   stageWidth,
   stageHeight,
   isSimulating,
+  nodeContainerRefs,
   overloadedNodeIds,
   selectedNodeId,
   lockedNodeIds,
@@ -806,6 +821,7 @@ const PixiCanvasContent = ({
         {nodes.map((node) => (
           <PixiNodeGraphic
             key={node.id}
+            containerRefs={nodeContainerRefs}
             isLocked={isLocked || lockedNodeIds.includes(node.id)}
             isOverloaded={overloadedNodeIds.includes(node.id)}
             isSelected={selectedNodeId === node.id}
@@ -843,7 +859,8 @@ const GameCanvas = ({
   );
   const [stageSize, setStageSize] = useState({ height: 0, width: 0 });
   const draggingRef = useRef<DragState | null>(null),
-    dropzoneRef = useRef<HTMLDivElement>(null);
+    dropzoneRef = useRef<HTMLDivElement>(null),
+    nodeContainerRefs = useRef<Map<string, Container>>(new Map());
 
   useEffect(() => {
     const el = dropzoneRef.current;
@@ -983,29 +1000,26 @@ const GameCanvas = ({
     setContextMenu(null);
   }, []);
 
-  const onNodePointerDown = useCallback(
-    (nodeId: string, e: FederatedPointerEvent) => {
-      const node = nodes.find((n) => n.id === nodeId);
-      if (node === undefined) {
-        return;
-      }
-      draggingRef.current = {
-        nodeId,
-        offsetX: e.globalX - node.position.x,
-        offsetY: e.globalY - node.position.y,
-      };
-    },
-    [nodes],
-  );
+  const onNodePointerDown = useCallback((nodeId: string, e: FederatedPointerEvent) => {
+    const container = nodeContainerRefs.current.get(nodeId);
+    if (container === undefined) {
+      return;
+    }
+    draggingRef.current = {
+      nodeId,
+      offsetX: e.globalX - container.x,
+      offsetY: e.globalY - container.y,
+    };
+  }, []);
 
   const onStagePointerMove = useCallback((e: FederatedPointerEvent) => {
     const drag = draggingRef.current;
     if (drag !== null) {
-      const newX = e.globalX - drag.offsetX;
-      const newY = e.globalY - drag.offsetY;
-      setNodes((current) =>
-        current.map((n) => (n.id === drag.nodeId ? { ...n, position: { x: newX, y: newY } } : n)),
-      );
+      const container = nodeContainerRefs.current.get(drag.nodeId);
+      if (container !== undefined) {
+        container.x = e.globalX - drag.offsetX;
+        container.y = e.globalY - drag.offsetY;
+      }
       return;
     }
     setPendingEdge((prev) => (prev === null ? null : { ...prev, x: e.globalX, y: e.globalY }));
@@ -1016,12 +1030,15 @@ const GameCanvas = ({
     if (drag === null) {
       return;
     }
-    setNodes((current) =>
-      current.map((n) =>
-        n.id === drag.nodeId ? { ...n, position: snapPositionToGrid(n.position) } : n,
-      ),
-    );
     draggingRef.current = null;
+    const container = nodeContainerRefs.current.get(drag.nodeId);
+    if (container === undefined) {
+      return;
+    }
+    const snapped = snapPositionToGrid({ x: container.x, y: container.y });
+    setNodes((current) =>
+      current.map((n) => (n.id === drag.nodeId ? { ...n, position: snapped } : n)),
+    );
   }, []);
 
   const onPaneClick = useCallback(() => {
@@ -1158,6 +1175,7 @@ const GameCanvas = ({
               isLocked={isLocked}
               isSimulating={isSimulating}
               lockedNodeIds={lockedNodeIds}
+              nodeContainerRefs={nodeContainerRefs}
               nodes={nodes}
               onEdgeClick={onEdgeClick}
               onEdgeContextMenu={onEdgeContextMenu}
