@@ -1,4 +1,9 @@
-import { GameCanvas, isConnectionValid, snapPositionToGrid } from "./game-canvas.js";
+import {
+  GameCanvas,
+  chooseBestHandles,
+  isConnectionValid,
+  snapPositionToGrid,
+} from "./game-canvas.js";
 import { fireEvent, render, screen } from "@testing-library/react";
 
 describe("game canvas", () => {
@@ -447,5 +452,71 @@ describe("locked nodes", () => {
     });
 
     expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+  });
+});
+
+describe("static graph rendering", () => {
+  it("renders nodes from initialNodes", () => {
+    render(
+      <GameCanvas
+        initialNodes={[
+          {
+            data: { componentType: "server", label: "Server" },
+            id: "server-1",
+            position: { x: 0, y: 0 },
+            type: "architecture",
+          },
+        ]}
+      />,
+    );
+
+    expect(screen.getByTestId("canvas-node-server-1")).toBeInTheDocument();
+    expect(screen.getByText("Server")).toBeInTheDocument();
+  });
+
+  it("renders edges from initialEdges", () => {
+    render(
+      <GameCanvas
+        initialEdges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
+        initialNodes={[...INITIAL_NODES_TWO]}
+      />,
+    );
+
+    expect(screen.getByTestId("canvas-edge-edge-1")).toBeInTheDocument();
+  });
+});
+
+describe(chooseBestHandles, () => {
+  const makeNode = (x: number, y: number) =>
+    ({
+      data: { componentType: "server" as const, label: "Server" },
+      id: "n",
+      position: { x, y },
+      type: "architecture" as const,
+    }) as const;
+
+  it("returns right→left when target is to the right", () => {
+    const result = chooseBestHandles(makeNode(0, 0), makeNode(200, 0));
+    expect(result).toStrictEqual({ sourceHandle: "right", targetHandle: "left" });
+  });
+
+  it("returns left→right when target is to the left", () => {
+    const result = chooseBestHandles(makeNode(200, 0), makeNode(0, 0));
+    expect(result).toStrictEqual({ sourceHandle: "left", targetHandle: "right" });
+  });
+
+  it("returns bottom→top when target is below", () => {
+    const result = chooseBestHandles(makeNode(0, 0), makeNode(0, 200));
+    expect(result).toStrictEqual({ sourceHandle: "bottom", targetHandle: "top" });
+  });
+
+  it("returns top→bottom when target is above", () => {
+    const result = chooseBestHandles(makeNode(0, 200), makeNode(0, 0));
+    expect(result).toStrictEqual({ sourceHandle: "top", targetHandle: "bottom" });
+  });
+
+  it("prefers horizontal when dx equals dy", () => {
+    const result = chooseBestHandles(makeNode(0, 0), makeNode(100, 100));
+    expect(result).toStrictEqual({ sourceHandle: "right", targetHandle: "left" });
   });
 });

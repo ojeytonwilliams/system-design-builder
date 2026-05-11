@@ -20,13 +20,13 @@
 
 ## Phase 2: Static graph — Nodes and edges rendered without interaction
 
-- [ ] CODE: Graph geometry utilities
+- [x] CODE: Graph geometry utilities
   - Feature: Implement pure functions `getHandlePosition(node, side)`, `chooseBestHandles(source, target)`, and `getBezierControlPoints(src, tgt)` as described in `design/replace-react-flow-with-pixi.md`; these replace `getHandleCenterAnchorPoint` and `getBezierPath` from React Flow
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
     - `chooseBestHandles` returns `right→left` when target is to the right, `bottom→top` when target is below
     - `getBezierControlPoints` produces control points that result in a smooth curve between any two handle positions
-- [ ] CODE: `PixiNodeGraphic` component
+- [x] CODE: `PixiNodeGraphic` component
   - Feature: Render each node as a `<pixiContainer>` positioned at `node.position.x / y`, containing: a `<pixiGraphics>` rounded rect (16px radius, 88×96px) filled and stroked with colours derived from `isSelected` and `isOverloaded` props; a `<pixiGraphics>` icon pill; a `<pixiText>` emoji icon centred in the pill; a `<pixiText>` label below; users node has no target handles
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
@@ -34,13 +34,13 @@
     - Selected node uses `#fff3ea` fill and `#e5634d` border
     - Overloaded node uses `#ffe4dd` fill, `#e5634d` border, and a thicker stroke to simulate a glow
     - Users node renders without left/top target handles
-- [ ] CODE: `HandleGraphic` component
+- [x] CODE: `HandleGraphic` component
   - Feature: Render each connection handle as a `<pixiGraphics>` with an invisible 22px-radius hit circle and a visible 4px-radius dot in `#7b8cb2`; source handles at right and bottom of node, target handles at left and top (omitted on users nodes)
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:
     - Each handle's visible dot is centred on the node's edge
     - Hit area covers at least 44×44px (radius 22px)
-- [ ] CODE: `PixiEdgeGraphic` component
+- [x] CODE: `PixiEdgeGraphic` component
   - Feature: For each edge in `edges`, look up source and target nodes, call `chooseBestHandles`, compute bezier control points via `getBezierControlPoints`, and draw the curve with `g.bezierCurveTo()`; draw a manual arrowhead triangle at the target end; selected edges use `#e5634d` stroke at width 3, others use `#7b8cb2` at width 2
   - Files: `src/components/game-canvas.tsx`
   - Acceptance:

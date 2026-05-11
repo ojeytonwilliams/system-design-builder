@@ -1087,5 +1087,5 @@ const GameCanvas = ({
   );
 };
 
-export { GameCanvas, isConnectionValid, snapPositionToGrid };
+export { GameCanvas, chooseBestHandles, isConnectionValid, snapPositionToGrid };
 export type { ArchitectureCanvasNode, ArchitectureNodeData, Edge };

@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.2.0] - 2026-05-11
+
+### Phase 2 — Static graph: nodes and edges rendered without interaction
+
+- **Graph geometry utilities**: Implemented `getHandlePosition(node, side)`, `chooseBestHandles(source, target)`, and `getBezierControlPoints(src, tgt)` as pure functions replacing React Flow's `getBezierPath` and handle anchor logic. `chooseBestHandles` is now exported for unit testing.
+- **`PixiNodeGraphic` component**: Renders each node as a `<pixiContainer>` with a rounded-rect background (88×96px, 16px radius), an icon pill with emoji, and a label. Selected nodes use `#fff3ea` fill and `#e5634d` border; overloaded nodes use `#ffe4dd` fill with a thicker coral stroke.
+- **`HandleGraphic` component**: Renders connection handles as invisible 22px-radius hit circles with a visible 4px dot at `#7b8cb2`. Source handles on right/bottom; target handles on left/top. `users` nodes omit all target handles.
+- **`PixiEdgeGraphic` component**: Draws each edge as a cubic bezier curve via `g.bezierCurveTo()`; selected edges use coral (`#e5634d`) at width 3, others use `#7b8cb2` at width 2. Includes a manual arrowhead triangle at the target end.
+- **Hidden DOM mirror**: Node and edge `data-testid` elements are rendered as zero-size hidden `<div>`s for test compatibility in jsdom.
+
 ## [2.1.0] - 2026-05-11
 
 ### Phase 1 — Pixi scaffold with dot grid background
