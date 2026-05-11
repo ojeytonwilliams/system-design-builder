@@ -89,12 +89,14 @@ const GameLayoutContent = ({
   const { currentTrafficRate, endSimulation, mode, nodeStates, startSimulation, tick } =
     useSimulation();
 
-  const [currentLevelId, setCurrentLevelId] = useState<number>(() =>
-    getFirstIncompleteLevel(loadProgress().completedLevels, LEVELS.length),
-  );
-  const [completedLevels, setCompletedLevels] = useState<number[]>(
-    () => loadProgress().completedLevels,
-  );
+  const [currentLevelId, setCurrentLevelId] = useState<number>(1);
+  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+
+  useEffect(() => {
+    const progress = loadProgress();
+    setCompletedLevels(progress.completedLevels);
+    setCurrentLevelId(getFirstIncompleteLevel(progress.completedLevels, LEVELS.length));
+  }, []);
   const [showEndScreen, setShowEndScreen] = useState(false);
   const [, setOverloadDurations] = useState<OverloadDurations>(EMPTY_OVERLOAD_DURATIONS);
   const [canvasKey, setCanvasKey] = useState(0);
