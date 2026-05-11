@@ -736,7 +736,9 @@ const PixiCanvasContent = ({
   onPaneClick,
 }: PixiCanvasContentProps) => {
   const [dashOffset, setDashOffset] = useState(0);
-  const { app } = useApplication();
+  const { app, isInitialised } = useApplication() as ReturnType<typeof useApplication> & {
+    isInitialised: boolean;
+  };
 
   useTick((delta) => {
     if (!isSimulating) {
@@ -746,6 +748,9 @@ const PixiCanvasContent = ({
   });
 
   useEffect(() => {
+    if (!isInitialised) {
+      return;
+    }
     const { stage } = app;
     stage.eventMode = "static";
     stage.hitArea = app.screen;
@@ -765,7 +770,7 @@ const PixiCanvasContent = ({
       stage.off("pointerupoutside", onUp);
       stage.off("click", onClick);
     };
-  }, [app, onStagePointerMove, onStagePointerUp, onPaneClick]);
+  }, [app, isInitialised, onStagePointerMove, onStagePointerUp, onPaneClick]);
 
   const drawDotGrid = useCallback(
     (g: Graphics) => {
