@@ -119,7 +119,14 @@ describe("game canvas", () => {
 
 describe("grid snapping", () => {
   it("snaps a dropped position to the nearest grid cell", () => {
-    expect(snapPositionToGrid({ x: 145, y: 117 })).toStrictEqual({ x: 144, y: 96 });
+    expect(snapPositionToGrid({ x: 145, y: 117 })).toStrictEqual({ x: 144, y: 120 });
+  });
+
+  it("snaps to the nearest visible dot (every 24px), not every other dot", () => {
+    // The background dot grid renders every 24px. Snapping to 48px skips every
+    // Other dot, making nodes appear to jump two squares at a time.
+    // X=25 is 1px past the 24px dot — should snap to 24, not 48.
+    expect(snapPositionToGrid({ x: 25, y: 25 })).toStrictEqual({ x: 24, y: 24 });
   });
 });
 

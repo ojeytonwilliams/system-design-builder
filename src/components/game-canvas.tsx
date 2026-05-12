@@ -109,7 +109,7 @@ const drawDashedBezier = (g: Graphics, curve: BezierCurve, style: DashStyle): vo
 // oxlint-disable-next-line jest/require-hook
 extend({ Container, Graphics, Text });
 
-const GRID_SIZE = 48;
+const GRID_SIZE = 24;
 const BACKGROUND_GAP = 24;
 const CANVAS_BACKGROUND = "#f8f5ec";
 const NODE_WIDTH = 88;

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.3] - 2026-05-12
+
+### Bug fixes
+
+- **Node drag snaps to every other dot**: `GRID_SIZE` was 48px while the background dot grid renders every 24px, making nodes appear to jump two squares at a time. Reduced `GRID_SIZE` to 24px to match the visible grid. Starting node positions across all six levels updated to align to the corrected grid.
+
 ## [2.3.2] - 2026-05-12
 
 ### Bug fixes
