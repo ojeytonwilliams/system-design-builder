@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.2] - 2026-05-12
+
+### Bug fixes
+
+- **Edge endpoints after drag snap**: When a node was dragged and snapped back to its original grid cell, React's reconciler saw no prop change and skipped updating the Pixi container, leaving it at the mid-drag position while edges calculated their endpoints from the (unchanged) state position. Edges therefore missed the handles after drop. Fixed by explicitly writing the snapped coordinates back to the container immediately in `onStagePointerUp`, before the React state update.
+
 ## [2.3.1] - 2026-05-11
 
 ### Bug fixes — Pixi canvas interaction

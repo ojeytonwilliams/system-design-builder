@@ -1115,6 +1115,8 @@ const GameCanvas = ({
       return;
     }
     const snapped = snapPositionToGrid({ x: container.x, y: container.y });
+    container.x = snapped.x;
+    container.y = snapped.y;
     setNodes((current) =>
       current.map((n) => (n.id === drag.nodeId ? { ...n, position: snapped } : n)),
     );
