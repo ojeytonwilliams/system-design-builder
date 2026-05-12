@@ -1252,7 +1252,13 @@ const GameCanvas = ({
         </div>
 
         {stageSize.width > 0 && stageSize.height > 0 && (
-          <Application background={0xf8f5ec} resizeTo={dropzoneRef}>
+          <Application
+            antialias
+            autoDensity
+            background={0xf8f5ec}
+            resolution={window.devicePixelRatio}
+            resizeTo={dropzoneRef}
+          >
             <PixiCanvasContent
               draggingRef={draggingRef}
               edges={edges}
