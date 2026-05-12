@@ -1,0 +1,4 @@
+site: system-design-builder
+
+build:
+  command: pnpm build
