@@ -1171,7 +1171,13 @@ const GameCanvas = ({
   }, []);
 
   const onEdgeContextMenu = useCallback((edgeId: string, e: FederatedPointerEvent) => {
-    setContextMenu({ edgeId, kind: "edge", x: e.client.x, y: e.client.y });
+    const rect = dropzoneRef.current?.getBoundingClientRect();
+    setContextMenu({
+      edgeId,
+      kind: "edge",
+      x: e.client.x - (rect?.left ?? 0),
+      y: e.client.y - (rect?.top ?? 0),
+    });
     setSelectedNodeId(null);
   }, []);
 
@@ -1181,7 +1187,13 @@ const GameCanvas = ({
         return;
       }
       setSelectedNodeId(nodeId);
-      setContextMenu({ kind: "node", nodeId, x: e.client.x, y: e.client.y });
+      const rect = dropzoneRef.current?.getBoundingClientRect();
+      setContextMenu({
+        kind: "node",
+        nodeId,
+        x: e.client.x - (rect?.left ?? 0),
+        y: e.client.y - (rect?.top ?? 0),
+      });
     },
     [lockedNodeIds],
   );
@@ -1220,7 +1232,13 @@ const GameCanvas = ({
                   return;
                 }
                 setSelectedNodeId(node.id);
-                setContextMenu({ kind: "node", nodeId: node.id, x: e.clientX, y: e.clientY });
+                const rect = dropzoneRef.current?.getBoundingClientRect();
+                setContextMenu({
+                  kind: "node",
+                  nodeId: node.id,
+                  x: e.clientX - (rect?.left ?? 0),
+                  y: e.clientY - (rect?.top ?? 0),
+                });
               }}
             >
               {node.data.label}
@@ -1244,7 +1262,13 @@ const GameCanvas = ({
               }}
               onContextMenu={(e) => {
                 e.preventDefault();
-                setContextMenu({ edgeId: edge.id, kind: "edge", x: e.clientX, y: e.clientY });
+                const rect = dropzoneRef.current?.getBoundingClientRect();
+                setContextMenu({
+                  edgeId: edge.id,
+                  kind: "edge",
+                  x: e.clientX - (rect?.left ?? 0),
+                  y: e.clientY - (rect?.top ?? 0),
+                });
                 setSelectedNodeId(null);
               }}
             />
