@@ -49,7 +49,7 @@ describe("game canvas", () => {
   });
 
   it("places a queued component when componentToPlace is provided", () => {
-    const onComponentPlaced = vi.fn();
+    const onComponentPlaced = vi.fn<() => void>();
 
     render(<GameCanvas componentToPlace="server" onComponentPlaced={onComponentPlaced} />);
 
@@ -110,7 +110,7 @@ describe("game canvas", () => {
       clientX: 240,
       clientY: 160,
     });
-    fireEvent.click(screen.getByRole("button", { name: /remove/i }));
+    fireEvent.click(screen.getByRole("button", { name: /remove/iv }));
 
     expect(screen.queryByTestId("canvas-node-server-1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("canvas-edge-edge-1")).not.toBeInTheDocument();
@@ -262,7 +262,7 @@ describe("locked mode", () => {
 
 describe("onStateChange callback", () => {
   it("fires with updated nodes after a node is dropped", () => {
-    const onStateChange = vi.fn();
+    const onStateChange = vi.fn<() => void>();
     render(<GameCanvas onStateChange={onStateChange} />);
     const dropzone = screen.getByTestId("game-canvas-dropzone");
 
@@ -377,7 +377,7 @@ describe("overloaded node state", () => {
 
 describe("escape key", () => {
   it("pressing Escape calls onSelectedNodeChange with null to close the inspector", () => {
-    const onSelectedNodeChange = vi.fn();
+    const onSelectedNodeChange = vi.fn<() => void>();
 
     render(
       <GameCanvas
@@ -425,9 +425,9 @@ describe("edge deletion", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /remove/i }));
+    fireEvent.click(screen.getByRole("button", { name: /remove/iv }));
 
-    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /remove/iv })).not.toBeInTheDocument();
   });
 });
 
@@ -458,7 +458,7 @@ describe("locked nodes", () => {
       clientY: 100,
     });
 
-    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /remove/iv })).not.toBeInTheDocument();
   });
 });
 

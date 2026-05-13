@@ -1,4 +1,3 @@
-// oxlint-disable import/max-dependencies
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Coach } from "../components/coach.js";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";

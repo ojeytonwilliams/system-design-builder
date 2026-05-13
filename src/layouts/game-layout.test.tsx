@@ -94,7 +94,7 @@ describe("game layout", () => {
   it("renders the resources region", () => {
     render(<GameLayout />);
 
-    expect(screen.getByRole("region", { name: /resources/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /resources/iv })).toBeInTheDocument();
   });
 
   it("renders the canvas area", () => {
@@ -106,13 +106,13 @@ describe("game layout", () => {
   it("renders the inspector region", () => {
     render(<GameLayout />);
 
-    expect(screen.getByRole("region", { name: /inspector/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /vinspector/iv })).toBeInTheDocument();
   });
 
   it("renders a Start Traffic button", () => {
     render(<GameLayout />);
 
-    expect(screen.getByRole("button", { name: /start traffic/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start traffic/iv })).toBeInTheDocument();
   });
 });
 
@@ -134,9 +134,9 @@ describe("simulation mode", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
-    expect(screen.getByRole("button", { name: /stop traffic/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /stop traffic/iv })).toBeInTheDocument();
   });
 
   it("clicking Stop Traffic returns to design mode", () => {
@@ -148,10 +148,10 @@ describe("simulation mode", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
-    fireEvent.click(screen.getByRole("button", { name: /stop traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
+    fireEvent.click(screen.getByRole("button", { name: /stop traffic/iv }));
 
-    expect(screen.getByRole("button", { name: /start traffic/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start traffic/iv })).toBeInTheDocument();
   });
 
   it("simulation ends automatically after the timeout expires", () => {
@@ -163,13 +163,13 @@ describe("simulation mode", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
     act(() => {
       vi.advanceTimersByTime(testLevelConfig.timeout * 1000 + 500);
     });
 
-    expect(screen.getByRole("button", { name: /start traffic/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start traffic/iv })).toBeInTheDocument();
   });
 
   it("inspector load field reflects overloaded state for the selected node", () => {
@@ -182,13 +182,13 @@ describe("simulation mode", () => {
     );
 
     fireEvent.click(screen.getByTestId("canvas-node-server-1"));
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
     act(() => {
       vi.advanceTimersByTime(1000);
     });
 
-    expect(screen.getByText(/load:\s*300%\s*\(overloaded\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/load:\s*300%\s*\(overloaded\)/iv)).toBeInTheDocument();
   });
 
   it("returns the selected node to normal load state when traffic drops below capacity", () => {
@@ -201,13 +201,13 @@ describe("simulation mode", () => {
     );
 
     fireEvent.click(screen.getByTestId("canvas-node-server-1"));
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
     act(() => {
       vi.advanceTimersByTime(3000);
     });
 
-    expect(screen.getByText(/load:\s*50%$/i)).toBeInTheDocument();
+    expect(screen.getByText(/load:\s*50%$/iv)).toBeInTheDocument();
   });
 });
 
@@ -247,12 +247,12 @@ describe("level system", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(4000);
     });
 
-    expect(screen.getByRole("heading", { name: /level complete/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /level complete/iv })).toBeInTheDocument();
   });
 
   it("replay button dismisses end-of-level screen and returns to design mode", () => {
@@ -264,14 +264,14 @@ describe("level system", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(4000);
     });
-    fireEvent.click(screen.getByRole("button", { name: /replay/i }));
+    fireEvent.click(screen.getByRole("button", { name: /replay/iv }));
 
-    expect(screen.queryByRole("heading", { name: /level complete/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /start traffic/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /level complete/iv })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /start traffic/iv })).toBeInTheDocument();
   });
 
   it("continue button dismisses end-of-level screen", () => {
@@ -283,13 +283,13 @@ describe("level system", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(4000);
     });
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue/iv }));
 
-    expect(screen.queryByRole("heading", { name: /level complete/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /level complete/iv })).not.toBeInTheDocument();
   });
 
   it("saves completed level to localStorage when a level is won", () => {
@@ -301,7 +301,7 @@ describe("level system", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(4000);
     });
@@ -326,11 +326,11 @@ describe("level system", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(4000);
     });
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue/iv }));
 
     expect(screen.getByTestId("level-strip-level-2")).toHaveAttribute("data-status", "active");
   });
@@ -340,7 +340,7 @@ describe("level context UI", () => {
   it("shows the active level title in the UI", () => {
     render(<GameLayout />);
 
-    expect(screen.getByText(/first request/i)).toBeInTheDocument();
+    expect(screen.getByText(/first request/iv)).toBeInTheDocument();
   });
 
   it("shows the level objective text", () => {
@@ -356,13 +356,13 @@ describe("simulation gating", () => {
   it("start traffic button is disabled when canvas has no runnable path", () => {
     render(<GameLayout initialNodes={overloadNodes} initialEdges={[]} />);
 
-    expect(screen.getByRole("button", { name: /start traffic/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /start traffic/iv })).toBeDisabled();
   });
 
   it("start traffic button is enabled when users node has an outgoing connection", () => {
     render(<GameLayout initialEdges={overloadEdges} initialNodes={overloadNodes} />);
 
-    expect(screen.getByRole("button", { name: /start traffic/i })).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: /start traffic/iv })).not.toBeDisabled();
   });
 });
 
@@ -378,7 +378,7 @@ describe("level progression strip", () => {
   it("renders a level progression navigation region", () => {
     render(<GameLayout />);
 
-    expect(screen.getByRole("navigation", { name: /level progression/i })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /level progression/iv })).toBeInTheDocument();
   });
 
   it("marks completed levels as completed in the strip", () => {
@@ -395,7 +395,7 @@ describe("level progression strip", () => {
     render(<GameLayout />);
     fireEvent.click(screen.getByTestId("level-strip-level-1"));
 
-    expect(screen.getByText(/first request/i)).toBeInTheDocument();
+    expect(screen.getByText(/first request/iv)).toBeInTheDocument();
   });
 });
 
@@ -413,8 +413,8 @@ describe("coach panel", () => {
   it("shows an opening mission message when a level starts", () => {
     render(<GameLayout />);
 
-    expect(screen.getByRole("heading", { name: /coach/i })).toBeInTheDocument();
-    expect(screen.getByText(/mission: your server is overloaded/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /coach/iv })).toBeInTheDocument();
+    expect(screen.getByText(/mission: your server is overloaded/iv)).toBeInTheDocument();
   });
 
   it("shows a timed coach message during simulation", () => {
@@ -429,12 +429,12 @@ describe("coach panel", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(3000);
     });
 
-    expect(screen.getByText(/database is the bottleneck/i)).toBeInTheDocument();
+    expect(screen.getByText(/database is the bottleneck/iv)).toBeInTheDocument();
   });
 
   it("shows a coaching message the first time overload occurs in a level", () => {
@@ -446,12 +446,12 @@ describe("coach panel", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(1000);
     });
 
-    expect(screen.getByText(/overload detected/i)).toBeInTheDocument();
+    expect(screen.getByText(/overload detected/iv)).toBeInTheDocument();
   });
 });
 
@@ -477,15 +477,15 @@ describe("event log", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(3000);
     });
 
-    expect(screen.getByRole("heading", { name: /event log/i })).toBeInTheDocument();
-    expect(screen.getByText(/component placed: users/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/component placed: small server/i)).toHaveLength(2);
-    expect(screen.getByText(/connection created/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /event log/iv })).toBeInTheDocument();
+    expect(screen.getByText(/component placed: users/iv)).toBeInTheDocument();
+    expect(screen.getAllByText(/component placed: small server/iv)).toHaveLength(2);
+    expect(screen.getByText(/connection created/iv)).toBeInTheDocument();
   });
 
   it("logs overload start and resolution events", () => {
@@ -497,13 +497,13 @@ describe("event log", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /start traffic/i }));
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
       vi.advanceTimersByTime(3000);
     });
 
-    expect(screen.getByText(/overload started/i)).toBeInTheDocument();
-    expect(screen.getByText(/overload resolved/i)).toBeInTheDocument();
+    expect(screen.getByText(/overload started/iv)).toBeInTheDocument();
+    expect(screen.getByText(/overload resolved/iv)).toBeInTheDocument();
   });
 });
 
@@ -529,7 +529,7 @@ describe("budget enforcement", () => {
 
     fireEvent.click(screen.getByTestId("resource-item-server"));
 
-    expect(screen.getByText(/over budget/i)).toBeInTheDocument();
+    expect(screen.getByText(/over budget/iv)).toBeInTheDocument();
   });
 });
 
@@ -540,10 +540,10 @@ describe("responsive layout", () => {
 
     render(<GameLayout />);
 
-    expect(screen.getByRole("region", { name: /resources/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /inspector/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /coach/i })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /event log/i })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /resources/iv })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /vinspector/iv })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /coach/iv })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /event log/iv })).toBeInTheDocument();
     expect(screen.getByTestId("game-layout-shell")).toHaveStyle({ overflowX: "hidden" });
   });
 });

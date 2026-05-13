@@ -5,7 +5,7 @@ describe("event log", () => {
   it("renders an Event Log heading", () => {
     render(<EventLog entries={[]} />);
 
-    expect(screen.getByRole("heading", { name: /event log/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /event log/iv })).toBeInTheDocument();
   });
 
   it("renders entries in chronological order", () => {

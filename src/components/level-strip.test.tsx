@@ -10,7 +10,7 @@ describe("level strip", () => {
       <LevelStrip completedLevelIds={[]} currentLevelId={1} levels={LEVELS} onSelectLevel={noop} />,
     );
 
-    expect(screen.getByRole("navigation", { name: /level progression/i })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: /level progression/iv })).toBeInTheDocument();
   });
 
   it("renders a button for each level", () => {
@@ -60,7 +60,7 @@ describe("level strip", () => {
   });
 
   it("calls onSelectLevel with the level id when a completed level is clicked", () => {
-    const onSelectLevel = vi.fn();
+    const onSelectLevel = vi.fn<() => void>();
 
     render(
       <LevelStrip
@@ -77,7 +77,7 @@ describe("level strip", () => {
   });
 
   it("does not call onSelectLevel when a locked level is clicked", () => {
-    const onSelectLevel = vi.fn();
+    const onSelectLevel = vi.fn<() => void>();
 
     render(
       <LevelStrip
@@ -94,7 +94,7 @@ describe("level strip", () => {
   });
 
   it("calls onSelectLevel when the active level is clicked", () => {
-    const onSelectLevel = vi.fn();
+    const onSelectLevel = vi.fn<() => void>();
 
     render(
       <LevelStrip

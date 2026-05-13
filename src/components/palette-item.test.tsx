@@ -27,7 +27,7 @@ describe("resource item", () => {
       />,
     );
 
-    expect(screen.getByText(/\$20\/mo/)).toBeInTheDocument();
+    expect(screen.getByText(/\$20\/mo/u)).toBeInTheDocument();
   });
 
   it("renders the capacity", () => {
@@ -41,7 +41,7 @@ describe("resource item", () => {
       />,
     );
 
-    expect(screen.getByText(/50 req\/s/)).toBeInTheDocument();
+    expect(screen.getByText(/50 req\/s/u)).toBeInTheDocument();
   });
 
   it("renders the description", () => {
@@ -55,7 +55,7 @@ describe("resource item", () => {
       />,
     );
 
-    expect(screen.getByText(/handles incoming web requests/i)).toBeInTheDocument();
+    expect(screen.getByText(/handles incoming web requests/iv)).toBeInTheDocument();
   });
 
   it("is draggable", () => {
@@ -100,7 +100,7 @@ describe("resource item", () => {
       />,
     );
     const item = screen.getByTestId("resource-item-server");
-    const setData = vi.fn();
+    const setData = vi.fn<() => void>();
 
     fireEvent.dragStart(item, { dataTransfer: { setData } });
 
@@ -108,7 +108,7 @@ describe("resource item", () => {
   });
 
   it("calls onPlaceComponent when clicked", () => {
-    const onPlaceComponent = vi.fn();
+    const onPlaceComponent = vi.fn<() => void>();
 
     render(
       <ResourceItem

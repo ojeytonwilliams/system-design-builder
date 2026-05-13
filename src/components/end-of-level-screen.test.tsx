@@ -26,7 +26,7 @@ describe(EndOfLevelScreen, () => {
   it("renders a level complete heading", () => {
     renderScreen();
 
-    expect(screen.getByRole("heading", { name: /level complete/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /level complete/iv })).toBeInTheDocument();
   });
 
   it("renders the level title", () => {
@@ -45,29 +45,29 @@ describe(EndOfLevelScreen, () => {
   it("renders a Continue button", () => {
     renderScreen();
 
-    expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue/iv })).toBeInTheDocument();
   });
 
   it("renders a Replay button", () => {
     renderScreen();
 
-    expect(screen.getByRole("button", { name: /replay/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /replay/iv })).toBeInTheDocument();
   });
 
   it("calls onContinue when the Continue button is clicked", () => {
-    const onContinue = vi.fn();
+    const onContinue = vi.fn<() => void>();
     renderScreen({ onContinue });
 
-    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    fireEvent.click(screen.getByRole("button", { name: /continue/iv }));
 
     expect(onContinue).toHaveBeenCalledOnce();
   });
 
   it("calls onReplay when the Replay button is clicked", () => {
-    const onReplay = vi.fn();
+    const onReplay = vi.fn<() => void>();
     renderScreen({ onReplay });
 
-    fireEvent.click(screen.getByRole("button", { name: /replay/i }));
+    fireEvent.click(screen.getByRole("button", { name: /replay/iv }));
 
     expect(onReplay).toHaveBeenCalledOnce();
   });
@@ -75,7 +75,7 @@ describe(EndOfLevelScreen, () => {
   it("displays the remaining budget", () => {
     renderScreen({ monthlyBudget: 100, remainingBudget: 40 });
 
-    expect(screen.getByText(/\$40/)).toBeInTheDocument();
+    expect(screen.getByText(/\$40/u)).toBeInTheDocument();
   });
 
   it("shows 3 stars when budget headroom is high (≥50% remaining)", () => {
