@@ -5,7 +5,7 @@ describe("inspector", () => {
   it("renders an Inspector heading", () => {
     render(<Inspector />);
 
-    expect(screen.getByRole("heading", { name: /vinspector/iv })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /inspector/iv })).toBeInTheDocument();
   });
 
   it("shows a prompt when no node is selected", () => {

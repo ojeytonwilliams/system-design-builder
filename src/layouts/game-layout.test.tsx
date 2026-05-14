@@ -106,7 +106,7 @@ describe("game layout", () => {
   it("renders the inspector region", () => {
     render(<GameLayout />);
 
-    expect(screen.getByRole("region", { name: /vinspector/iv })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /inspector/iv })).toBeInTheDocument();
   });
 
   it("renders a Start Traffic button", () => {
@@ -541,7 +541,7 @@ describe("responsive layout", () => {
     render(<GameLayout />);
 
     expect(screen.getByRole("region", { name: /resources/iv })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: /vinspector/iv })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /inspector/iv })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /coach/iv })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: /event log/iv })).toBeInTheDocument();
     expect(screen.getByTestId("game-layout-shell")).toHaveStyle({ overflowX: "hidden" });
