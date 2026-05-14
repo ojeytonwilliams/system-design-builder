@@ -3,6 +3,8 @@ import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { COMPONENT_LIBRARY, isComponentType } from "./component-library.js";
+import type { ComponentType } from "./component-library.js";
 
 interface BezierCurve {
   cp1: Point;
@@ -121,18 +123,6 @@ const DEFAULT_DROP_POSITION = { x: 160, y: 160 };
 const DEFAULT_OVERLOADED_NODE_IDS: string[] = [];
 const DEFAULT_LOCKED_NODE_IDS: string[] = [];
 
-const CANVAS_COMPONENT_LIBRARY = {
-  cache: { accentColor: 0xd9a65b, icon: "⚡", label: "Cache" },
-  db: { accentColor: 0x5f8ca8, icon: "🛢️", label: "DB" },
-  "db-large": { accentColor: 0x3a6e8a, icon: "🛢️", label: "Large DB" },
-  "load-balancer": { accentColor: 0x7f6bd8, icon: "⇄", label: "Load Balancer" },
-  server: { accentColor: 0x4f8f73, icon: "🖥️", label: "Server" },
-  "server-large": { accentColor: 0x2d6b50, icon: "🖥️", label: "Large Server" },
-  users: { accentColor: 0xe5634d, icon: "👥", label: "Users" },
-} as const;
-
-type ComponentType = keyof typeof CANVAS_COMPONENT_LIBRARY;
-
 interface Point {
   x: number;
   y: number;
@@ -207,9 +197,6 @@ interface GameCanvasProps {
   onStateChange?: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
   overloadedNodeIds?: string[];
 }
-
-const isComponentType = (value: string): value is ComponentType =>
-  Object.hasOwn(CANVAS_COMPONENT_LIBRARY, value);
 
 const snapPositionToGrid = ({ x, y }: Point): Point => ({
   x: Math.round(x / GRID_SIZE) * GRID_SIZE,
@@ -389,7 +376,7 @@ const PixiNodeGraphic = ({
     },
     [node.id, containerRefs],
   );
-  const def = CANVAS_COMPONENT_LIBRARY[node.data.componentType];
+  const def = COMPONENT_LIBRARY[node.data.componentType];
   const { accentColor } = def;
 
   let fillColor = 0xfffdf8;
@@ -1236,7 +1223,7 @@ const GameCanvas = ({
                 });
               }}
             >
-              {CANVAS_COMPONENT_LIBRARY[node.data.componentType].label}
+              {COMPONENT_LIBRARY[node.data.componentType].label}
               {/* Handle mirrors */}
               <div data-testid={`handle-${node.id}-source-right`} />
               <div data-testid={`handle-${node.id}-source-bottom`} />

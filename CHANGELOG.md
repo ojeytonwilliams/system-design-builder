@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.5] - 2026-05-14
+
+### Refactoring
+
+- **`game-canvas.tsx` maintained its own duplicate component library**: `CANVAS_COMPONENT_LIBRARY` held the same labels, icons, and accent colours that already existed in `component-library.ts`, but with slightly different labels (e.g. `"Server"` vs `"Small Server"`) and numeric hex colours instead of CSS strings. Removed the duplicate and replaced all usages with `COMPONENT_LIBRARY` from `component-library.ts`, making that file the single source of truth for component metadata. PixiJS accepts CSS colour strings natively, so no conversion was needed.
+
 ## [2.3.4] - 2026-05-14
 
 ### Refactoring

@@ -45,7 +45,7 @@ describe("game canvas", () => {
     });
 
     expect(screen.getByTestId("canvas-node-server-1")).toBeInTheDocument();
-    expect(screen.getByText("Server")).toBeInTheDocument();
+    expect(screen.getByText("Small Server")).toBeInTheDocument();
   });
 
   it("places a queued component when componentToPlace is provided", () => {
@@ -63,13 +63,13 @@ describe("game canvas", () => {
         initialEdges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
         initialNodes={[
           {
-            data: { componentType: "users", label: "Users" },
+            data: { componentType: "users" },
             id: "users-1",
             position: { x: 0, y: 0 },
             type: "architecture",
           },
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 96, y: 0 },
             type: "architecture",
@@ -91,13 +91,13 @@ describe("game canvas", () => {
         initialEdges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
         initialNodes={[
           {
-            data: { componentType: "users", label: "Users" },
+            data: { componentType: "users" },
             id: "users-1",
             position: { x: 0, y: 0 },
             type: "architecture",
           },
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 96, y: 0 },
             type: "architecture",
@@ -132,13 +132,13 @@ describe("grid snapping", () => {
 
 const INITIAL_NODES_TWO = [
   {
-    data: { componentType: "users", label: "Users" },
+    data: { componentType: "users" },
     id: "users-1",
     position: { x: 0, y: 0 },
     type: "architecture",
   },
   {
-    data: { componentType: "server", label: "Server" },
+    data: { componentType: "server" },
     id: "server-1",
     position: { x: 96, y: 0 },
     type: "architecture",
@@ -151,7 +151,7 @@ describe("connection ports", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -170,7 +170,7 @@ describe("connection ports", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -189,7 +189,7 @@ describe("connection ports", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "users", label: "Users" },
+            data: { componentType: "users" },
             id: "users-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -297,7 +297,7 @@ describe("overloaded node state", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -315,7 +315,7 @@ describe("overloaded node state", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -329,7 +329,7 @@ describe("overloaded node state", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -347,7 +347,7 @@ describe("overloaded node state", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -361,7 +361,7 @@ describe("overloaded node state", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -383,7 +383,7 @@ describe("escape key", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -433,7 +433,7 @@ describe("edge deletion", () => {
 
 const LOCKED_USERS_NODE = [
   {
-    data: { componentType: "users" as const, label: "Users" },
+    data: { componentType: "users" as const },
     id: "users-1",
     position: { x: 0, y: 0 },
     type: "architecture" as const,
@@ -468,7 +468,7 @@ describe("static graph rendering", () => {
       <GameCanvas
         initialNodes={[
           {
-            data: { componentType: "server", label: "Server" },
+            data: { componentType: "server" },
             id: "server-1",
             position: { x: 0, y: 0 },
             type: "architecture",
@@ -478,7 +478,7 @@ describe("static graph rendering", () => {
     );
 
     expect(screen.getByTestId("canvas-node-server-1")).toBeInTheDocument();
-    expect(screen.getByText("Server")).toBeInTheDocument();
+    expect(screen.getByText("Small Server")).toBeInTheDocument();
   });
 
   it("renders edges from initialEdges", () => {
@@ -496,7 +496,7 @@ describe("static graph rendering", () => {
 describe(chooseBestHandles, () => {
   const makeNode = (x: number, y: number) =>
     ({
-      data: { componentType: "server" as const, label: "Server" },
+      data: { componentType: "server" as const },
       id: "n",
       position: { x, y },
       type: "architecture" as const,
