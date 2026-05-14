@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.4] - 2026-05-14
+
+### Refactoring
+
+- **`game-layout.tsx` was doing too much**: A single 675-line component owned level management, event logging, component unlocks, simulation ticking, inspector data derivation, and layout detection — making each concern hard to test or reason about in isolation. Extracted six custom hooks (`useLevel`, `useEventLog`, `useComponentUnlocks`, `useSimulationTick`, `useInspectorData`, `useCompactLayout`) and two adapter modules (`graph-adapters`, `level-canvas-adapters`), reducing `game-layout.tsx` to 391 lines and dropping cyclomatic complexity from 26 to 11.
+- **`overloadDurations` write-only state smell fixed**: The original code called `setAvailableComponents` inside a `setOverloadDurations` functional updater to get the latest previous value — a pattern that hides causality. `useComponentUnlocks` now owns `overloadDurations` as an internal ref and exposes a clean `applySnapshot` / `updateFromGraph` / `resetForLevel` API.
+- **`latencyMs` moved into `component-library.ts`**: Component latency values were stored in a separate `LATENCY_MS` constant in the layout file while every other per-component property (`capacity`, `monthlyCost`) already lived in `COMPONENT_LIBRARY`. Consolidating them removes the inconsistency and makes the component definition the single source of truth.
+
 ## [2.3.3] - 2026-05-12
 
 ### Bug fixes

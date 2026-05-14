@@ -1,0 +1,50 @@
+import { useCallback, useRef, useState } from "react";
+import { COMPONENT_LIBRARY } from "../components/component-library.js";
+import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { EventLogEntry } from "../components/event-log.js";
+
+interface UseEventLogResult {
+  appendEvent: (text: string) => void;
+  eventEntries: EventLogEntry[];
+  resetEvents: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
+}
+
+const useEventLog = (): UseEventLogResult => {
+  const [eventEntries, setEventEntries] = useState<EventLogEntry[]>([]);
+  const counterRef = useRef(0);
+
+  const appendEvent = useCallback((text: string) => {
+    counterRef.current += 1;
+    const id = `event-${counterRef.current}`;
+
+    setEventEntries((prev) => [...prev, { id, text }]);
+  }, []);
+
+  const resetEvents = useCallback((nodes: ArchitectureCanvasNode[], edges: Edge[]) => {
+    counterRef.current = 0;
+    const entries: EventLogEntry[] = [];
+
+    nodes.forEach((node) => {
+      counterRef.current += 1;
+      entries.push({
+        id: `event-${counterRef.current}`,
+        text: `Component placed: ${COMPONENT_LIBRARY[node.data.componentType].label}`,
+      });
+    });
+
+    edges.forEach((edge) => {
+      counterRef.current += 1;
+      entries.push({
+        id: `event-${counterRef.current}`,
+        text: `Connection created: ${edge.source} → ${edge.target}`,
+      });
+    });
+
+    setEventEntries(entries);
+  }, []);
+
+  return { appendEvent, eventEntries, resetEvents };
+};
+
+export { useEventLog };
+export type { UseEventLogResult };

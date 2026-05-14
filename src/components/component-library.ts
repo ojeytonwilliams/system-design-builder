@@ -4,6 +4,7 @@ interface ComponentDefinition {
   description: string;
   icon: string;
   label: string;
+  latencyMs: number;
   monthlyCost: number;
 }
 
@@ -23,6 +24,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Caches frequent DB reads in memory",
     icon: "⚡",
     label: "Cache",
+    latencyMs: 5,
     monthlyCost: 25,
   },
   db: {
@@ -31,6 +33,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Stores and retrieves application data",
     icon: "🛢️",
     label: "Small DB",
+    latencyMs: 15,
     monthlyCost: 15,
   },
   "db-large": {
@@ -39,6 +42,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "High-capacity managed database",
     icon: "🛢️",
     label: "Large DB",
+    latencyMs: 10,
     monthlyCost: 50,
   },
   "load-balancer": {
@@ -47,6 +51,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Splits traffic evenly across servers",
     icon: "⇄",
     label: "Load Balancer",
+    latencyMs: 2,
     monthlyCost: 20,
   },
   server: {
@@ -55,6 +60,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Handles incoming web requests",
     icon: "🖥️",
     label: "Small Server",
+    latencyMs: 10,
     monthlyCost: 20,
   },
   "server-large": {
@@ -63,6 +69,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "High-capacity web server",
     icon: "🖥️",
     label: "Large Server",
+    latencyMs: 8,
     monthlyCost: 80,
   },
   users: {
@@ -71,6 +78,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Traffic source",
     icon: "👥",
     label: "Users",
+    latencyMs: 0,
     monthlyCost: 0,
   },
 };

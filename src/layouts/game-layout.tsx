@@ -1,37 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Coach } from "../components/coach.js";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
+import { Coach } from "../components/coach.js";
 import { EndOfLevelScreen } from "../components/end-of-level-screen.js";
 import { EventLog } from "../components/event-log.js";
-import type { EventLogEntry } from "../components/event-log.js";
-import { GameCanvas } from "../components/game-canvas.js";
 import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import { GameCanvas } from "../components/game-canvas.js";
 import { Inspector } from "../components/inspector.js";
 import { LevelStrip } from "../components/level-strip.js";
 import { Resources } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
 import { LEVELS, getLevelById } from "../levels/index.js";
-import { level1 } from "../levels/level1.js";
-import type { LevelDefinition, StartingEdge, StartingNode } from "../levels/types.js";
-import { getFirstIncompleteLevel, loadProgress, saveProgress } from "../persistence.js";
-import { computeTrafficFlow, getLinearTrafficRate, hasRunnablePath } from "../simulation/engine.js";
-import type { GraphEdge, GraphNode, LevelConfig } from "../simulation/types.js";
-import { computeAvailableComponents, updateOverloadDurations } from "../simulation/unlocks.js";
-import type { OverloadDurations } from "../simulation/unlocks.js";
+import type { LevelDefinition } from "../levels/types.js";
+import { useCompactLayout } from "../hooks/use-compact-layout.js";
+import { useComponentUnlocks } from "../hooks/use-component-unlocks.js";
+import { useEventLog } from "../hooks/use-event-log.js";
+import { useInspectorData } from "../hooks/use-inspector-data.js";
+import { useLevel } from "../hooks/use-level.js";
+import { useSimulationTick } from "../hooks/use-simulation-tick.js";
+import { toGraphEdge, toGraphNode } from "./graph-adapters.js";
+import type { LevelConfig } from "../simulation/types.js";
+import { computeTrafficFlow, hasRunnablePath } from "../simulation/engine.js";
 import { SimulationProvider, useSimulation } from "../store.js";
 
-const WIN_SUSTAIN_SECONDS = 3;
-
-const LATENCY_MS: Record<ComponentType, number> = {
-  cache: 5,
-  db: 15,
-  "db-large": 10,
-  "load-balancer": 2,
-  server: 10,
-  "server-large": 8,
-  users: 0,
-};
+const MOBILE_LAYOUT_BREAKPOINT = 768;
 
 interface GameLayoutProps {
   initialEdges?: Edge[];
@@ -39,46 +31,11 @@ interface GameLayoutProps {
   levelConfig?: LevelConfig;
 }
 
-const toGraphNode = (canvasNode: ArchitectureCanvasNode): GraphNode => ({
-  capacity: COMPONENT_LIBRARY[canvasNode.data.componentType].capacity,
-  id: canvasNode.id,
-  type: canvasNode.data.componentType,
-});
-
-const toGraphEdge = (edge: Edge): GraphEdge => ({
-  source: edge.source,
-  target: edge.target,
-});
-
-const levelNodeToCanvasNode = (node: StartingNode): ArchitectureCanvasNode => ({
-  data: { componentType: node.componentType, label: node.label },
-  id: node.id,
-  position: node.position,
-  type: "architecture",
-});
-
-const levelEdgeToCanvasEdge = (startingEdge: StartingEdge): Edge => ({
-  animated: false,
-  id: startingEdge.id,
-  source: startingEdge.source,
-  target: startingEdge.target,
-  type: "architecture-edge",
-});
-
-const computeTotalMonthlyCost = (nodes: ArchitectureCanvasNode[]): number =>
-  nodes.reduce((sum, node) => sum + COMPONENT_LIBRARY[node.data.componentType].monthlyCost, 0);
-
 interface GameLayoutContentProps {
   initialEdges: Edge[];
   initialNodes: ArchitectureCanvasNode[];
   levelConfig: LevelConfig | undefined;
 }
-
-const EMPTY_OVERLOAD_DURATIONS: OverloadDurations = new Map();
-const MOBILE_LAYOUT_BREAKPOINT = 768;
-
-const getComponentName = (componentType: ComponentType): string =>
-  COMPONENT_LIBRARY[componentType].label;
 
 const GameLayoutContent = ({
   initialEdges,
@@ -88,39 +45,33 @@ const GameLayoutContent = ({
   const { currentTrafficRate, endSimulation, mode, nodeStates, startSimulation, tick } =
     useSimulation();
 
-  const [currentLevelId, setCurrentLevelId] = useState<number>(1);
-  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
+  const {
+    canvasKey,
+    completedLevels,
+    currentLevel,
+    levelStartEdges,
+    levelStartNodes,
+    loadLevel,
+    markLevelComplete,
+  } = useLevel(initialNodes, initialEdges);
 
-  useEffect(() => {
-    const progress = loadProgress();
-    setCompletedLevels(progress.completedLevels);
-    setCurrentLevelId(getFirstIncompleteLevel(progress.completedLevels, LEVELS.length));
-  }, []);
-  const [showEndScreen, setShowEndScreen] = useState(false);
-  const [, setOverloadDurations] = useState<OverloadDurations>(EMPTY_OVERLOAD_DURATIONS);
-  const [canvasKey, setCanvasKey] = useState(0);
+  const { appendEvent, eventEntries, resetEvents } = useEventLog();
+  const isCompactLayout = useCompactLayout(MOBILE_LAYOUT_BREAKPOINT);
+  const { applySnapshot, availableComponents, resetForLevel, updateFromGraph } =
+    useComponentUnlocks(currentLevel, levelStartNodes);
 
-  const currentLevel = getLevelById(currentLevelId) ?? level1;
-
-  const initialCanvasNodes =
-    initialNodes.length > 0 ? initialNodes : currentLevel.startingNodes.map(levelNodeToCanvasNode);
-  const initialCanvasEdges =
-    initialNodes.length > 0 ? initialEdges : currentLevel.startingEdges.map(levelEdgeToCanvasEdge);
-
-  const [levelStartNodes, setLevelStartNodes] = useState<ArchitectureCanvasNode[]>(
-    () => initialCanvasNodes,
-  );
-  const [levelStartEdges, setLevelStartEdges] = useState<Edge[]>(() => initialCanvasEdges);
   const [coachMessage, setCoachMessage] = useState(`Mission: ${currentLevel.objectiveText}`);
-  const [eventEntries, setEventEntries] = useState<EventLogEntry[]>([]);
-  const [isCompactLayout, setIsCompactLayout] = useState(false);
   const [queuedComponentType, setQueuedComponentType] = useState<ComponentType | null>(null);
-  const eventCounterRef = useRef(0);
-  const shownCoachMessageRef = useRef<Set<number>>(new Set());
-  const hasSeenOverloadThisLevelRef = useRef(false);
-  const hasSnapshotOverloadRef = useRef(false);
-  const previousAvailableComponentsRef = useRef<ComponentType[]>(currentLevel.availableComponents);
-  const sustainedNoDropSecondsRef = useRef(0);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [showEndScreen, setShowEndScreen] = useState(false);
+
+  const [graphState, setGraphState] = useState(() => ({
+    edges: levelStartEdges,
+    nodes: levelStartNodes,
+  }));
+  const graphRef = useRef({ edges: levelStartEdges, nodes: levelStartNodes });
+
+  const inspectorData = useInspectorData(selectedNodeId, graphState.nodes, nodeStates);
 
   const effectiveLevelConfig = useMemo<LevelConfig>(
     () =>
@@ -135,215 +86,132 @@ const GameLayoutContent = ({
     [propLevelConfig, currentLevel],
   );
 
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [graphState, setGraphState] = useState<{ edges: Edge[]; nodes: ArchitectureCanvasNode[] }>(
-    () => ({ edges: initialCanvasEdges, nodes: initialCanvasNodes }),
-  );
-
-  const buildUnlockInput = useCallback(
-    (
-      snapshot: Record<string, { droppedOps: number; handledOps: number; incomingOps: number }>,
-      durations: OverloadDurations,
-      nodes: ArchitectureCanvasNode[],
-    ) => ({
-      graphNodes: nodes.map(toGraphNode),
-      overloadDurations: durations,
-      snapshot,
-    }),
-    [],
-  );
-
-  const [availableComponents, setAvailableComponents] = useState<ComponentType[]>(() =>
-    computeAvailableComponents(currentLevel.availableComponents, currentLevel.componentUnlocks, {
-      graphNodes: initialCanvasNodes.map(toGraphNode),
-      overloadDurations: EMPTY_OVERLOAD_DURATIONS,
-      snapshot: {},
-    }),
-  );
-
-  const graphRef = useRef<{ edges: Edge[]; nodes: ArchitectureCanvasNode[] }>({
-    edges: initialCanvasEdges,
-    nodes: initialCanvasNodes,
-  });
-
-  const appendEvent = useCallback((text: string) => {
-    eventCounterRef.current += 1;
-    const id = `event-${eventCounterRef.current}`;
-
-    setEventEntries((currentEntries) => [...currentEntries, { id, text }]);
-  }, []);
-
-  const buildInitialGraphEvents = useCallback(
-    (nodes: ArchitectureCanvasNode[], edges: Edge[]): EventLogEntry[] => {
-      const entries: EventLogEntry[] = [];
-
-      nodes.forEach((node) => {
-        eventCounterRef.current += 1;
-        entries.push({
-          id: `event-${eventCounterRef.current}`,
-          text: `Component placed: ${getComponentName(node.data.componentType)}`,
-        });
-      });
-
-      edges.forEach((edge) => {
-        eventCounterRef.current += 1;
-        entries.push({
-          id: `event-${eventCounterRef.current}`,
-          text: `Connection created: ${edge.source} → ${edge.target}`,
-        });
-      });
-
-      return entries;
-    },
-    [],
-  );
-
-  // Compute design-mode overload preview from starting traffic rate
-  const designModeOverloadedNodeIds = useMemo(() => {
-    if (mode === "SIMULATE") {
-      return [];
-    }
-
-    const graphNodes = graphState.nodes.map(toGraphNode);
-    const graphEdges = graphState.edges.map(toGraphEdge);
-    const previewSnapshot = computeTrafficFlow(graphNodes, graphEdges, {
-      cacheHitRate: effectiveLevelConfig.cacheHitRate,
-      trafficRate: effectiveLevelConfig.trafficStart,
-    });
-
-    return Object.entries(previewSnapshot)
-      .filter(([, state]) => state.droppedOps > 0)
-      .map(([nodeId]) => nodeId);
-  }, [mode, graphState, effectiveLevelConfig]);
+  const previousAvailableComponentsRef = useRef<ComponentType[]>(currentLevel.availableComponents);
 
   useEffect(() => {
-    const syncLayout = () => {
-      setIsCompactLayout(window.innerWidth <= MOBILE_LAYOUT_BREAKPOINT);
-    };
+    resetEvents(graphRef.current.nodes, graphRef.current.edges);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    syncLayout();
-    window.addEventListener("resize", syncLayout);
+  useEffect(() => {
+    const newlyUnlocked = availableComponents.filter(
+      (c) => !previousAvailableComponentsRef.current.includes(c),
+    );
 
-    return () => {
-      window.removeEventListener("resize", syncLayout);
-    };
-  }, []);
-
-  const handleGraphChange = useCallback(
-    (nodes: ArchitectureCanvasNode[], edges: Edge[]) => {
-      const previousNodeIds = new Set(graphRef.current.nodes.map((node) => node.id));
-      const previousEdgeIds = new Set(graphRef.current.edges.map((edge) => edge.id));
-
-      nodes.forEach((node) => {
-        if (!previousNodeIds.has(node.id)) {
-          appendEvent(`Component placed: ${getComponentName(node.data.componentType)}`);
-        }
-      });
-
-      edges.forEach((edge) => {
-        if (!previousEdgeIds.has(edge.id)) {
-          appendEvent(`Connection created: ${edge.source} → ${edge.target}`);
-        }
-      });
-
-      setGraphState({ edges, nodes });
-      graphRef.current = { edges, nodes };
-
-      const unlockInput = {
-        graphNodes: nodes.map(toGraphNode),
-        overloadDurations: EMPTY_OVERLOAD_DURATIONS,
-        snapshot: {},
-      };
-
-      setAvailableComponents(
-        computeAvailableComponents(
-          currentLevel.availableComponents,
-          currentLevel.componentUnlocks,
-          unlockInput,
-        ),
+    newlyUnlocked.forEach((c) => {
+      appendEvent(`Concept unlocked: ${COMPONENT_LIBRARY[c].label}`);
+      setCoachMessage(
+        `Unlocked: ${COMPONENT_LIBRARY[c].label}. Try using it to improve your architecture.`,
       );
-    },
-    [appendEvent, currentLevel],
-  );
+    });
 
-  const handleSelectedNodeChange = useCallback((nodeId: string | null) => {
-    setSelectedNodeId(nodeId);
-  }, []);
-
-  const loadLevel = useCallback(
-    (level: LevelDefinition) => {
-      const newNodes = level.startingNodes.map(levelNodeToCanvasNode);
-      const newEdges = level.startingEdges.map(levelEdgeToCanvasEdge);
-      const newAvailableComponents = computeAvailableComponents(
-        level.availableComponents,
-        level.componentUnlocks,
-        {
-          graphNodes: newNodes.map(toGraphNode),
-          overloadDurations: EMPTY_OVERLOAD_DURATIONS,
-          snapshot: {},
-        },
-      );
-
-      setCurrentLevelId(level.id);
-      setLevelStartNodes(newNodes);
-      setLevelStartEdges(newEdges);
-      setCanvasKey((k) => k + 1);
-      setGraphState({ edges: newEdges, nodes: newNodes });
-      graphRef.current = { edges: newEdges, nodes: newNodes };
-      setSelectedNodeId(null);
-      setOverloadDurations(new Map());
-      setShowEndScreen(false);
-      setCoachMessage(`Mission: ${level.objectiveText}`);
-      setEventEntries(buildInitialGraphEvents(newNodes, newEdges));
-      setQueuedComponentType(null);
-      shownCoachMessageRef.current = new Set();
-      hasSeenOverloadThisLevelRef.current = false;
-      hasSnapshotOverloadRef.current = false;
-      sustainedNoDropSecondsRef.current = 0;
-      endSimulation();
-      setAvailableComponents(newAvailableComponents);
-      previousAvailableComponentsRef.current = level.availableComponents;
-    },
-    [buildInitialGraphEvents, endSimulation],
-  );
+    previousAvailableComponentsRef.current = availableComponents;
+  }, [appendEvent, availableComponents]);
 
   const isRunnable = hasRunnablePath(
     graphState.nodes.map(toGraphNode),
     graphState.edges.map(toGraphEdge),
   );
-
-  const totalMonthlyCost = computeTotalMonthlyCost(graphState.nodes);
+  const totalMonthlyCost = graphState.nodes.reduce(
+    (sum, node) => sum + COMPONENT_LIBRARY[node.data.componentType].monthlyCost,
+    0,
+  );
   const remainingBudget = effectiveLevelConfig.monthlyBudget - totalMonthlyCost;
+
+  const designModeOverloadedNodeIds = useMemo(() => {
+    if (mode === "SIMULATE") {
+      return [];
+    }
+
+    const snapshot = computeTrafficFlow(
+      graphState.nodes.map(toGraphNode),
+      graphState.edges.map(toGraphEdge),
+      {
+        cacheHitRate: effectiveLevelConfig.cacheHitRate,
+        trafficRate: effectiveLevelConfig.trafficStart,
+      },
+    );
+
+    return Object.entries(snapshot)
+      .filter(([, s]) => s.droppedOps > 0)
+      .map(([id]) => id);
+  }, [mode, graphState, effectiveLevelConfig]);
+
+  const simulationOverloadedNodeIds = Object.entries(nodeStates)
+    .filter(([, s]) => s.droppedOps > 0)
+    .map(([id]) => id);
+  const overloadedNodeIds =
+    mode === "SIMULATE" ? simulationOverloadedNodeIds : designModeOverloadedNodeIds;
+
+  const handleLoadLevel = useCallback(
+    (level: LevelDefinition) => {
+      const { newEdges, newNodes } = loadLevel(level);
+
+      previousAvailableComponentsRef.current = level.availableComponents;
+      setCoachMessage(`Mission: ${level.objectiveText}`);
+      setSelectedNodeId(null);
+      setShowEndScreen(false);
+      setQueuedComponentType(null);
+      resetEvents(newNodes, newEdges);
+      resetForLevel(level, newNodes);
+      setGraphState({ edges: newEdges, nodes: newNodes });
+      graphRef.current = { edges: newEdges, nodes: newNodes };
+      endSimulation();
+    },
+    [endSimulation, loadLevel, resetEvents, resetForLevel],
+  );
+
+  const handleWin = useCallback(() => {
+    setShowEndScreen(true);
+    markLevelComplete(currentLevel.id);
+  }, [currentLevel.id, markLevelComplete]);
+
+  useSimulationTick({
+    appendEvent,
+    applySnapshot,
+    currentLevel,
+    effectiveLevelConfig,
+    endSimulation,
+    graphRef,
+    mode,
+    onWin: handleWin,
+    resetKey: canvasKey,
+    setCoachMessage,
+    tick,
+  });
 
   const handleToggleTraffic = useCallback(() => {
     if (mode === "SIMULATE") {
       endSimulation();
     } else if (isRunnable) {
-      sustainedNoDropSecondsRef.current = 0;
       startSimulation();
     }
-  }, [mode, startSimulation, endSimulation, isRunnable]);
+  }, [endSimulation, isRunnable, mode, startSimulation]);
 
   const handleContinue = useCallback(() => {
-    const nextLevel = getLevelById(currentLevelId + 1);
-    setShowEndScreen(false);
-    if (nextLevel !== undefined) {
-      loadLevel(nextLevel);
+    const nextLevel = getLevelById(currentLevel.id + 1);
+
+    if (nextLevel === undefined) {
+      setShowEndScreen(false);
+
+      return;
     }
-  }, [currentLevelId, loadLevel]);
+
+    handleLoadLevel(nextLevel);
+  }, [currentLevel.id, handleLoadLevel]);
 
   const handleReplay = useCallback(() => {
-    loadLevel(currentLevel);
-  }, [currentLevel, loadLevel]);
+    handleLoadLevel(currentLevel);
+  }, [currentLevel, handleLoadLevel]);
 
   const handleSelectLevel = useCallback(
     (levelId: number) => {
       const level = getLevelById(levelId);
+
       if (level !== undefined) {
-        loadLevel(level);
+        handleLoadLevel(level);
       }
     },
-    [loadLevel],
+    [handleLoadLevel],
   );
 
   const handlePlaceComponent = useCallback(
@@ -367,179 +235,33 @@ const GameLayoutContent = ({
     setQueuedComponentType(null);
   }, []);
 
-  useEffect(() => {
-    setEventEntries(buildInitialGraphEvents(graphRef.current.nodes, graphRef.current.edges));
-  }, [buildInitialGraphEvents]);
+  const handleGraphChange = useCallback(
+    (nodes: ArchitectureCanvasNode[], edges: Edge[]) => {
+      const previousNodeIds = new Set(graphRef.current.nodes.map((n) => n.id));
+      const previousEdgeIds = new Set(graphRef.current.edges.map((e) => e.id));
 
-  // Simulation tick loop
-  useEffect(() => {
-    if (mode !== "SIMULATE") {
-      return;
-    }
-
-    let elapsedSeconds = 0;
-
-    const interval = setInterval(() => {
-      elapsedSeconds++;
-
-      currentLevel.coachMessages.forEach((message, index) => {
-        if (elapsedSeconds < message.atSecond || shownCoachMessageRef.current.has(index)) {
-          return;
+      nodes.forEach((node) => {
+        if (!previousNodeIds.has(node.id)) {
+          appendEvent(`Component placed: ${COMPONENT_LIBRARY[node.data.componentType].label}`);
         }
-
-        shownCoachMessageRef.current.add(index);
-        setCoachMessage(message.text);
       });
 
-      if (elapsedSeconds >= effectiveLevelConfig.timeout) {
-        endSimulation();
-
-        return;
-      }
-
-      const rate = getLinearTrafficRate({
-        elapsed: elapsedSeconds,
-        timeout: effectiveLevelConfig.timeout,
-        trafficPeak: effectiveLevelConfig.trafficPeak,
-        trafficStart: effectiveLevelConfig.trafficStart,
-      });
-      const graphNodes = graphRef.current.nodes.map(toGraphNode);
-      const graphEdges = graphRef.current.edges.map(toGraphEdge);
-      const snapshot = computeTrafficFlow(graphNodes, graphEdges, {
-        cacheHitRate: effectiveLevelConfig.cacheHitRate,
-        trafficRate: rate,
-      });
-      const hasOverload = Object.values(snapshot).some((state) => state.droppedOps > 0);
-      const hadOverload = hasSnapshotOverloadRef.current;
-
-      if (!hadOverload && hasOverload) {
-        appendEvent("Overload started");
-
-        if (!hasSeenOverloadThisLevelRef.current) {
-          setCoachMessage(
-            "Overload detected. Add capacity or spread traffic to reduce dropped requests.",
-          );
-          hasSeenOverloadThisLevelRef.current = true;
+      edges.forEach((edge) => {
+        if (!previousEdgeIds.has(edge.id)) {
+          appendEvent(`Connection created: ${edge.source} → ${edge.target}`);
         }
-      }
-
-      if (hadOverload && !hasOverload) {
-        appendEvent("Overload resolved");
-      }
-
-      hasSnapshotOverloadRef.current = hasOverload;
-
-      // Win condition: sustain target req/s with zero drops for WIN_SUSTAIN_SECONDS
-      const atOrAboveTarget = rate >= effectiveLevelConfig.trafficTarget;
-
-      if (atOrAboveTarget && !hasOverload) {
-        sustainedNoDropSecondsRef.current += 1;
-      } else {
-        sustainedNoDropSecondsRef.current = 0;
-      }
-
-      // Update overload durations and available components
-      setOverloadDurations((prev) => {
-        const next = updateOverloadDurations(prev, snapshot);
-        const unlockInput = buildUnlockInput(snapshot, next, graphRef.current.nodes);
-
-        setAvailableComponents(
-          computeAvailableComponents(
-            currentLevel.availableComponents,
-            currentLevel.componentUnlocks,
-            unlockInput,
-          ),
-        );
-
-        return next;
       });
 
-      tick(snapshot, rate);
+      setGraphState({ edges, nodes });
+      graphRef.current = { edges, nodes };
+      updateFromGraph(nodes);
+    },
+    [appendEvent, updateFromGraph],
+  );
 
-      if (sustainedNoDropSecondsRef.current >= WIN_SUSTAIN_SECONDS) {
-        endSimulation();
-        setShowEndScreen(true);
-
-        const updated = [...new Set([...completedLevels, currentLevelId])];
-
-        saveProgress(updated);
-        setCompletedLevels(updated);
-      }
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [
-    appendEvent,
-    mode,
-    endSimulation,
-    tick,
-    effectiveLevelConfig,
-    completedLevels,
-    currentLevelId,
-    currentLevel,
-    buildUnlockInput,
-  ]);
-
-  const simulationOverloadedNodeIds = Object.entries(nodeStates)
-    .filter(([, state]) => state.droppedOps > 0)
-    .map(([nodeId]) => nodeId);
-
-  const overloadedNodeIds =
-    mode === "SIMULATE" ? simulationOverloadedNodeIds : designModeOverloadedNodeIds;
-
-  useEffect(() => {
-    const unlockedComponents = availableComponents.filter(
-      (componentType) => !previousAvailableComponentsRef.current.includes(componentType),
-    );
-
-    unlockedComponents.forEach((componentType) => {
-      const componentName = getComponentName(componentType);
-      appendEvent(`Concept unlocked: ${componentName}`);
-      setCoachMessage(`Unlocked: ${componentName}. Try using it to improve your architecture.`);
-    });
-
-    previousAvailableComponentsRef.current = availableComponents;
-  }, [appendEvent, availableComponents]);
-
-  const selectedNode = graphState.nodes.find((node) => node.id === selectedNodeId);
-
-  const selectedNodeLabel: string | undefined = selectedNode?.data.label;
-  const selectedComponentType: ComponentType | undefined = selectedNode?.data.componentType;
-  const selectedNodeState =
-    selectedNode?.id === undefined ? undefined : nodeStates[selectedNode.id];
-  const opsPerSec = selectedNodeState?.incomingOps;
-  const maxCapacity =
-    selectedComponentType === undefined
-      ? undefined
-      : COMPONENT_LIBRARY[selectedComponentType].capacity;
-
-  const latencyMs =
-    selectedComponentType === undefined ? undefined : LATENCY_MS[selectedComponentType];
-  const cost =
-    selectedComponentType === undefined
-      ? undefined
-      : COMPONENT_LIBRARY[selectedComponentType].monthlyCost;
-
-  const selectedNodeCapacity =
-    selectedComponentType === undefined
-      ? undefined
-      : COMPONENT_LIBRARY[selectedComponentType].capacity;
-
-  const loadPercent =
-    selectedNodeState === undefined ||
-    !Number.isFinite(selectedNodeCapacity) ||
-    selectedNodeCapacity === undefined
-      ? undefined
-      : (selectedNodeState.incomingOps / selectedNodeCapacity) * 100;
-
-  const isSelectedNodeOverloaded =
-    selectedNodeState === undefined ||
-    !Number.isFinite(selectedNodeCapacity) ||
-    selectedNodeCapacity === undefined
-      ? undefined
-      : selectedNodeState.incomingOps > selectedNodeCapacity;
+  const handleSelectedNodeChange = useCallback((nodeId: string | null) => {
+    setSelectedNodeId(nodeId);
+  }, []);
 
   const isLocked = mode === "SIMULATE";
 
@@ -570,7 +292,7 @@ const GameLayoutContent = ({
       />
       <LevelStrip
         completedLevelIds={completedLevels}
-        currentLevelId={currentLevelId}
+        currentLevelId={currentLevel.id}
         levels={LEVELS}
         onSelectLevel={handleSelectLevel}
       />
@@ -598,11 +320,11 @@ const GameLayoutContent = ({
         <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           <GameCanvas
             componentToPlace={queuedComponentType}
-            key={canvasKey}
             initialEdges={levelStartEdges}
             initialNodes={levelStartNodes}
             isLocked={isLocked}
             isSimulating={mode === "SIMULATE"}
+            key={canvasKey}
             lockedNodeIds={currentLevel.lockedNodeIds}
             onComponentPlaced={handleComponentPlaced}
             onSelectedNodeChange={handleSelectedNodeChange}
@@ -622,14 +344,14 @@ const GameLayoutContent = ({
         >
           <section aria-label="Inspector" style={{ flexShrink: 0 }}>
             <Inspector
-              componentType={selectedComponentType}
-              cost={cost}
-              isOverloaded={isSelectedNodeOverloaded}
-              latencyMs={latencyMs}
-              loadPercent={loadPercent}
-              maxCapacity={maxCapacity}
-              opsPerSec={opsPerSec}
-              selectedNodeLabel={selectedNodeLabel}
+              componentType={inspectorData.componentType}
+              cost={inspectorData.cost}
+              isOverloaded={inspectorData.isOverloaded}
+              latencyMs={inspectorData.latencyMs}
+              loadPercent={inspectorData.loadPercent}
+              maxCapacity={inspectorData.maxCapacity}
+              opsPerSec={inspectorData.opsPerSec}
+              selectedNodeLabel={inspectorData.selectedNodeLabel}
             />
           </section>
           <Coach message={coachMessage} />
