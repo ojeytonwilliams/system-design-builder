@@ -1,0 +1,27 @@
+/* This ruleset is not enforced, but is intended as a guide when refactoring. */
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["eslint", "import", "typescript", "react", "oxc", "promise", "vitest"],
+  "extends": [".oxlintrc.json"],
+
+  "rules": {
+    "max-statements": ["error", { "max": 15 }],
+    "max-lines": ["error", { "max": 500, "skipBlankLines": true, "skipComments": true }],
+    "max-lines-per-function": [
+      "error",
+      { "max": 50, "skipBlankLines": true, "skipComments": true }
+    ],
+    "complexity": ["error", { "max": 15 }]
+  },
+  "overrides": [
+    {
+      /* We can be more lenient about test files */
+      "files": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "max-statements": "off",
+        "max-lines": "off",
+        "max-lines-per-function": "off"
+      }
+    }
+  ]
+}

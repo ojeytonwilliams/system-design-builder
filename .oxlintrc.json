@@ -42,9 +42,6 @@
     single class */
     "max-classes-per-file": "off",
     "max-params": ["error", { "max": 4 }],
-    /* This is a useful code smell, but fixing it on the fly warps the codebase.
-    It only makes sense as a refactoring hint */
-    "import/max-dependencies": "off",
     /* We're using node */
     "import/no-nodejs-modules": "off",
     /* Various rules conflict  */
@@ -53,10 +50,15 @@
     positives (e.g. 0 in a loop or 2 as a divisor) and I don't want to configure
     it */
     "no-magic-numbers": "off",
+    /* Early returns are preferred */
+    "no-else-return": ["error", { "allowElseIf": false }],
     /* STRICTNESS: the following should be enabled for strict linting, but not during normal development*/
+    "import/max-dependencies": "off",
     "max-statements": "off",
     "max-lines": "off",
-    "max-lines-per-function": "off"
+    "max-lines-per-function": "off",
+    /* 20 is quite high, so this is overriden in the strict rules */
+    "complexity": ["error", { "max": 20 }]
   },
 
   "overrides": [

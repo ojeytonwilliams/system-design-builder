@@ -10,6 +10,8 @@
   "scripts": {
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
+    "lint:strict": "oxlint --config .oxlintrc.strict.json",
+    "lint:strict:fix": "oxlint --config .oxlintrc.strict.json --fix",
     "test": "vitest run",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
