@@ -142,10 +142,8 @@ type HandleSide = "bottom" | "left" | "right" | "top";
 
 interface ArchitectureNodeData {
   componentType: ComponentType;
-  icon?: string;
   isOverloaded?: boolean;
   isSelected?: boolean;
-  label: string;
 }
 
 interface PixiNode {
@@ -221,10 +219,7 @@ const snapPositionToGrid = ({ x, y }: Point): Point => ({
 const isConnectionValid = (_sourceType: ComponentType, targetType: ComponentType): boolean =>
   targetType !== "users";
 
-const createNodeData = (componentType: ComponentType): ArchitectureNodeData => {
-  const def = CANVAS_COMPONENT_LIBRARY[componentType];
-  return { componentType, icon: def.icon, label: def.label };
-};
+const createNodeData = (componentType: ComponentType): ArchitectureNodeData => ({ componentType });
 
 const withDefaultNodeShape = (node: PixiNode): PixiNode => ({
   ...node,
@@ -498,14 +493,14 @@ const PixiNodeGraphic = ({
       <pixiText
         anchor={{ x: 0.5, y: 0.5 }}
         style={iconStyle}
-        text={node.data.icon ?? ""}
+        text={def.icon}
         x={NODE_WIDTH / 2}
         y={32}
       />
       <pixiText
         anchor={{ x: 0.5, y: 0 }}
         style={labelStyle}
-        text={node.data.label}
+        text={def.label}
         x={NODE_WIDTH / 2}
         y={60}
       />
@@ -1241,7 +1236,7 @@ const GameCanvas = ({
                 });
               }}
             >
-              {node.data.label}
+              {CANVAS_COMPONENT_LIBRARY[node.data.componentType].label}
               {/* Handle mirrors */}
               <div data-testid={`handle-${node.id}-source-right`} />
               <div data-testid={`handle-${node.id}-source-bottom`} />

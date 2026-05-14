@@ -16,8 +16,9 @@ const useInspectorData = (
       return {};
     }
 
-    const { componentType, label: selectedNodeLabel } = selectedNode.data;
+    const { componentType } = selectedNode.data;
     const def = COMPONENT_LIBRARY[componentType];
+    const selectedNodeLabel = def.label;
     const nodeState = nodeStates[selectedNode.id];
     const opsPerSec = nodeState?.incomingOps;
     const { capacity: maxCapacity, latencyMs, monthlyCost: cost } = def;

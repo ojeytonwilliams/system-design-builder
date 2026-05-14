@@ -48,13 +48,13 @@ const resolvingOverloadLevelConfig: LevelConfig = {
 
 const overloadNodes: ArchitectureCanvasNode[] = [
   {
-    data: { componentType: "users", label: "Users" },
+    data: { componentType: "users" },
     id: "users-1",
     position: { x: 0, y: 0 },
     type: "architecture",
   },
   {
-    data: { componentType: "server", label: "Server" },
+    data: { componentType: "server" },
     id: "server-1",
     position: { x: 96, y: 0 },
     type: "architecture",
@@ -63,19 +63,19 @@ const overloadNodes: ArchitectureCanvasNode[] = [
 
 const unlockedLevel3Nodes: ArchitectureCanvasNode[] = [
   {
-    data: { componentType: "users", label: "Users" },
+    data: { componentType: "users" },
     id: "users-1",
     position: { x: 0, y: 0 },
     type: "architecture",
   },
   {
-    data: { componentType: "server", label: "Server" },
+    data: { componentType: "server" },
     id: "server-1",
     position: { x: 96, y: 0 },
     type: "architecture",
   },
   {
-    data: { componentType: "server", label: "Server" },
+    data: { componentType: "server" },
     id: "server-2",
     position: { x: 192, y: 0 },
     type: "architecture",

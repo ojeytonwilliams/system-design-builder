@@ -2,7 +2,7 @@ import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js"
 import type { StartingEdge, StartingNode } from "../levels/types.js";
 
 const levelNodeToCanvasNode = (node: StartingNode): ArchitectureCanvasNode => ({
-  data: { componentType: node.componentType, label: node.label },
+  data: { componentType: node.componentType },
   id: node.id,
   position: node.position,
   type: "architecture",
