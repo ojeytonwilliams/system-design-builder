@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.6] - 2026-05-14
+
+### Bug fixes
+
+- **First page load showed the wrong level after completing level 1**: `useLevel` deferred reading `localStorage` to a `useEffect`, which meant the first render always started at level 1. When the effect fired and updated `currentLevelId`, the level text changed but `levelStartNodes`, `levelStartEdges`, `graphState`, `coachMessage`, and `availableComponents` were still initialised from level 1 — producing a broken intermediate state with mismatched content. Fixed by switching Astro's hydration directive from `client:load` to `client:only="react"`, which skips server rendering entirely and removes the hydration-mismatch concern that necessitated the deferred read. `useLevel` now reads `localStorage` in lazy `useState` initialisers, so the correct level is available on the very first render.
+
 ## [2.3.5] - 2026-05-14
 
 ### Refactoring

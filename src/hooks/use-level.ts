@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
 import { LEVELS, getLevelById } from "../levels/index.js";
 import { level1 } from "../levels/level1.js";
@@ -30,15 +30,13 @@ const toCanvasEdges = (level: LevelDefinition): Edge[] =>
 const useLevel = (initialNodes: ArchitectureCanvasNode[], initialEdges: Edge[]): UseLevelResult => {
   const hasInitialNodes = initialNodes.length > 0;
 
-  const [currentLevelId, setCurrentLevelId] = useState<number>(1);
-  const [completedLevels, setCompletedLevels] = useState<number[]>([]);
-
-  useEffect(() => {
+  const [currentLevelId, setCurrentLevelId] = useState<number>(() => {
     const progress = loadProgress();
-
-    setCompletedLevels(progress.completedLevels);
-    setCurrentLevelId(getFirstIncompleteLevel(progress.completedLevels, LEVELS.length));
-  }, []);
+    return getFirstIncompleteLevel(progress.completedLevels, LEVELS.length);
+  });
+  const [completedLevels, setCompletedLevels] = useState<number[]>(
+    () => loadProgress().completedLevels,
+  );
 
   const currentLevel = getLevelById(currentLevelId) ?? level1;
 

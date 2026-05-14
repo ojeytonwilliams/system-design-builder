@@ -317,6 +317,17 @@ describe("level system", () => {
     expect(screen.getByTestId("level-strip-level-2")).toHaveAttribute("data-status", "active");
   });
 
+  it("loads the correct canvas nodes and resources for the first incomplete level on page load", () => {
+    localStorage.setItem("sdb_progress", JSON.stringify({ completedLevels: [1], version: 1 }));
+
+    render(<GameLayout />);
+
+    // Level 2 starts with two servers; level 1 starts with only a users node
+    expect(screen.getByTestId("canvas-node-server-2")).toBeInTheDocument();
+    // Level 2 has load-balancer in its palette; level 1 does not
+    expect(screen.getByTestId("resource-item-load-balancer")).toBeInTheDocument();
+  });
+
   it("loads the next level after continue is clicked", () => {
     render(
       <GameLayout
