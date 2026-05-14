@@ -45,7 +45,7 @@ const Inspector = ({
 
   const opsText = opsPerSec === undefined ? "— ops/s" : `${Math.round(opsPerSec)} ops/s`;
 
-  let capacityText: string | undefined;
+  let capacityText: string | undefined = undefined;
 
   if (maxCapacity !== undefined) {
     capacityText = maxCapacity === Infinity ? "Capacity: ∞" : `Capacity: ${maxCapacity} ops/s`;

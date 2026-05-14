@@ -11,9 +11,11 @@ const isPersistedProgress = (value: unknown): value is PersistedProgress => {
     return false;
   }
 
-  const obj = value as Record<string, unknown>;
+  if (!("version" in value) || !("completedLevels" in value)) {
+    return false;
+  }
 
-  return obj["version"] === SCHEMA_VERSION && Array.isArray(obj["completedLevels"]);
+  return value.version === SCHEMA_VERSION && Array.isArray(value.completedLevels);
 };
 
 const loadProgress = (): PersistedProgress => {

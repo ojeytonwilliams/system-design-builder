@@ -49,69 +49,75 @@
     "import/no-nodejs-modules": "off",
     /* Various rules conflict  */
     "no-duplicate-imports": ["error", { "allowSeparateTypeImports": true }],
-    /* TEST SPECIFIC RULES BELOW. Move to override when override bugs are fixed */
-    "vitest/prefer-describe-function-title": "error",
-    /* We use globals */
-    "vitest/prefer-importing-vitest-globals": "off",
-    /* expect-expect should be enough */
-    "vitest/prefer-expect-assertions": "off",
-    /* Tests often insert mocks where a void callback is expected, this is fine */
-    "typescript/strict-void-return": "off",
-    /* valid-title seems overly strict and rejects perfectly valid titles (e.g. describe(myFunction)) */
-    "vitest/valid-title": "off",
-    "jest/valid-title": "off",
-    /* This doesn't apply to vitest and the vitest version does not work */
-    "jest/valid-expect": "off",
-    /* describe blocks include functions and can be quite large, so this doesn't make sense*/
-    "max-lines-per-function": "off",
-    /* each test is a statement */
-    "max-statements": "off",
-    /* Starting a comment with a capital letter is generally nicer, but there are common exceptions (e.g. function names: // mkdir needs to be...) */
-    "eslint/capitalized-comments": "off",
     /* magic numbers aren't great, but the blanket rule has too many false
     positives (e.g. 0 in a loop or 2 as a divisor) and I don't want to configure
     it */
     "no-magic-numbers": "off",
-    /* max-lines is a useful indicator, but cannot be acted upon by an AI unless we're refactoring */
+    /* STRICTNESS: the following should be enabled for strict linting, but not during normal development*/
+    "max-statements": "off",
     "max-lines": "off",
-    /* Before/after hooks have their place*/
-    "no-hooks": "off",
-    "vitest/no-hooks": "off",
-    /* A fairly common pattern is to declare a variable in describe block and
+    "max-lines-per-function": "off"
+  },
+
+  "overrides": [
+    {
+      "files": ["**/*.test.{ts,tsx}"],
+      "rules": {
+        "vitest/prefer-describe-function-title": "error",
+        /* We use globals */
+        "vitest/prefer-importing-vitest-globals": "off",
+        /* expect-expect should be enough */
+        "vitest/prefer-expect-assertions": "off",
+        /* Tests often insert mocks where a void callback is expected, this is fine */
+        "typescript/strict-void-return": "off",
+        /* valid-title seems overly strict and rejects perfectly valid titles (e.g. describe(myFunction)) */
+        "vitest/valid-title": "off",
+        "jest/valid-title": "off",
+        /* This doesn't apply to vitest and the vitest version does not work */
+        "jest/valid-expect": "off",
+        /* Starting a comment with a capital letter is generally nicer, but there are common exceptions (e.g. function names: // mkdir needs to be...) */
+        "eslint/capitalized-comments": "off",
+
+        /* Before/after hooks have their place*/
+        "no-hooks": "off",
+        "vitest/no-hooks": "off",
+        /* A fairly common pattern is to declare a variable in describe block and
     initialize it in a hook. We want to allow this. */
-    "init-declarations": "off",
-    /* Strictness is preferrable for true or false */
-    "vitest/prefer-to-be-falsy": "off",
-    "vitest/prefer-to-be-truthy": "off",
-    /* Either calledOnce or calledTimes(1) is fine, but we should pick one for consistency */
-    "vitest/prefer-called-times": "off",
-    /* We're more interested in testing behaviour. If a test needs to make an unsafe assertion, that's okay */
-    "typescript/no-unsafe-type-assertion": "off",
-    /* Nullable booleans get a pass so that optional flags (e.g. opts.isWhatever) can be used in ternaries */
-    "typescript/strict-boolean-expressions": [
-      "error",
-      { "allowNullableBoolean": true, "allowNullableString": true }
-    ],
-    /* Generally this is a little neater, but there are lot of false positives.
+        "init-declarations": "off",
+        /* Strictness is preferrable for true or false */
+        "vitest/prefer-to-be-falsy": "off",
+        "vitest/prefer-to-be-truthy": "off",
+        /* Either calledOnce or calledTimes(1) is fine, but we should pick one for consistency */
+        "vitest/prefer-called-times": "off",
+        /* We're more interested in testing behaviour. If a test needs to make an unsafe assertion, that's okay */
+        "typescript/no-unsafe-type-assertion": "off",
+        /* Nullable booleans get a pass so that optional flags (e.g. opts.isWhatever) can be used in ternaries */
+        "typescript/strict-boolean-expressions": [
+          "error",
+          { "allowNullableBoolean": true, "allowNullableString": true }
+        ],
+        /* Generally this is a little neater, but there are lot of false positives.
     Consider simply disabling if the allowedPrefixes balloons */
-    "jest/prefer-lowercase-title": [
-      "error",
-      {
-        "allowedPrefixes": [
-          /* HTTP methods */
-          "GET",
-          "POST",
-          "PUT",
-          "PATCH",
-          "DELETE",
-          "HEAD",
-          "OPTIONS",
-          "TRACE",
-          "CONNECT",
-          /* Standard acronyms */
-          "URL"
+        "jest/prefer-lowercase-title": [
+          "error",
+          {
+            "allowedPrefixes": [
+              /* HTTP methods */
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE",
+              "HEAD",
+              "OPTIONS",
+              "TRACE",
+              "CONNECT",
+              /* Standard acronyms */
+              "URL"
+            ]
+          }
         ]
       }
-    ]
-  }
+    }
+  ]
 }

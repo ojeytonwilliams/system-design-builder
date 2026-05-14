@@ -503,40 +503,43 @@ const GameLayoutContent = ({
     previousAvailableComponentsRef.current = availableComponents;
   }, [appendEvent, availableComponents]);
 
-  let selectedNode = graphState.nodes.find((node) => node.id === selectedNodeId);
+  const selectedNode = graphState.nodes.find((node) => node.id === selectedNodeId);
 
-  if (selectedNodeId === null) {
-    selectedNode = undefined;
-  }
+  const selectedNodeLabel: string | undefined = selectedNode?.data.label;
+  const selectedComponentType: ComponentType | undefined = selectedNode?.data.componentType;
+  const selectedNodeState =
+    selectedNode?.id === undefined ? undefined : nodeStates[selectedNode.id];
+  const opsPerSec = selectedNodeState?.incomingOps;
+  const maxCapacity =
+    selectedComponentType === undefined
+      ? undefined
+      : COMPONENT_LIBRARY[selectedComponentType].capacity;
 
-  let selectedNodeLabel: string | undefined;
-  let selectedComponentType: ComponentType | undefined;
-  let loadPercent: number | undefined;
-  let opsPerSec: number | undefined;
-  let maxCapacity: number | undefined;
-  let latencyMs: number | undefined;
-  let cost: number | undefined;
-  let isSelectedNodeOverloaded = false;
+  const latencyMs =
+    selectedComponentType === undefined ? undefined : LATENCY_MS[selectedComponentType];
+  const cost =
+    selectedComponentType === undefined
+      ? undefined
+      : COMPONENT_LIBRARY[selectedComponentType].monthlyCost;
 
-  if (selectedNode !== undefined) {
-    selectedNodeLabel = selectedNode.data.label;
-    selectedComponentType = selectedNode.data.componentType;
-    maxCapacity = COMPONENT_LIBRARY[selectedNode.data.componentType].capacity;
-    latencyMs = LATENCY_MS[selectedNode.data.componentType];
-    cost = COMPONENT_LIBRARY[selectedNode.data.componentType].monthlyCost;
+  const selectedNodeCapacity =
+    selectedComponentType === undefined
+      ? undefined
+      : COMPONENT_LIBRARY[selectedComponentType].capacity;
 
-    const selectedNodeState = nodeStates[selectedNode.id];
-    const selectedNodeCapacity = COMPONENT_LIBRARY[selectedNode.data.componentType].capacity;
+  const loadPercent =
+    selectedNodeState === undefined ||
+    !Number.isFinite(selectedNodeCapacity) ||
+    selectedNodeCapacity === undefined
+      ? undefined
+      : (selectedNodeState.incomingOps / selectedNodeCapacity) * 100;
 
-    if (selectedNodeState !== undefined) {
-      opsPerSec = selectedNodeState.incomingOps;
-
-      if (Number.isFinite(selectedNodeCapacity)) {
-        loadPercent = (selectedNodeState.incomingOps / selectedNodeCapacity) * 100;
-        isSelectedNodeOverloaded = selectedNodeState.incomingOps > selectedNodeCapacity;
-      }
-    }
-  }
+  const isSelectedNodeOverloaded =
+    selectedNodeState === undefined ||
+    !Number.isFinite(selectedNodeCapacity) ||
+    selectedNodeCapacity === undefined
+      ? undefined
+      : selectedNodeState.incomingOps > selectedNodeCapacity;
 
   const isLocked = mode === "SIMULATE";
 

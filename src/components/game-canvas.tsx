@@ -484,7 +484,7 @@ const PixiNodeGraphic = ({
 
   return (
     <pixiContainer
-      ref={handleRef as unknown as never}
+      ref={handleRef}
       cursor={isLocked ? "default" : "grab"}
       eventMode="static"
       onClick={handleClick}

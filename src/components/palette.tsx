@@ -18,7 +18,7 @@ const Resources = ({
   let contentDisplay = "grid";
   let contentGap = "0.75rem";
   let contentOverflowX: "auto" | "visible" = "visible";
-  let contentPaddingBottom: string | undefined;
+  let contentPaddingBottom: string | undefined = undefined;
 
   if (isCompact) {
     contentDisplay = "flex";

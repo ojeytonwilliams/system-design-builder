@@ -95,7 +95,7 @@ const computeTrafficFlow = (
     const node = nodeMap.get(nodeId);
 
     if (node !== undefined) {
-      let incomingOps: number;
+      let incomingOps = 0;
 
       if (node.type === "users") {
         incomingOps = trafficRate;
@@ -106,8 +106,8 @@ const computeTrafficFlow = (
         );
       }
 
-      let handledOps: number;
-      let droppedOps: number;
+      let handledOps = 0;
+      let droppedOps = 0;
 
       if (node.type === "load-balancer") {
         handledOps = incomingOps;
