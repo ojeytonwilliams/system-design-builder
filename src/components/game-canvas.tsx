@@ -2,7 +2,7 @@ import { Application, useApplication } from "@pixi/react";
 import type { Container, FederatedPointerEvent, Graphics } from "pixi.js";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { COMPONENT_LIBRARY, isComponentType } from "./component-library.js";
+import { isComponentType } from "./component-library.js";
 import type { ComponentType } from "./component-library.js";
 import { EdgesLayer } from "./canvas-edge-graphic.js";
 import type { DragState, PendingEdge } from "./canvas-edge-graphic.js";
@@ -68,9 +68,9 @@ interface PixiCanvasContentProps {
   nodeContainerRefs: { current: Map<string, Container> };
   nodes: PixiNode[];
   onEdgeClick: (edgeId: string) => void;
-  onEdgeContextMenu: (edgeId: string, e: FederatedPointerEvent) => void;
+  onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
   onHandleClick: (nodeId: string, side: HandleSide, kind: "source" | "target") => void;
-  onNodeContextMenu: (nodeId: string, e: FederatedPointerEvent) => void;
+  onNodeContextMenu: (nodeId: string, pos: { clientX: number; clientY: number }) => void;
   onNodePointerDown: (nodeId: string, e: FederatedPointerEvent) => void;
   onNodeSelect: (nodeId: string) => void;
   onPaneClick: () => void;
@@ -181,88 +181,6 @@ const PixiCanvasContent = ({
     </pixiContainer>
   );
 };
-
-interface DomMirrorProps {
-  dropzoneRef: { current: HTMLDivElement | null };
-  edges: Edge[];
-  lockedNodeIds: string[];
-  nodes: PixiNode[];
-  onEdgeClick: (edgeId: string) => void;
-  onNodeSelect: (nodeId: string) => void;
-  overloadedNodeIds: string[];
-  setContextMenu: (state: ContextMenuState | null) => void;
-  setSelectedNodeId: (id: string | null) => void;
-}
-
-const DomMirror = ({
-  nodes,
-  edges,
-  overloadedNodeIds,
-  lockedNodeIds,
-  dropzoneRef,
-  onNodeSelect,
-  onEdgeClick,
-  setContextMenu,
-  setSelectedNodeId,
-}: DomMirrorProps) => (
-  <div aria-hidden="true" style={{ display: "none" }}>
-    {nodes.map((node) => (
-      <div
-        key={node.id}
-        data-component-type={node.data.componentType}
-        data-overloaded={overloadedNodeIds.includes(node.id).toString()}
-        data-testid={`canvas-node-${node.id}`}
-        onClick={() => {
-          onNodeSelect(node.id);
-        }}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          if (lockedNodeIds.includes(node.id)) {
-            return;
-          }
-          setSelectedNodeId(node.id);
-          const rect = dropzoneRef.current?.getBoundingClientRect();
-          setContextMenu({
-            kind: "node",
-            nodeId: node.id,
-            x: e.clientX - (rect?.left ?? 0),
-            y: e.clientY - (rect?.top ?? 0),
-          });
-        }}
-      >
-        {COMPONENT_LIBRARY[node.data.componentType].label}
-        <div data-testid={`handle-${node.id}-source-right`} />
-        <div data-testid={`handle-${node.id}-source-bottom`} />
-        {node.data.componentType !== "users" && (
-          <>
-            <div data-testid={`handle-${node.id}-target-left`} />
-            <div data-testid={`handle-${node.id}-target-top`} />
-          </>
-        )}
-      </div>
-    ))}
-    {edges.map((edge) => (
-      <div
-        key={edge.id}
-        data-testid={`canvas-edge-${edge.id}`}
-        onClick={() => {
-          onEdgeClick(edge.id);
-        }}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          const rect = dropzoneRef.current?.getBoundingClientRect();
-          setContextMenu({
-            edgeId: edge.id,
-            kind: "edge",
-            x: e.clientX - (rect?.left ?? 0),
-            y: e.clientY - (rect?.top ?? 0),
-          });
-          setSelectedNodeId(null);
-        }}
-      />
-    ))}
-  </div>
-);
 
 const useCanvasKeyboard = (
   graph: { edges: Edge[]; nodes: PixiNode[] },
@@ -591,19 +509,22 @@ const GameCanvas = ({
     setContextMenu(null);
   }, []);
 
-  const onEdgeContextMenu = useCallback((edgeId: string, e: FederatedPointerEvent) => {
-    const rect = dropzoneRef.current?.getBoundingClientRect();
-    setContextMenu({
-      edgeId,
-      kind: "edge",
-      x: e.client.x - (rect?.left ?? 0),
-      y: e.client.y - (rect?.top ?? 0),
-    });
-    setSelectedNodeId(null);
-  }, []);
+  const onEdgeContextMenu = useCallback(
+    (edgeId: string, pos: { clientX: number; clientY: number }) => {
+      const rect = dropzoneRef.current?.getBoundingClientRect();
+      setContextMenu({
+        edgeId,
+        kind: "edge",
+        x: pos.clientX - (rect?.left ?? 0),
+        y: pos.clientY - (rect?.top ?? 0),
+      });
+      setSelectedNodeId(null);
+    },
+    [],
+  );
 
   const onNodeContextMenu = useCallback(
-    (nodeId: string, e: FederatedPointerEvent) => {
+    (nodeId: string, pos: { clientX: number; clientY: number }) => {
       if (lockedNodeIds.includes(nodeId)) {
         return;
       }
@@ -612,8 +533,8 @@ const GameCanvas = ({
       setContextMenu({
         kind: "node",
         nodeId,
-        x: e.client.x - (rect?.left ?? 0),
-        y: e.client.y - (rect?.top ?? 0),
+        x: pos.clientX - (rect?.left ?? 0),
+        y: pos.clientY - (rect?.top ?? 0),
       });
     },
     [lockedNodeIds],
@@ -636,18 +557,6 @@ const GameCanvas = ({
           width: "100%",
         }}
       >
-        <DomMirror
-          dropzoneRef={dropzoneRef}
-          edges={edges}
-          lockedNodeIds={lockedNodeIds}
-          nodes={nodes}
-          onEdgeClick={onEdgeClick}
-          onNodeSelect={onNodeSelect}
-          overloadedNodeIds={overloadedNodeIds}
-          setContextMenu={setContextMenu}
-          setSelectedNodeId={setSelectedNodeId}
-        />
-
         {stageSize.width > 0 && stageSize.height > 0 && (
           <Application
             antialias

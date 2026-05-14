@@ -23,7 +23,7 @@ interface PixiEdgeInnerProps {
   edge: PixiEdge;
   isSimulating: boolean;
   onEdgeClick: (edgeId: string) => void;
-  onEdgeContextMenu: (edgeId: string, e: FederatedPointerEvent) => void;
+  onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
   sourceNode: PixiNode;
   targetNode: PixiNode;
 }
@@ -101,6 +101,7 @@ const PixiEdgeInner = ({
   return (
     <pixiGraphics
       cursor="pointer"
+      data-testid={`canvas-edge-${edgeId}`}
       draw={draw}
       eventMode="static"
       onClick={(e: FederatedPointerEvent) => {
@@ -108,7 +109,7 @@ const PixiEdgeInner = ({
         e.stopPropagation();
       }}
       onRightClick={(e: FederatedPointerEvent) => {
-        onEdgeContextMenu(edgeId, e);
+        onEdgeContextMenu(edgeId, { clientX: e.client.x, clientY: e.client.y });
         e.stopPropagation();
       }}
     />
@@ -121,7 +122,7 @@ interface PixiEdgeGraphicProps {
   isSimulating: boolean;
   nodes: PixiNode[];
   onEdgeClick: (edgeId: string) => void;
-  onEdgeContextMenu: (edgeId: string, e: FederatedPointerEvent) => void;
+  onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
 }
 
 const PixiEdgeGraphic = ({
@@ -202,7 +203,7 @@ interface EdgesLayerProps {
   nodeContainerRefs: { current: Map<string, Container> };
   nodes: PixiNode[];
   onEdgeClick: (edgeId: string) => void;
-  onEdgeContextMenu: (edgeId: string, e: FederatedPointerEvent) => void;
+  onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
   pendingEdge: PendingEdge | null;
 }
 

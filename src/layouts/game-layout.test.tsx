@@ -84,6 +84,13 @@ const unlockedLevel3Nodes: ArchitectureCanvasNode[] = [
 
 const overloadEdges: Edge[] = [{ id: "edge-1", source: "users-1", target: "server-1" }];
 
+// oxlint-disable-next-line vitest/require-top-level-describe
+beforeAll(() => {
+  // The pixi mocks replace the pixi elements with custom elements that react
+  // does not recognize, which causes React to log errors during tests.
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
+
 describe("game layout", () => {
   it("renders the top bar", () => {
     render(<GameLayout />);

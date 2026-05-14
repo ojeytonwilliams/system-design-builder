@@ -66,7 +66,7 @@ interface PixiNodeProps {
   isPendingConnection: boolean;
   isSelected: boolean;
   node: PixiNode;
-  onContextMenu: (nodeId: string, e: FederatedPointerEvent) => void;
+  onContextMenu: (nodeId: string, pos: { clientX: number; clientY: number }) => void;
   onHandleClick: (nodeId: string, side: HandleSide, kind: "source" | "target") => void;
   onPointerDown: (nodeId: string, e: FederatedPointerEvent) => void;
   onSelect: (nodeId: string) => void;
@@ -160,7 +160,7 @@ const PixiNodeGraphic = ({
       if (isLocked) {
         return;
       }
-      onContextMenu(nodeId, e);
+      onContextMenu(nodeId, { clientX: e.client.x, clientY: e.client.y });
       e.stopPropagation();
     },
     [isLocked, onContextMenu, nodeId],
@@ -186,6 +186,9 @@ const PixiNodeGraphic = ({
     <pixiContainer
       ref={handleRef}
       cursor={isLocked ? "default" : "grab"}
+      data-label={def.label}
+      data-overloaded={isOverloaded}
+      data-testid={`canvas-node-${nodeId}`}
       eventMode="static"
       onClick={handleClick}
       onPointerDown={handlePointerDown}

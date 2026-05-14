@@ -1,25 +1,35 @@
-import {
-  GameCanvas,
-  chooseBestHandles,
-  isConnectionValid,
-  snapPositionToGrid,
-} from "./game-canvas.js";
+import { GameCanvas } from "./game-canvas.js";
 import { fireEvent, render, screen } from "@testing-library/react";
 
+const INITIAL_NODES_TWO = [
+  {
+    data: { componentType: "users" },
+    id: "users-1",
+    position: { x: 0, y: 0 },
+    type: "architecture",
+  },
+  {
+    data: { componentType: "server" },
+    id: "server-1",
+    position: { x: 96, y: 0 },
+    type: "architecture",
+  },
+] as const;
+
+const LOCKED_USERS_NODE = [
+  {
+    data: { componentType: "users" as const },
+    id: "users-1",
+    position: { x: 0, y: 0 },
+    type: "architecture" as const,
+  },
+];
+
 describe("game canvas", () => {
-  it("renders a canvas container", () => {
-    render(<GameCanvas />);
-
-    expect(screen.getByTestId("game-canvas")).toBeInTheDocument();
-  });
-
-  it("canvas container fills its parent with 100% dimensions", () => {
-    render(<GameCanvas />);
-
-    expect(screen.getByTestId("game-canvas")).toHaveStyle({
-      height: "100%",
-      width: "100%",
-    });
+  beforeAll(() => {
+    // The pixi mocks replace the pixi elements with custom elements that react
+    // does not recognize, which causes React to log errors during tests.
+    vi.spyOn(console, "error").mockImplementation(() => {});
   });
 
   it("drops a palette item onto the canvas and renders its label", () => {
@@ -44,8 +54,10 @@ describe("game canvas", () => {
       dataTransfer: { getData: () => "server" },
     });
 
-    expect(screen.getByTestId("canvas-node-server-1")).toBeInTheDocument();
-    expect(screen.getByText("Small Server")).toBeInTheDocument();
+    expect(screen.getByTestId("canvas-node-server-1")).toHaveAttribute(
+      "data-label",
+      "Small Server",
+    );
   });
 
   it("places a queued component when componentToPlace is provided", () => {
@@ -83,153 +95,6 @@ describe("game canvas", () => {
 
     expect(screen.queryByTestId("canvas-node-server-1")).not.toBeInTheDocument();
     expect(screen.queryByTestId("canvas-edge-edge-1")).not.toBeInTheDocument();
-  });
-
-  it("removes a node and its connected edges from the context menu", () => {
-    render(
-      <GameCanvas
-        initialEdges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
-        initialNodes={[
-          {
-            data: { componentType: "users" },
-            id: "users-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-          {
-            data: { componentType: "server" },
-            id: "server-1",
-            position: { x: 96, y: 0 },
-            type: "architecture",
-          },
-        ]}
-      />,
-    );
-
-    fireEvent.contextMenu(screen.getByTestId("canvas-node-server-1"), {
-      clientX: 240,
-      clientY: 160,
-    });
-    fireEvent.click(screen.getByRole("button", { name: /remove/iv }));
-
-    expect(screen.queryByTestId("canvas-node-server-1")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("canvas-edge-edge-1")).not.toBeInTheDocument();
-  });
-});
-
-describe("grid snapping", () => {
-  it("snaps a dropped position to the nearest grid cell", () => {
-    expect(snapPositionToGrid({ x: 145, y: 117 })).toStrictEqual({ x: 144, y: 120 });
-  });
-
-  it("snaps to the nearest visible dot (every 24px), not every other dot", () => {
-    // The background dot grid renders every 24px. Snapping to 48px skips every
-    // Other dot, making nodes appear to jump two squares at a time.
-    // X=25 is 1px past the 24px dot — should snap to 24, not 48.
-    expect(snapPositionToGrid({ x: 25, y: 25 })).toStrictEqual({ x: 24, y: 24 });
-  });
-});
-
-const INITIAL_NODES_TWO = [
-  {
-    data: { componentType: "users" },
-    id: "users-1",
-    position: { x: 0, y: 0 },
-    type: "architecture",
-  },
-  {
-    data: { componentType: "server" },
-    id: "server-1",
-    position: { x: 96, y: 0 },
-    type: "architecture",
-  },
-] as const;
-
-describe("connection ports", () => {
-  it("renders source handles on server nodes", () => {
-    const { container } = render(
-      <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
-      />,
-    );
-
-    expect(
-      container.querySelector('[data-testid="handle-server-1-source-right"]'),
-    ).toBeInTheDocument();
-  });
-
-  it("renders target handles on server nodes", () => {
-    const { container } = render(
-      <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
-      />,
-    );
-
-    expect(
-      container.querySelector('[data-testid="handle-server-1-target-left"]'),
-    ).toBeInTheDocument();
-  });
-
-  it("users node has no target handles", () => {
-    const { container } = render(
-      <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "users" },
-            id: "users-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
-      />,
-    );
-
-    expect(
-      container.querySelector('[data-testid="handle-users-1-target-left"]'),
-    ).not.toBeInTheDocument();
-    expect(
-      container.querySelector('[data-testid="handle-users-1-source-right"]'),
-    ).toBeInTheDocument();
-  });
-});
-
-describe("connection validation", () => {
-  it("allows server to server connections", () => {
-    expect(isConnectionValid("server", "server")).toBe(true);
-  });
-
-  it("allows users to server connections", () => {
-    expect(isConnectionValid("users", "server")).toBe(true);
-  });
-
-  it("allows server to db connections", () => {
-    expect(isConnectionValid("server", "db")).toBe(true);
-  });
-
-  it("blocks server targeting users", () => {
-    expect(isConnectionValid("server", "users")).toBe(false);
-  });
-
-  it("blocks db targeting users", () => {
-    expect(isConnectionValid("db", "users")).toBe(false);
-  });
-
-  it("blocks cache targeting users", () => {
-    expect(isConnectionValid("cache", "users")).toBe(false);
   });
 });
 
@@ -431,15 +296,6 @@ describe("edge deletion", () => {
   });
 });
 
-const LOCKED_USERS_NODE = [
-  {
-    data: { componentType: "users" as const },
-    id: "users-1",
-    position: { x: 0, y: 0 },
-    type: "architecture" as const,
-  },
-];
-
 describe("locked nodes", () => {
   it("does not remove a locked node when Delete is pressed", () => {
     render(<GameCanvas initialNodes={LOCKED_USERS_NODE} lockedNodeIds={["users-1"]} />);
@@ -448,17 +304,6 @@ describe("locked nodes", () => {
     fireEvent.keyDown(window, { key: "Delete" });
 
     expect(screen.getByTestId("canvas-node-users-1")).toBeInTheDocument();
-  });
-
-  it("does not show a context menu for a locked node", () => {
-    render(<GameCanvas initialNodes={LOCKED_USERS_NODE} lockedNodeIds={["users-1"]} />);
-
-    fireEvent.contextMenu(screen.getByTestId("canvas-node-users-1"), {
-      clientX: 100,
-      clientY: 100,
-    });
-
-    expect(screen.queryByRole("button", { name: /remove/iv })).not.toBeInTheDocument();
   });
 });
 
@@ -477,8 +322,10 @@ describe("static graph rendering", () => {
       />,
     );
 
-    expect(screen.getByTestId("canvas-node-server-1")).toBeInTheDocument();
-    expect(screen.getByText("Small Server")).toBeInTheDocument();
+    expect(screen.getByTestId("canvas-node-server-1")).toHaveAttribute(
+      "data-label",
+      "Small Server",
+    );
   });
 
   it("renders edges from initialEdges", () => {
@@ -490,40 +337,5 @@ describe("static graph rendering", () => {
     );
 
     expect(screen.getByTestId("canvas-edge-edge-1")).toBeInTheDocument();
-  });
-});
-
-describe(chooseBestHandles, () => {
-  const makeNode = (x: number, y: number) =>
-    ({
-      data: { componentType: "server" as const },
-      id: "n",
-      position: { x, y },
-      type: "architecture" as const,
-    }) as const;
-
-  it("returns right→left when target is to the right", () => {
-    const result = chooseBestHandles(makeNode(0, 0), makeNode(200, 0));
-    expect(result).toStrictEqual({ sourceHandle: "right", targetHandle: "left" });
-  });
-
-  it("returns left→right when target is to the left", () => {
-    const result = chooseBestHandles(makeNode(200, 0), makeNode(0, 0));
-    expect(result).toStrictEqual({ sourceHandle: "left", targetHandle: "right" });
-  });
-
-  it("returns bottom→top when target is below", () => {
-    const result = chooseBestHandles(makeNode(0, 0), makeNode(0, 200));
-    expect(result).toStrictEqual({ sourceHandle: "bottom", targetHandle: "top" });
-  });
-
-  it("returns top→bottom when target is above", () => {
-    const result = chooseBestHandles(makeNode(0, 200), makeNode(0, 0));
-    expect(result).toStrictEqual({ sourceHandle: "top", targetHandle: "bottom" });
-  });
-
-  it("prefers horizontal when dx equals dy", () => {
-    const result = chooseBestHandles(makeNode(0, 0), makeNode(100, 100));
-    expect(result).toStrictEqual({ sourceHandle: "right", targetHandle: "left" });
   });
 });

@@ -59,11 +59,12 @@
     "max-lines-per-function": "off",
     /* 20 is quite high, so this is overriden in the strict rules */
     "complexity": ["error", { "max": 20 }]
+    /* Project uses vitest globals: true — vi is always a global, no need to import */
   },
 
   "overrides": [
     {
-      "files": ["**/*.test.{ts,tsx}"],
+      "files": ["**/*.test.{ts,tsx}", "test-setup.ts"],
       "rules": {
         "vitest/prefer-describe-function-title": "error",
         /* We use globals */

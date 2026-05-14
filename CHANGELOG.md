@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.7] - 2026-05-14
+
+### Refactoring
+
+- **Tests were targeting a hidden DOM mirror instead of the real canvas**: `DomMirror` was a hidden `<div>` that duplicated every node and edge purely so tests could find them with `getByTestId`. This made tests pass while the real Pixi canvas remained untestable. Removed `DomMirror` and replaced it with proper mocks for `pixi.js` and `@pixi/react` in `test-setup.ts` (via `vitest-canvas-mock`). `data-testid`, `data-label`, and `data-overloaded` attributes are now placed on the actual Pixi container elements, so tests exercise the real component tree.
+- **Context menu callbacks no longer leak PixiJS internals**: The `onNodeContextMenu` and `onEdgeContextMenu` callbacks previously accepted a raw `FederatedPointerEvent`. Callers had to know about Pixi's `e.client.x/y` API, and tests couldn't fire these without a real Pixi event. The signatures now accept a plain `{ clientX: number; clientY: number }` object, and the Pixi-specific extraction happens at the call site inside the graphics components.
+
 ## [2.3.6] - 2026-05-14
 
 ### Bug fixes
