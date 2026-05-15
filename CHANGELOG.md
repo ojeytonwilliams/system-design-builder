@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.9] - 2026-05-15
+
+### Refactoring
+
+- **Node drag position was split across React state and mutable Pixi container refs**: During a drag, node positions were updated by directly mutating `container.x/y` on Pixi `Container` objects stored in a `nodeContainerRefs` map. This was invisible to React, so a separate `setDragFrame` ticker hack was needed to force edge re-renders. Replaced with a single `dragPos` React state that updates on every pointer move, from which `liveNodes` is derived and passed down. `nodeContainerRefs` and `setDragFrame` are gone; edges follow dragged nodes because React's render cycle now drives all position updates.
+
 ## [2.3.8] - 2026-05-15
 
 ### Refactoring
