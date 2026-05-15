@@ -1,3 +1,4 @@
+import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
 import type { ComponentType } from "../components/component-library.js";
 
 interface CapacityReachedTrigger {
@@ -21,24 +22,6 @@ interface CoachMessage {
   text: string;
 }
 
-interface StartingNodePosition {
-  x: number;
-  y: number;
-}
-
-interface StartingNode {
-  componentType: ComponentType;
-  id: string;
-  label: string;
-  position: StartingNodePosition;
-}
-
-interface StartingEdge {
-  id: string;
-  source: string;
-  target: string;
-}
-
 interface ComponentUnlock {
   components: ComponentType[];
   trigger: UnlockTrigger;
@@ -54,8 +37,8 @@ interface LevelDefinition {
   lockedNodeIds: string[];
   monthlyBudget: number;
   objectiveText: string;
-  startingEdges: StartingEdge[];
-  startingNodes: StartingNode[];
+  startingEdges: ArchitectureEdge[];
+  startingNodes: ArchitectureNode[];
   timeout: number;
   title: string;
   trafficPeak: number;
@@ -63,4 +46,4 @@ interface LevelDefinition {
   trafficTarget: number;
 }
 
-export type { ComponentUnlock, LevelDefinition, StartingEdge, StartingNode, UnlockTrigger };
+export type { ComponentUnlock, LevelDefinition, UnlockTrigger };

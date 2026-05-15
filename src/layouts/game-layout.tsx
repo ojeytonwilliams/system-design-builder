@@ -4,7 +4,7 @@ import type { ComponentType } from "../components/component-library.js";
 import { Coach } from "../components/coach.js";
 import { EndOfLevelScreen } from "../components/end-of-level-screen.js";
 import { EventLog } from "../components/event-log.js";
-import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import { GameCanvas } from "../components/game-canvas.js";
 import { Inspector } from "../components/inspector.js";
 import { LevelStrip } from "../components/level-strip.js";
@@ -28,14 +28,14 @@ import { SimulationProvider, useSimulation } from "../store.js";
 const MOBILE_LAYOUT_BREAKPOINT = 768;
 
 interface GameLayoutProps {
-  initialEdges?: Edge[];
-  initialNodes?: ArchitectureCanvasNode[];
+  initialEdges?: ArchitectureEdge[];
+  initialNodes?: ArchitectureNode[];
   levelConfig?: LevelConfig;
 }
 
 interface GameLayoutContentProps {
-  initialEdges: Edge[];
-  initialNodes: ArchitectureCanvasNode[];
+  initialEdges: ArchitectureEdge[];
+  initialNodes: ArchitectureNode[];
   levelConfig: LevelConfig | undefined;
 }
 
@@ -83,7 +83,7 @@ const GameLayoutContent = ({
     graphState.edges.map(toGraphEdge),
   );
   const totalMonthlyCost = graphState.nodes.reduce(
-    (sum, node) => sum + COMPONENT_LIBRARY[node.data.componentType].monthlyCost,
+    (sum, node) => sum + COMPONENT_LIBRARY[node.componentType].monthlyCost,
     0,
   );
   const remainingBudget = effectiveLevelConfig.monthlyBudget - totalMonthlyCost;

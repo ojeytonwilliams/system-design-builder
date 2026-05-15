@@ -2,26 +2,17 @@ import type { ComponentType } from "./component-library.js";
 
 type HandleSide = "bottom" | "left" | "right" | "top";
 
-interface ArchitectureNodeData {
+interface ArchitectureNode {
   componentType: ComponentType;
-  isOverloaded?: boolean;
-  isSelected?: boolean;
-}
-
-interface PixiNode {
-  data: ArchitectureNodeData;
   id: string;
   position: { x: number; y: number };
-  type: "architecture";
 }
 
-interface PixiEdge {
-  animated?: boolean;
+interface ArchitectureEdge {
   id: string;
   selected?: boolean;
   source: string;
   target: string;
-  type?: string;
 }
 
 const GRID_SIZE = 24;
@@ -40,9 +31,7 @@ const snapPositionToGrid = ({ x, y }: { x: number; y: number }): { x: number; y:
 const isConnectionValid = (_sourceType: ComponentType, targetType: ComponentType): boolean =>
   targetType !== "users";
 
-const createNodeData = (componentType: ComponentType): ArchitectureNodeData => ({ componentType });
-
-const getNextNodeId = (componentType: ComponentType, nodes: PixiNode[]): string => {
+const getNextNodeId = (componentType: ComponentType, nodes: ArchitectureNode[]): string => {
   const usedIds = new Set(nodes.map((n) => n.id));
   let i = 1;
   while (usedIds.has(`${componentType}-${i}`)) {
@@ -51,12 +40,16 @@ const getNextNodeId = (componentType: ComponentType, nodes: PixiNode[]): string 
   return `${componentType}-${i}`;
 };
 
-const removeNodeAndConnections = (nodeId: string, nodes: PixiNode[], edges: PixiEdge[]) => ({
+const removeNodeAndConnections = (
+  nodeId: string,
+  nodes: ArchitectureNode[],
+  edges: ArchitectureEdge[],
+) => ({
   edges: edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
   nodes: nodes.filter((n) => n.id !== nodeId),
 });
 
-const getHandlePosition = (node: PixiNode, side: HandleSide): { x: number; y: number } => {
+const getHandlePosition = (node: ArchitectureNode, side: HandleSide): { x: number; y: number } => {
   const { x, y } = node.position;
   switch (side) {
     case "right":
@@ -71,8 +64,8 @@ const getHandlePosition = (node: PixiNode, side: HandleSide): { x: number; y: nu
 };
 
 const chooseBestHandles = (
-  source: PixiNode,
-  target: PixiNode,
+  source: ArchitectureNode,
+  target: ArchitectureNode,
 ): { sourceHandle: HandleSide; targetHandle: HandleSide } => {
   const dx = target.position.x - source.position.x;
   const dy = target.position.y - source.position.y;
@@ -88,7 +81,6 @@ const chooseBestHandles = (
 
 export {
   chooseBestHandles,
-  createNodeData,
   DEFAULT_DROP_POSITION,
   DEFAULT_LOCKED_NODE_IDS,
   DEFAULT_OVERLOADED_NODE_IDS,
@@ -100,4 +92,4 @@ export {
   removeNodeAndConnections,
   snapPositionToGrid,
 };
-export type { ArchitectureNodeData, HandleSide, PixiEdge, PixiNode };
+export type { ArchitectureEdge, ArchitectureNode, HandleSide };

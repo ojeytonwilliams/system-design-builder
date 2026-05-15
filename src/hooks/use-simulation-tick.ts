@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { toGraphEdge, toGraphNode } from "../layouts/graph-adapters.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "../simulation/engine.js";
@@ -9,13 +9,13 @@ const WIN_SUSTAIN_SECONDS = 3;
 
 interface UseSimulationTickParams {
   appendEvent: (text: string) => void;
-  applySnapshot: (snapshot: TrafficSnapshot, nodes: ArchitectureCanvasNode[]) => void;
+  applySnapshot: (snapshot: TrafficSnapshot, nodes: ArchitectureNode[]) => void;
   currentLevel: LevelDefinition;
-  edges: Edge[];
+  edges: ArchitectureEdge[];
   effectiveLevelConfig: LevelConfig;
   endSimulation: () => void;
   mode: SimulationMode;
-  nodes: ArchitectureCanvasNode[];
+  nodes: ArchitectureNode[];
   onWin: () => void;
   resetKey: number;
   setCoachMessage: (message: string) => void;

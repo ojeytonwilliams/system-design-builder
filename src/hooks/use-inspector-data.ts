@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
-import type { ArchitectureCanvasNode } from "../components/game-canvas.js";
+import type { ArchitectureNode } from "../components/game-canvas.js";
 import type { InspectorProps } from "../components/inspector.js";
 import type { TrafficSnapshot } from "../simulation/types.js";
 
 const useInspectorData = (
   selectedNodeId: string | null,
-  nodes: ArchitectureCanvasNode[],
+  nodes: ArchitectureNode[],
   nodeStates: TrafficSnapshot,
 ): InspectorProps =>
   useMemo(() => {
@@ -16,7 +16,7 @@ const useInspectorData = (
       return {};
     }
 
-    const { componentType } = selectedNode.data;
+    const { componentType } = selectedNode;
     const def = COMPONENT_LIBRARY[componentType];
     const selectedNodeLabel = def.label;
     const nodeState = nodeStates[selectedNode.id];

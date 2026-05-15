@@ -1,12 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
-import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import type { EventLogEntry } from "../components/event-log.js";
 
 interface UseEventLogResult {
   appendEvent: (text: string) => void;
   eventEntries: EventLogEntry[];
-  resetEvents: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
+  resetEvents: (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void;
 }
 
 const useEventLog = (): UseEventLogResult => {
@@ -20,7 +20,7 @@ const useEventLog = (): UseEventLogResult => {
     setEventEntries((prev) => [...prev, { id, text }]);
   }, []);
 
-  const resetEvents = useCallback((nodes: ArchitectureCanvasNode[], edges: Edge[]) => {
+  const resetEvents = useCallback((nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => {
     counterRef.current = 0;
     const entries: EventLogEntry[] = [];
 
@@ -28,7 +28,7 @@ const useEventLog = (): UseEventLogResult => {
       counterRef.current += 1;
       entries.push({
         id: `event-${counterRef.current}`,
-        text: `Component placed: ${COMPONENT_LIBRARY[node.data.componentType].label}`,
+        text: `Component placed: ${COMPONENT_LIBRARY[node.componentType].label}`,
       });
     });
 

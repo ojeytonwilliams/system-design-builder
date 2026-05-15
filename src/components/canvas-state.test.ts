@@ -23,14 +23,12 @@ const makeGraph = (overrides: Partial<CanvasGraph> = {}): CanvasGraph => ({
 });
 
 const makeNode = (id: string, componentType: ComponentType = "server") => ({
-  data: { componentType },
+  componentType,
   id,
   position: { x: 0, y: 0 },
-  type: "architecture" as const,
 });
 
 const makeEdge = (id: string, source: string, target: string, selected = false) => ({
-  animated: false,
   id,
   selected,
   source,
@@ -40,7 +38,7 @@ const makeEdge = (id: string, source: string, target: string, selected = false) 
 describe(placeNode, () => {
   it("adds a node with the given component type", () => {
     const result = placeNode(makeGraph(), "server", { x: 48, y: 48 });
-    expect(result.nodes[0]?.data.componentType).toBe("server");
+    expect(result.nodes[0]?.componentType).toBe("server");
   });
 
   it("uses the provided position unchanged", () => {
@@ -235,11 +233,6 @@ describe(addEdge, () => {
     expect(result.edges).toHaveLength(1);
     expect(result.edges[0]?.source).toBe("users-1");
     expect(result.edges[0]?.target).toBe("server-1");
-  });
-
-  it("sets animated: false on the new edge", () => {
-    const graph = makeGraph({ nodes: [makeNode("server-1"), makeNode("server-2")] });
-    expect(addEdge(graph, "server-1", "server-2").edges[0]?.animated).toBe(false);
   });
 });
 

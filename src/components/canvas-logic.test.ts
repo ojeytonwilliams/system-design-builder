@@ -1,6 +1,5 @@
 import {
   chooseBestHandles,
-  createNodeData,
   getHandlePosition,
   getNextNodeId,
   isConnectionValid,
@@ -12,10 +11,9 @@ import {
 
 const makeNode = (id: string, x: number, y: number, componentType = "server" as const) =>
   ({
-    data: { componentType },
+    componentType,
     id,
     position: { x, y },
-    type: "architecture" as const,
   }) as const;
 
 describe(snapPositionToGrid, () => {
@@ -108,12 +106,6 @@ describe(getHandlePosition, () => {
   it("top handle is at the top-centre of the node", () => {
     const node = makeNode("n", 0, 0);
     expect(getHandlePosition(node, "top")).toStrictEqual({ x: NODE_WIDTH / 2, y: 0 });
-  });
-});
-
-describe(createNodeData, () => {
-  it("returns an object with the given componentType", () => {
-    expect(createNodeData("server")).toStrictEqual({ componentType: "server" });
   });
 });
 

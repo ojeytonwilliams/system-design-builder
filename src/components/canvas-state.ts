@@ -1,10 +1,5 @@
-import {
-  createNodeData,
-  getNextNodeId,
-  isConnectionValid,
-  removeNodeAndConnections,
-} from "./canvas-logic.js";
-import type { PixiEdge, PixiNode } from "./canvas-logic.js";
+import { getNextNodeId, isConnectionValid, removeNodeAndConnections } from "./canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode } from "./canvas-logic.js";
 import type { ComponentType } from "./component-library.js";
 
 interface NodeContextMenu {
@@ -25,8 +20,8 @@ type ContextMenuState = EdgeContextMenu | NodeContextMenu;
 
 interface CanvasGraph {
   contextMenu: ContextMenuState | null;
-  edges: PixiEdge[];
-  nodes: PixiNode[];
+  edges: ArchitectureEdge[];
+  nodes: ArchitectureNode[];
   selectedNodeId: string | null;
 }
 
@@ -35,11 +30,10 @@ const placeNode = (
   componentType: ComponentType,
   position: { x: number; y: number },
 ): CanvasGraph => {
-  const node: PixiNode = {
-    data: createNodeData(componentType),
+  const node: ArchitectureNode = {
+    componentType,
     id: getNextNodeId(componentType, graph.nodes),
     position,
-    type: "architecture",
   };
   return { ...graph, contextMenu: null, nodes: [...graph.nodes, node], selectedNodeId: null };
 };
@@ -105,11 +99,10 @@ const addEdge = (graph: CanvasGraph, sourceNodeId: string, targetNodeId: string)
   if (sourceNode === undefined || targetNode === undefined) {
     return graph;
   }
-  if (!isConnectionValid(sourceNode.data.componentType, targetNode.data.componentType)) {
+  if (!isConnectionValid(sourceNode.componentType, targetNode.componentType)) {
     return graph;
   }
-  const edge: PixiEdge = {
-    animated: false,
+  const edge: ArchitectureEdge = {
     id: `edge-${sourceNodeId}-${targetNodeId}-${Date.now()}`,
     source: sourceNodeId,
     target: targetNodeId,

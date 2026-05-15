@@ -29,31 +29,26 @@ const level3: LevelDefinition = {
     {
       componentType: "users",
       id: "users-1",
-      label: "Users",
       position: { x: 72, y: 192 },
     },
     {
       componentType: "load-balancer",
       id: "lb-1",
-      label: "Load Balancer",
       position: { x: 264, y: 192 },
     },
     {
       componentType: "server",
       id: "server-1",
-      label: "Small Server",
       position: { x: 432, y: 72 },
     },
     {
       componentType: "server",
       id: "server-2",
-      label: "Small Server",
       position: { x: 432, y: 312 },
     },
     {
       componentType: "db",
       id: "db-1",
-      label: "Small DB",
       position: { x: 648, y: 192 },
     },
   ],

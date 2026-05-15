@@ -10,7 +10,7 @@ import {
   NODE_WIDTH,
   snapPositionToGrid,
 } from "./canvas-logic.js";
-import type { HandleSide, PixiEdge, PixiNode } from "./canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode, HandleSide } from "./canvas-logic.js";
 import { COMPONENT_LIBRARY } from "./component-library.js";
 
 // oxlint-disable-next-line jest/require-hook
@@ -38,11 +38,11 @@ interface DragState {
 }
 
 interface CanvasPixiRendererProps {
-  edges: PixiEdge[];
+  edges: ArchitectureEdge[];
   isLocked: boolean;
   isSimulating: boolean;
   lockedNodeIds: string[];
-  nodes: PixiNode[];
+  nodes: ArchitectureNode[];
   onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
   onEdgeCreated: (sourceNodeId: string, targetNodeId: string) => void;
   onEdgeSelect: (edgeId: string) => void;
@@ -115,7 +115,7 @@ interface PixiNodeGraphicProps {
   isOverloaded: boolean;
   isPendingConnection: boolean;
   isSelected: boolean;
-  node: PixiNode;
+  node: ArchitectureNode;
   onContextMenu: (nodeId: string, pos: { clientX: number; clientY: number }) => void;
   onHandleClick: (nodeId: string, side: HandleSide, kind: "source" | "target") => void;
   onPointerDown: (
@@ -137,7 +137,7 @@ const PixiNodeGraphic = ({
   onHandleClick,
   onContextMenu,
 }: PixiNodeGraphicProps) => {
-  const def = COMPONENT_LIBRARY[node.data.componentType];
+  const def = COMPONENT_LIBRARY[node.componentType];
   const { accentColor } = def;
 
   let fillColor = 0xfffdf8;
@@ -177,7 +177,7 @@ const PixiNodeGraphic = ({
     [accentColor],
   );
 
-  const isUsersNode = node.data.componentType === "users",
+  const isUsersNode = node.componentType === "users",
     nodeId = node.id;
 
   const handlePointerDown = useCallback(
@@ -296,12 +296,12 @@ const PixiNodeGraphic = ({
 
 interface PixiEdgeInnerProps {
   dashOffset: number;
-  edge: PixiEdge;
+  edge: ArchitectureEdge;
   isSimulating: boolean;
   onEdgeClick: (edgeId: string) => void;
   onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
-  sourceNode: PixiNode;
-  targetNode: PixiNode;
+  sourceNode: ArchitectureNode;
+  targetNode: ArchitectureNode;
 }
 
 const PixiEdgeInner = ({
@@ -394,9 +394,9 @@ const PixiEdgeInner = ({
 
 interface PixiEdgeGraphicProps {
   dashOffset: number;
-  edge: PixiEdge;
+  edge: ArchitectureEdge;
   isSimulating: boolean;
-  nodes: PixiNode[];
+  nodes: ArchitectureNode[];
   onEdgeClick: (edgeId: string) => void;
   onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
 }
@@ -428,7 +428,7 @@ const PixiEdgeGraphic = ({
 };
 
 interface LiveEdgeGraphicProps {
-  nodes: PixiNode[];
+  nodes: ArchitectureNode[];
   pendingEdge: PendingEdge;
 }
 
@@ -473,9 +473,9 @@ const LiveEdgeGraphic = ({ pendingEdge, nodes }: LiveEdgeGraphicProps) => {
 };
 
 interface EdgesLayerProps {
-  edges: PixiEdge[];
+  edges: ArchitectureEdge[];
   isSimulating: boolean;
-  nodes: PixiNode[];
+  nodes: ArchitectureNode[];
   onEdgeClick: (edgeId: string) => void;
   onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
   pendingEdge: PendingEdge | null;
@@ -516,11 +516,11 @@ const EdgesLayer = ({
 };
 
 interface PixiContentProps {
-  edges: PixiEdge[];
+  edges: ArchitectureEdge[];
   isLocked: boolean;
   isSimulating: boolean;
   lockedNodeIds: string[];
-  nodes: PixiNode[];
+  nodes: ArchitectureNode[];
   onEdgeClick: (edgeId: string) => void;
   onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
   onHandleClick: (nodeId: string, side: HandleSide, kind: "source" | "target") => void;

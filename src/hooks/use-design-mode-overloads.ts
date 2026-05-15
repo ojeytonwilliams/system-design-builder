@@ -1,12 +1,12 @@
 import { useMemo } from "react";
-import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import { toGraphEdge, toGraphNode } from "../layouts/graph-adapters.js";
 import { computeTrafficFlow } from "../simulation/engine.js";
 import type { LevelConfig, SimulationMode } from "../simulation/types.js";
 
 interface GraphState {
-  edges: Edge[];
-  nodes: ArchitectureCanvasNode[];
+  edges: ArchitectureEdge[];
+  nodes: ArchitectureNode[];
 }
 
 const useDesignModeOverloads = (

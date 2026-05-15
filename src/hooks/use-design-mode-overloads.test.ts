@@ -1,24 +1,22 @@
 import { renderHook } from "@testing-library/react";
-import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import type { LevelConfig } from "../simulation/types.js";
 import { useDesignModeOverloads } from "./use-design-mode-overloads.js";
 
-const nodes: ArchitectureCanvasNode[] = [
+const nodes: ArchitectureNode[] = [
   {
-    data: { componentType: "users" },
+    componentType: "users",
     id: "users-1",
     position: { x: 0, y: 0 },
-    type: "architecture",
   },
   {
-    data: { componentType: "server" },
+    componentType: "server",
     id: "server-1",
     position: { x: 96, y: 0 },
-    type: "architecture",
   },
 ];
 
-const edges: Edge[] = [{ id: "edge-1", source: "users-1", target: "server-1" }];
+const edges: ArchitectureEdge[] = [{ id: "edge-1", source: "users-1", target: "server-1" }];
 
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,

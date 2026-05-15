@@ -32,43 +32,36 @@ const level5: LevelDefinition = {
     {
       componentType: "users",
       id: "users-1",
-      label: "Users",
       position: { x: 72, y: 264 },
     },
     {
       componentType: "load-balancer",
       id: "lb-1",
-      label: "Load Balancer",
       position: { x: 264, y: 264 },
     },
     {
       componentType: "server-large",
       id: "server-1",
-      label: "Large Server",
       position: { x: 432, y: 72 },
     },
     {
       componentType: "server-large",
       id: "server-2",
-      label: "Large Server",
       position: { x: 432, y: 264 },
     },
     {
       componentType: "server-large",
       id: "server-3",
-      label: "Large Server",
       position: { x: 432, y: 432 },
     },
     {
       componentType: "cache",
       id: "cache-1",
-      label: "Cache",
       position: { x: 648, y: 264 },
     },
     {
       componentType: "db-large",
       id: "db-1",
-      label: "Large DB",
       position: { x: 816, y: 264 },
     },
   ],

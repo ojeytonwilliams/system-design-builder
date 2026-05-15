@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.13] - 2026-05-15
+
+### Refactoring
+
+- **`PixiNode` and `PixiEdge` were misnamed, structurally redundant, and leaked dead fields throughout the codebase**: `PixiNode` had nothing to do with Pixi — it was the canonical canvas node type. Its `data: { componentType }` wrapper existed only to satisfy a React Flow convention that this project never used, forcing a `level-canvas-adapters` module to translate `StartingNode` into `PixiNode` on every level load. Both types also carried fields that were never read: `PixiNode.type` was always the constant `"architecture"`; `ArchitectureNodeData.isOverloaded` and `isSelected` were computed externally from `overloadedNodeIds`/`selectedNodeId` and never written to the node object; `PixiEdge.animated` was always `false`; `PixiEdge.type` was set but never read. `StartingNode.label` was populated in every level definition but discarded by the adapter because labels come from `COMPONENT_LIBRARY`. Renamed `PixiNode` → `ArchitectureNode` and `PixiEdge` → `ArchitectureEdge`, flattened `componentType` onto the node directly, stripped all dead fields, deleted `level-canvas-adapters.ts`, and updated `LevelDefinition` to use the canvas types directly so level data can be used on the canvas with no conversion.
+
 ## [2.3.12] - 2026-05-15
 
 ### Refactoring

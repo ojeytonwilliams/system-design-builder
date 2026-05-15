@@ -1,33 +1,29 @@
 import { useCallback, useState } from "react";
-import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import { LEVELS, getLevelById } from "../levels/index.js";
 import { level1 } from "../levels/level1.js";
 import type { LevelDefinition } from "../levels/types.js";
-import { levelEdgeToCanvasEdge, levelNodeToCanvasNode } from "../layouts/level-canvas-adapters.js";
 import { getFirstIncompleteLevel, loadProgress, saveProgress } from "../persistence.js";
 
 interface LoadLevelResult {
-  newEdges: Edge[];
-  newNodes: ArchitectureCanvasNode[];
+  newEdges: ArchitectureEdge[];
+  newNodes: ArchitectureNode[];
 }
 
 interface UseLevelResult {
   canvasKey: number;
   completedLevels: number[];
   currentLevel: LevelDefinition;
-  levelStartEdges: Edge[];
-  levelStartNodes: ArchitectureCanvasNode[];
+  levelStartEdges: ArchitectureEdge[];
+  levelStartNodes: ArchitectureNode[];
   loadLevel: (level: LevelDefinition) => LoadLevelResult;
   markLevelComplete: (levelId: number) => void;
 }
 
-const toCanvasNodes = (level: LevelDefinition): ArchitectureCanvasNode[] =>
-  level.startingNodes.map(levelNodeToCanvasNode);
-
-const toCanvasEdges = (level: LevelDefinition): Edge[] =>
-  level.startingEdges.map(levelEdgeToCanvasEdge);
-
-const useLevel = (initialNodes: ArchitectureCanvasNode[], initialEdges: Edge[]): UseLevelResult => {
+const useLevel = (
+  initialNodes: ArchitectureNode[],
+  initialEdges: ArchitectureEdge[],
+): UseLevelResult => {
   const hasInitialNodes = initialNodes.length > 0;
 
   const [currentLevelId, setCurrentLevelId] = useState<number>(() => {
@@ -40,17 +36,17 @@ const useLevel = (initialNodes: ArchitectureCanvasNode[], initialEdges: Edge[]):
 
   const currentLevel = getLevelById(currentLevelId) ?? level1;
 
-  const [levelStartNodes, setLevelStartNodes] = useState<ArchitectureCanvasNode[]>(() =>
-    hasInitialNodes ? initialNodes : toCanvasNodes(currentLevel),
+  const [levelStartNodes, setLevelStartNodes] = useState<ArchitectureNode[]>(() =>
+    hasInitialNodes ? initialNodes : currentLevel.startingNodes,
   );
-  const [levelStartEdges, setLevelStartEdges] = useState<Edge[]>(() =>
-    hasInitialNodes ? initialEdges : toCanvasEdges(currentLevel),
+  const [levelStartEdges, setLevelStartEdges] = useState<ArchitectureEdge[]>(() =>
+    hasInitialNodes ? initialEdges : currentLevel.startingEdges,
   );
   const [canvasKey, setCanvasKey] = useState(0);
 
   const loadLevel = useCallback((level: LevelDefinition): LoadLevelResult => {
-    const newNodes = toCanvasNodes(level);
-    const newEdges = toCanvasEdges(level);
+    const newNodes = level.startingNodes;
+    const newEdges = level.startingEdges;
 
     setCurrentLevelId(level.id);
     setLevelStartNodes(newNodes);

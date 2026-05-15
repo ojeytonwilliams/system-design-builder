@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { GameLayout } from "./game-layout.js";
 import { loadProgress } from "../persistence.js";
 import type { LevelConfig } from "../simulation/types.js";
-import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 
 // Win after 10 sustained seconds: traffic=40 < server capacity=50, no drops
 const winLevelConfig: LevelConfig = {
@@ -46,43 +46,38 @@ const resolvingOverloadLevelConfig: LevelConfig = {
   trafficTarget: 40,
 };
 
-const overloadNodes: ArchitectureCanvasNode[] = [
+const overloadNodes: ArchitectureNode[] = [
   {
-    data: { componentType: "users" },
+    componentType: "users",
     id: "users-1",
     position: { x: 0, y: 0 },
-    type: "architecture",
   },
   {
-    data: { componentType: "server" },
+    componentType: "server",
     id: "server-1",
     position: { x: 96, y: 0 },
-    type: "architecture",
   },
 ];
 
-const unlockedLevel3Nodes: ArchitectureCanvasNode[] = [
+const unlockedLevel3Nodes: ArchitectureNode[] = [
   {
-    data: { componentType: "users" },
+    componentType: "users",
     id: "users-1",
     position: { x: 0, y: 0 },
-    type: "architecture",
   },
   {
-    data: { componentType: "server" },
+    componentType: "server",
     id: "server-1",
     position: { x: 96, y: 0 },
-    type: "architecture",
   },
   {
-    data: { componentType: "server" },
+    componentType: "server",
     id: "server-2",
     position: { x: 192, y: 0 },
-    type: "architecture",
   },
 ];
 
-const overloadEdges: Edge[] = [{ id: "edge-1", source: "users-1", target: "server-1" }];
+const overloadEdges: ArchitectureEdge[] = [{ id: "edge-1", source: "users-1", target: "server-1" }];
 
 // oxlint-disable-next-line vitest/require-top-level-describe
 beforeAll(() => {

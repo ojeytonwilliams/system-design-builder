@@ -2,14 +2,14 @@ import { useCallback } from "react";
 import type { RefObject } from "react";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
-import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import { getLevelById } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
 import type { LevelConfig, SimulationMode } from "../simulation/types.js";
 
 interface GraphSnapshot {
-  edges: Edge[];
-  nodes: ArchitectureCanvasNode[];
+  edges: ArchitectureEdge[];
+  nodes: ArchitectureNode[];
 }
 
 interface UseGameActionsParams {
@@ -19,12 +19,15 @@ interface UseGameActionsParams {
   endSimulation: () => void;
   graphState: GraphSnapshot;
   isRunnable: boolean;
-  loadLevel: (level: LevelDefinition) => { newEdges: Edge[]; newNodes: ArchitectureCanvasNode[] };
+  loadLevel: (level: LevelDefinition) => {
+    newEdges: ArchitectureEdge[];
+    newNodes: ArchitectureNode[];
+  };
   markLevelComplete: (levelId: number) => void;
   mode: SimulationMode;
   previousAvailableComponentsRef: RefObject<ComponentType[]>;
-  resetEvents: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
-  resetForLevel: (level: LevelDefinition, nodes: ArchitectureCanvasNode[]) => void;
+  resetEvents: (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void;
+  resetForLevel: (level: LevelDefinition, nodes: ArchitectureNode[]) => void;
   setCoachMessage: (msg: string) => void;
   setGraphState: (state: GraphSnapshot) => void;
   setQueuedComponentType: (type: ComponentType | null) => void;
@@ -32,13 +35,13 @@ interface UseGameActionsParams {
   setShowEndScreen: (show: boolean) => void;
   startSimulation: () => void;
   totalMonthlyCost: number;
-  updateFromGraph: (nodes: ArchitectureCanvasNode[]) => void;
+  updateFromGraph: (nodes: ArchitectureNode[]) => void;
 }
 
 interface UseGameActionsResult {
   handleComponentPlaced: () => void;
   handleContinue: () => void;
-  handleGraphChange: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
+  handleGraphChange: (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void;
   handleLoadLevel: (level: LevelDefinition) => void;
   handlePlaceComponent: (componentType: ComponentType) => void;
   handleReplay: () => void;
@@ -150,13 +153,13 @@ const useGameActions = ({
   }, [setQueuedComponentType]);
 
   const handleGraphChange = useCallback(
-    (nodes: ArchitectureCanvasNode[], edges: Edge[]) => {
+    (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => {
       const previousNodeIds = new Set(graphState.nodes.map((n) => n.id));
       const previousEdgeIds = new Set(graphState.edges.map((e) => e.id));
 
       nodes.forEach((node) => {
         if (!previousNodeIds.has(node.id)) {
-          appendEvent(`Component placed: ${COMPONENT_LIBRARY[node.data.componentType].label}`);
+          appendEvent(`Component placed: ${COMPONENT_LIBRARY[node.componentType].label}`);
         }
       });
 

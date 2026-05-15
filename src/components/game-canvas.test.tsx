@@ -11,25 +11,22 @@ const noop = () => {};
 
 const INITIAL_NODES_TWO = [
   {
-    data: { componentType: "users" },
+    componentType: "users",
     id: "users-1",
     position: { x: 0, y: 0 },
-    type: "architecture",
   },
   {
-    data: { componentType: "server" },
+    componentType: "server",
     id: "server-1",
     position: { x: 96, y: 0 },
-    type: "architecture",
   },
 ] as const;
 
 const LOCKED_USERS_NODE = [
   {
-    data: { componentType: "users" as const },
+    componentType: "users" as const,
     id: "users-1",
     position: { x: 0, y: 0 },
-    type: "architecture" as const,
   },
 ];
 
@@ -198,10 +195,9 @@ describe("overloaded node state", () => {
         edges={[]}
         nodes={[
           {
-            data: { componentType: "server" },
+            componentType: "server",
             id: "server-1",
             position: { x: 0, y: 0 },
-            type: "architecture",
           },
         ]}
         onSelectedNodeChange={noop}
@@ -216,10 +212,9 @@ describe("overloaded node state", () => {
 
   it("enters overloaded state immediately when node id is added", () => {
     const node = {
-      data: { componentType: "server" as const },
+      componentType: "server" as const,
       id: "server-1",
       position: { x: 0, y: 0 },
-      type: "architecture" as const,
     };
     const { rerender } = render(
       <GameCanvas
@@ -248,10 +243,9 @@ describe("overloaded node state", () => {
 
   it("returns a node to normal state when it is removed from overloadedNodeIds", () => {
     const node = {
-      data: { componentType: "server" as const },
+      componentType: "server" as const,
       id: "server-1",
       position: { x: 0, y: 0 },
-      type: "architecture" as const,
     };
     const { rerender } = render(
       <GameCanvas
@@ -288,10 +282,9 @@ describe("escape key", () => {
         edges={[]}
         nodes={[
           {
-            data: { componentType: "server" },
+            componentType: "server",
             id: "server-1",
             position: { x: 0, y: 0 },
-            type: "architecture",
           },
         ]}
         onSelectedNodeChange={onSelectedNodeChange}
@@ -371,10 +364,9 @@ describe("static graph rendering", () => {
         edges={[]}
         nodes={[
           {
-            data: { componentType: "server" },
+            componentType: "server",
             id: "server-1",
             position: { x: 0, y: 0 },
-            type: "architecture",
           },
         ]}
         onSelectedNodeChange={noop}

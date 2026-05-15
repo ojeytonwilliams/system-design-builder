@@ -28,25 +28,21 @@ const level2: LevelDefinition = {
     {
       componentType: "users",
       id: "users-1",
-      label: "Users",
       position: { x: 72, y: 192 },
     },
     {
       componentType: "server",
       id: "server-1",
-      label: "Small Server",
       position: { x: 312, y: 72 },
     },
     {
       componentType: "server",
       id: "server-2",
-      label: "Small Server",
       position: { x: 312, y: 312 },
     },
     {
       componentType: "db-large",
       id: "db-1",
-      label: "Large DB",
       position: { x: 552, y: 192 },
     },
   ],

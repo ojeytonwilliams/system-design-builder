@@ -8,7 +8,7 @@ import {
   DEFAULT_OVERLOADED_NODE_IDS,
   snapPositionToGrid,
 } from "./canvas-logic.js";
-import type { ArchitectureNodeData, PixiEdge, PixiNode } from "./canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode } from "./canvas-logic.js";
 import { CanvasPixiRenderer } from "./canvas-pixi-renderer.js";
 import {
   addEdge,
@@ -27,20 +27,17 @@ import type { CanvasGraph, ContextMenuState } from "./canvas-state.js";
 
 const CANVAS_BACKGROUND = "#f8f5ec";
 
-type ArchitectureCanvasNode = PixiNode;
-type Edge = PixiEdge;
-
 interface GameCanvasProps {
   componentToPlace?: ComponentType | null;
-  edges: Edge[];
+  edges: ArchitectureEdge[];
   initialContextMenu?: ContextMenuState;
   isLocked?: boolean;
   isSimulating?: boolean;
   lockedNodeIds?: string[];
-  nodes: ArchitectureCanvasNode[];
+  nodes: ArchitectureNode[];
   onComponentPlaced?: () => void;
   onSelectedNodeChange: (nodeId: string | null) => void;
-  onStateChange: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
+  onStateChange: (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void;
   overloadedNodeIds?: string[];
   selectedNodeId: string | null;
 }
@@ -294,4 +291,4 @@ const GameCanvas = ({
 };
 
 export { GameCanvas };
-export type { ArchitectureCanvasNode, ArchitectureNodeData, Edge };
+export type { ArchitectureEdge, ArchitectureNode };
