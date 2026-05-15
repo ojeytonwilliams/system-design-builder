@@ -120,4 +120,3 @@ const TopBar = ({
 };
 
 export { TopBar };
-export type { TopBarProps };

@@ -174,4 +174,3 @@ const EndOfLevelScreen = ({
 };
 
 export { EndOfLevelScreen };
-export type { EndOfLevelScreenProps };

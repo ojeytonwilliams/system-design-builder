@@ -3,13 +3,12 @@ import {
   evaluateUnlockTrigger,
   updateOverloadDurations,
 } from "./unlocks.js";
-import type { EvaluateUnlockInput } from "./unlocks.js";
 import type { GraphNode, TrafficSnapshot } from "./types.js";
 
-const emptyInput: EvaluateUnlockInput = {
-  graphNodes: [],
-  overloadDurations: new Map(),
-  snapshot: {},
+const emptyInput = {
+  graphNodes: [] as GraphNode[],
+  overloadDurations: new Map<string, number>(),
+  snapshot: {} as TrafficSnapshot,
 };
 
 const overloadedSnapshot: TrafficSnapshot = {
@@ -28,13 +27,13 @@ const twoServerNodes: GraphNode[] = [
 describe(evaluateUnlockTrigger, () => {
   describe("capacity reached", () => {
     it("returns true when any node has dropped ops", () => {
-      const input: EvaluateUnlockInput = { ...emptyInput, snapshot: overloadedSnapshot };
+      const input = { ...emptyInput, snapshot: overloadedSnapshot };
 
       expect(evaluateUnlockTrigger({ type: "CAPACITY_REACHED" }, input)).toBe(true);
     });
 
     it("returns false when no nodes have dropped ops", () => {
-      const input: EvaluateUnlockInput = { ...emptyInput, snapshot: normalSnapshot };
+      const input = { ...emptyInput, snapshot: normalSnapshot };
 
       expect(evaluateUnlockTrigger({ type: "CAPACITY_REACHED" }, input)).toBe(false);
     });
@@ -47,7 +46,7 @@ describe(evaluateUnlockTrigger, () => {
   describe("overload sustained", () => {
     it("returns true when any node has reached the required overload duration", () => {
       const overloadDurations = new Map([["server-1", 10]]);
-      const input: EvaluateUnlockInput = { ...emptyInput, overloadDurations };
+      const input = { ...emptyInput, overloadDurations };
 
       expect(
         evaluateUnlockTrigger({ durationSeconds: 10, type: "OVERLOAD_SUSTAINED" }, input),
@@ -56,7 +55,7 @@ describe(evaluateUnlockTrigger, () => {
 
     it("returns true when a node exceeds the required duration", () => {
       const overloadDurations = new Map([["server-1", 15]]);
-      const input: EvaluateUnlockInput = { ...emptyInput, overloadDurations };
+      const input = { ...emptyInput, overloadDurations };
 
       expect(
         evaluateUnlockTrigger({ durationSeconds: 10, type: "OVERLOAD_SUSTAINED" }, input),
@@ -65,7 +64,7 @@ describe(evaluateUnlockTrigger, () => {
 
     it("returns false when no node has reached the required duration", () => {
       const overloadDurations = new Map([["server-1", 5]]);
-      const input: EvaluateUnlockInput = { ...emptyInput, overloadDurations };
+      const input = { ...emptyInput, overloadDurations };
 
       expect(
         evaluateUnlockTrigger({ durationSeconds: 10, type: "OVERLOAD_SUSTAINED" }, input),
@@ -81,7 +80,7 @@ describe(evaluateUnlockTrigger, () => {
 
   describe("servers placed", () => {
     it("returns true when the required number of servers are present", () => {
-      const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: twoServerNodes };
+      const input = { ...emptyInput, graphNodes: twoServerNodes };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(true);
     });
@@ -91,7 +90,7 @@ describe(evaluateUnlockTrigger, () => {
         ...twoServerNodes,
         { capacity: 50, id: "server-3", type: "server" },
       ];
-      const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: threeServers };
+      const input = { ...emptyInput, graphNodes: threeServers };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(true);
     });
@@ -101,14 +100,14 @@ describe(evaluateUnlockTrigger, () => {
         { capacity: 50, id: "server-1", type: "server" },
         { capacity: 150, id: "server-lg-1", type: "server-large" },
       ];
-      const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: mixedServers };
+      const input = { ...emptyInput, graphNodes: mixedServers };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(true);
     });
 
     it("returns false when fewer than the required number of servers are present", () => {
       const oneServer: GraphNode[] = [{ capacity: 50, id: "server-1", type: "server" }];
-      const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: oneServer };
+      const input = { ...emptyInput, graphNodes: oneServer };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(false);
     });
@@ -118,7 +117,7 @@ describe(evaluateUnlockTrigger, () => {
         { capacity: 50, id: "server-1", type: "server" },
         { capacity: 30, id: "db-1", type: "db" },
       ];
-      const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: mixedNodes };
+      const input = { ...emptyInput, graphNodes: mixedNodes };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(false);
     });
@@ -165,7 +164,7 @@ describe(computeAvailableComponents, () => {
   });
 
   it("appends unlocked components when the trigger fires", () => {
-    const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: twoServerNodes };
+    const input = { ...emptyInput, graphNodes: twoServerNodes };
     const componentUnlocks = [
       {
         components: ["load-balancer" as const],
@@ -192,7 +191,7 @@ describe(computeAvailableComponents, () => {
   });
 
   it("does not duplicate components already in the base list", () => {
-    const input: EvaluateUnlockInput = { ...emptyInput, graphNodes: twoServerNodes };
+    const input = { ...emptyInput, graphNodes: twoServerNodes };
     const componentUnlocks = [
       {
         components: ["server" as const],

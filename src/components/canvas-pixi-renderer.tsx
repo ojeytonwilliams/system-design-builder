@@ -782,4 +782,3 @@ const CanvasPixiRenderer = ({
 };
 
 export { CanvasPixiRenderer };
-export type { CanvasPixiRendererProps };

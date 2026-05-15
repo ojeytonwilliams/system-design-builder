@@ -8,8 +8,6 @@ import {
   NODE_WIDTH,
   removeNodeAndConnections,
   snapPositionToGrid,
-  withDefaultEdgeShape,
-  withDefaultNodeShape,
 } from "./canvas-logic.js";
 
 const makeNode = (id: string, x: number, y: number, componentType = "server" as const) =>
@@ -116,40 +114,6 @@ describe(getHandlePosition, () => {
 describe(createNodeData, () => {
   it("returns an object with the given componentType", () => {
     expect(createNodeData("server")).toStrictEqual({ componentType: "server" });
-  });
-});
-
-describe(withDefaultNodeShape, () => {
-  it("sets type to architecture", () => {
-    const node = {
-      data: { componentType: "server" as const },
-      id: "n",
-      position: { x: 0, y: 0 },
-      type: "architecture" as const,
-    };
-    expect(withDefaultNodeShape(node).type).toBe("architecture");
-  });
-
-  it("preserves existing data fields", () => {
-    const node = {
-      data: { componentType: "server" as const, isSelected: true },
-      id: "n",
-      position: { x: 0, y: 0 },
-      type: "architecture" as const,
-    };
-    expect(withDefaultNodeShape(node).data.isSelected).toBe(true);
-  });
-});
-
-describe(withDefaultEdgeShape, () => {
-  it("defaults animated to false when not provided", () => {
-    expect(withDefaultEdgeShape({ id: "e1", source: "a", target: "b" }).animated).toBe(false);
-  });
-
-  it("preserves animated: true when provided", () => {
-    expect(
-      withDefaultEdgeShape({ animated: true, id: "e1", source: "a", target: "b" }).animated,
-    ).toBe(true);
   });
 });
 

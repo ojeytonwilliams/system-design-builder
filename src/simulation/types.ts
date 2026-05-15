@@ -35,12 +35,4 @@ interface FlowConfig {
 
 type SimulationMode = "DESIGN" | "SIMULATE";
 
-export type {
-  FlowConfig,
-  GraphEdge,
-  GraphNode,
-  LevelConfig,
-  NodeTrafficState,
-  SimulationMode,
-  TrafficSnapshot,
-};
+export type { FlowConfig, GraphEdge, GraphNode, LevelConfig, SimulationMode, TrafficSnapshot };

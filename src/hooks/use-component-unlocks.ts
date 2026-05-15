@@ -82,4 +82,3 @@ const useComponentUnlocks = (
 };
 
 export { useComponentUnlocks };
-export type { UseComponentUnlocksResult };

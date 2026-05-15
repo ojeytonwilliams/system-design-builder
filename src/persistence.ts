@@ -58,4 +58,3 @@ const getFirstIncompleteLevel = (completedLevels: number[], totalLevels: number)
 };
 
 export { getFirstIncompleteLevel, loadProgress, saveProgress };
-export type { PersistedProgress };

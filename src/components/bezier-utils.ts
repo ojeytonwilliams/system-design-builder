@@ -140,4 +140,3 @@ const drawArrowHead = (g: Graphics, from: Point, { color, to }: { color: number;
 };
 
 export { drawArrowHead, drawDashedBezier, getBezierControlPoints };
-export type { BezierCurve, DashStyle, Point, WalkState };

@@ -82,4 +82,3 @@ const useLevel = (initialNodes: ArchitectureCanvasNode[], initialEdges: Edge[]):
 };
 
 export { useLevel };
-export type { LoadLevelResult, UseLevelResult };

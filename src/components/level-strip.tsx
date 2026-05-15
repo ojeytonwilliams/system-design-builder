@@ -99,4 +99,3 @@ const LevelStrip = ({
 );
 
 export { LevelStrip };
-export type { LevelStatus, LevelStripItem, LevelStripProps };

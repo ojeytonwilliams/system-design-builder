@@ -3,8 +3,6 @@ import {
   getNextNodeId,
   isConnectionValid,
   removeNodeAndConnections,
-  withDefaultEdgeShape,
-  withDefaultNodeShape,
 } from "./canvas-logic.js";
 import type { PixiEdge, PixiNode } from "./canvas-logic.js";
 import type { ComponentType } from "./component-library.js";
@@ -31,13 +29,6 @@ interface CanvasGraph {
   nodes: PixiNode[];
   selectedNodeId: string | null;
 }
-
-const buildInitialGraph = (initialNodes: PixiNode[], initialEdges: PixiEdge[]): CanvasGraph => ({
-  contextMenu: null,
-  edges: initialEdges.map(withDefaultEdgeShape),
-  nodes: initialNodes.map(withDefaultNodeShape),
-  selectedNodeId: null,
-});
 
 const placeNode = (
   graph: CanvasGraph,
@@ -152,8 +143,6 @@ const openEdgeContextMenu = (
   selectedNodeId: null,
 });
 
-const closeContextMenu = (graph: CanvasGraph): CanvasGraph => ({ ...graph, contextMenu: null });
-
 const removeFromMenu = (graph: CanvasGraph): CanvasGraph => {
   if (graph.contextMenu === null) {
     return graph;
@@ -173,15 +162,8 @@ const removeFromMenu = (graph: CanvasGraph): CanvasGraph => {
   return { ...graph, contextMenu: null, edges: graph.edges.filter((e) => e.id !== edgeId) };
 };
 
-const setEdgesAnimated = (graph: CanvasGraph, animated: boolean): CanvasGraph => ({
-  ...graph,
-  edges: graph.edges.map((e) => ({ ...e, animated })),
-});
-
 export {
   addEdge,
-  buildInitialGraph,
-  closeContextMenu,
   deselectAll,
   moveNode,
   openEdgeContextMenu,
@@ -192,6 +174,5 @@ export {
   removeSelectedNode,
   selectEdge,
   selectNode,
-  setEdgesAnimated,
 };
 export type { CanvasGraph, ContextMenuState };

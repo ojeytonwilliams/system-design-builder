@@ -42,17 +42,6 @@ const isConnectionValid = (_sourceType: ComponentType, targetType: ComponentType
 
 const createNodeData = (componentType: ComponentType): ArchitectureNodeData => ({ componentType });
 
-const withDefaultNodeShape = (node: PixiNode): PixiNode => ({
-  ...node,
-  data: { ...createNodeData(node.data.componentType), ...node.data },
-  type: "architecture",
-});
-
-const withDefaultEdgeShape = (edge: PixiEdge): PixiEdge => ({
-  ...edge,
-  animated: edge.animated ?? false,
-});
-
 const getNextNodeId = (componentType: ComponentType, nodes: PixiNode[]): string => {
   const usedIds = new Set(nodes.map((n) => n.id));
   let i = 1;
@@ -105,13 +94,10 @@ export {
   DEFAULT_OVERLOADED_NODE_IDS,
   getHandlePosition,
   getNextNodeId,
-  GRID_SIZE,
   isConnectionValid,
   NODE_MIN_HEIGHT,
   NODE_WIDTH,
   removeNodeAndConnections,
   snapPositionToGrid,
-  withDefaultEdgeShape,
-  withDefaultNodeShape,
 };
 export type { ArchitectureNodeData, HandleSide, PixiEdge, PixiNode };

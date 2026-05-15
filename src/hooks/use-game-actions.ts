@@ -202,4 +202,3 @@ const useGameActions = ({
 };
 
 export { useGameActions };
-export type { UseGameActionsParams, UseGameActionsResult };

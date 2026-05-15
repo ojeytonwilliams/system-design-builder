@@ -89,4 +89,3 @@ const ResourceItem = ({
 };
 
 export { ResourceItem };
-export type { ResourceItemProps };

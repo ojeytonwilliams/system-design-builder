@@ -297,4 +297,3 @@ const GameLayout = ({ initialEdges = [], initialNodes = [], levelConfig }: GameL
 );
 
 export { GameLayout };
-export type { GameLayoutProps };

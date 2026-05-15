@@ -1,7 +1,5 @@
 import {
   addEdge,
-  buildInitialGraph,
-  closeContextMenu,
   deselectAll,
   moveNode,
   openEdgeContextMenu,
@@ -12,7 +10,6 @@ import {
   removeSelectedNode,
   selectEdge,
   selectNode,
-  setEdgesAnimated,
 } from "./canvas-state.js";
 import type { CanvasGraph } from "./canvas-state.js";
 import type { ComponentType } from "./component-library.js";
@@ -38,24 +35,6 @@ const makeEdge = (id: string, source: string, target: string, selected = false) 
   selected,
   source,
   target,
-});
-
-describe(buildInitialGraph, () => {
-  it("starts with no selection or context menu", () => {
-    const graph = buildInitialGraph([], []);
-    expect(graph.selectedNodeId).toBeNull();
-    expect(graph.contextMenu).toBeNull();
-  });
-
-  it("applies animated: false to initial edges without the field", () => {
-    const graph = buildInitialGraph([], [{ id: "e1", source: "a", target: "b" }]);
-    expect(graph.edges[0]?.animated).toBe(false);
-  });
-
-  it("preserves provided nodes", () => {
-    const graph = buildInitialGraph([makeNode("server-1")], []);
-    expect(graph.nodes).toHaveLength(1);
-  });
 });
 
 describe(placeNode, () => {
@@ -296,13 +275,6 @@ describe(openEdgeContextMenu, () => {
   });
 });
 
-describe(closeContextMenu, () => {
-  it("sets contextMenu to null", () => {
-    const graph = makeGraph({ contextMenu: { kind: "node", nodeId: "n1", x: 0, y: 0 } });
-    expect(closeContextMenu(graph).contextMenu).toBeNull();
-  });
-});
-
 describe(removeFromMenu, () => {
   it("returns graph unchanged when contextMenu is null", () => {
     const graph = makeGraph({ nodes: [makeNode("server-1")] });
@@ -344,21 +316,5 @@ describe(removeFromMenu, () => {
       nodes: [makeNode("server-1")],
     });
     expect(removeFromMenu(graph).contextMenu).toBeNull();
-  });
-});
-
-describe(setEdgesAnimated, () => {
-  it("sets animated: true on all edges", () => {
-    const graph = makeGraph({
-      edges: [makeEdge("e1", "a", "b"), makeEdge("e2", "b", "c")],
-    });
-    const result = setEdgesAnimated(graph, true);
-    expect(result.edges[0]?.animated).toBe(true);
-    expect(result.edges[1]?.animated).toBe(true);
-  });
-
-  it("sets animated: false on all edges", () => {
-    const graph = makeGraph({ edges: [{ ...makeEdge("e1", "a", "b"), animated: true }] });
-    expect(setEdgesAnimated(graph, false).edges[0]?.animated).toBe(false);
   });
 });

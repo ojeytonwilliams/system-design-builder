@@ -81,4 +81,3 @@ const useSimulation = (): SimulationContextValue => {
 };
 
 export { SimulationProvider, useSimulation };
-export type { SimulationContextValue, SimulationState };

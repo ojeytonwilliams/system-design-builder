@@ -115,4 +115,3 @@ const Resources = ({
 };
 
 export { Resources };
-export type { ResourcesProps };

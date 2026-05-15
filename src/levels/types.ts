@@ -63,15 +63,4 @@ interface LevelDefinition {
   trafficTarget: number;
 }
 
-export type {
-  CapacityReachedTrigger,
-  CoachMessage,
-  ComponentUnlock,
-  LevelDefinition,
-  OverloadSustainedTrigger,
-  ServersPlacedTrigger,
-  StartingEdge,
-  StartingNode,
-  StartingNodePosition,
-  UnlockTrigger,
-};
+export type { ComponentUnlock, LevelDefinition, StartingEdge, StartingNode, UnlockTrigger };

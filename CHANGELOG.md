@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.12] - 2026-05-15
+
+### Refactoring
+
+- **Speculative type exports created a misleading public API**: 31 types and 2 functions were exported from source modules but never imported outside their own file — mostly props interfaces and hook result types that were exported by habit rather than need. Two functions (`closeContextMenu`, `setEdgesAnimated`) existed only as test targets with no production call sites, so they were deleted along with their tests. Removed all unused exports to make the actual API surface match what the codebase uses.
+
 ## [2.3.11] - 2026-05-15
 
 ### Refactoring

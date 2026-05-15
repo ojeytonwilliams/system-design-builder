@@ -34,4 +34,3 @@ const useDesignModeOverloads = (
   }, [mode, graphState, effectiveLevelConfig]);
 
 export { useDesignModeOverloads };
-export type { GraphState };

@@ -47,4 +47,3 @@ const useEventLog = (): UseEventLogResult => {
 };
 
 export { useEventLog };
-export type { UseEventLogResult };

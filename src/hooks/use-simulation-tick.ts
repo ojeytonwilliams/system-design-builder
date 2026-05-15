@@ -145,4 +145,3 @@ const useSimulationTick = ({
 };
 
 export { useSimulationTick };
-export type { UseSimulationTickParams };
