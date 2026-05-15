@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.10] - 2026-05-15
+
+### Refactoring
+
+- **`GameLayoutContent` still held all its event handlers inline**: Even after extracting custom hooks in v2.3.4, the component body retained ten `useCallback` declarations (level loading, traffic toggling, graph changes, budget checks, etc.) alongside a `graphRef` mutable ref and two `useMemo` computations. Extracted the callbacks into `useGameActions`, the design-mode overload calculation into `useDesignModeOverloads` (with its own unit tests), and the level-config fallback logic into a pure `resolveEffectiveLevelConfig` utility (also unit-tested). Removed `graphRef` — it existed to avoid stale closures inside the simulation tick interval, but the canvas is locked during simulation so the graph cannot change while the interval runs; `nodes` and `edges` are passed as plain values instead.
+
 ## [2.3.9] - 2026-05-15
 
 ### Refactoring

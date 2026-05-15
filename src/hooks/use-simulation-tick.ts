@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import type { RefObject } from "react";
 import type { ArchitectureCanvasNode, Edge } from "../components/game-canvas.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { toGraphEdge, toGraphNode } from "../layouts/graph-adapters.js";
@@ -8,19 +7,15 @@ import type { LevelConfig, SimulationMode, TrafficSnapshot } from "../simulation
 
 const WIN_SUSTAIN_SECONDS = 3;
 
-interface GraphState {
-  edges: Edge[];
-  nodes: ArchitectureCanvasNode[];
-}
-
 interface UseSimulationTickParams {
   appendEvent: (text: string) => void;
   applySnapshot: (snapshot: TrafficSnapshot, nodes: ArchitectureCanvasNode[]) => void;
   currentLevel: LevelDefinition;
+  edges: Edge[];
   effectiveLevelConfig: LevelConfig;
   endSimulation: () => void;
-  graphRef: RefObject<GraphState>;
   mode: SimulationMode;
+  nodes: ArchitectureCanvasNode[];
   onWin: () => void;
   resetKey: number;
   setCoachMessage: (message: string) => void;
@@ -31,10 +26,11 @@ const useSimulationTick = ({
   appendEvent,
   applySnapshot,
   currentLevel,
+  edges,
   effectiveLevelConfig,
   endSimulation,
-  graphRef,
   mode,
+  nodes,
   onWin,
   resetKey,
   setCoachMessage,
@@ -86,8 +82,8 @@ const useSimulationTick = ({
         trafficStart: effectiveLevelConfig.trafficStart,
       });
 
-      const graphNodes = graphRef.current.nodes.map(toGraphNode);
-      const graphEdges = graphRef.current.edges.map(toGraphEdge);
+      const graphNodes = nodes.map(toGraphNode);
+      const graphEdges = edges.map(toGraphEdge);
       const snapshot = computeTrafficFlow(graphNodes, graphEdges, {
         cacheHitRate: effectiveLevelConfig.cacheHitRate,
         trafficRate: rate,
@@ -121,7 +117,7 @@ const useSimulationTick = ({
         sustainedNoDropSecondsRef.current = 0;
       }
 
-      applySnapshot(snapshot, graphRef.current.nodes);
+      applySnapshot(snapshot, nodes);
       tick(snapshot, rate);
 
       if (sustainedNoDropSecondsRef.current >= WIN_SUSTAIN_SECONDS) {
@@ -137,10 +133,11 @@ const useSimulationTick = ({
     appendEvent,
     applySnapshot,
     currentLevel,
+    edges,
     effectiveLevelConfig,
     endSimulation,
-    graphRef,
     mode,
+    nodes,
     onWin,
     setCoachMessage,
     tick,
