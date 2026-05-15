@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.8] - 2026-05-15
+
+### Refactoring
+
+- **Three-layer canvas architecture**: Separated the canvas into three distinct layers with clear responsibilities. (1) `canvas-state.ts` — a pure logic layer with 14 immutable reducer-style transition functions (`placeNode`, `selectNode`, `addEdge`, `removeSelectedNode`, etc.) that transform a `CanvasGraph` value with no side effects or React coupling. (2) `game-canvas.tsx` — a thin React shell that owns a single `useState<CanvasGraph>`, calls transition functions in response to events, and delegates all rendering to the Pixi layer. (3) `canvas-pixi-renderer.tsx` — the sole file that imports from `pixi.js` and `@pixi/react`, now handling `pendingEdge` drag state internally rather than leaking it to the shell.
+- **Deleted `canvas-node-graphic.tsx` and `canvas-edge-graphic.tsx`**: Their logic was consolidated into `canvas-pixi-renderer.tsx`, reducing cross-file coupling and keeping all Pixi interaction in one place.
+- **Pure logic is now independently tested**: `canvas-state.test.ts` covers all 14 transition functions with 46 unit tests against plain objects — no DOM, no React, no Pixi mocks required.
+
 ## [2.3.7] - 2026-05-14
 
 ### Refactoring

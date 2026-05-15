@@ -1,5 +1,11 @@
-import { GameCanvas } from "./game-canvas.js";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { GameCanvas } from "./game-canvas.js";
+
+// oxlint-disable-next-line vitest/require-top-level-describe
+beforeAll(() => {
+  // Pixi mocks render unknown custom elements; suppress React's warnings about them.
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
 
 const INITIAL_NODES_TWO = [
   {
@@ -26,12 +32,6 @@ const LOCKED_USERS_NODE = [
 ];
 
 describe("game canvas", () => {
-  beforeAll(() => {
-    // The pixi mocks replace the pixi elements with custom elements that react
-    // does not recognize, which causes React to log errors during tests.
-    vi.spyOn(console, "error").mockImplementation(() => {});
-  });
-
   it("drops a palette item onto the canvas and renders its label", () => {
     render(<GameCanvas />);
     const dropzone = screen.getByTestId("game-canvas-dropzone");

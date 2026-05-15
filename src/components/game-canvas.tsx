@@ -1,49 +1,36 @@
-import { Application, useApplication } from "@pixi/react";
-import type { Container, FederatedPointerEvent, Graphics } from "pixi.js";
 import type { DragEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { isComponentType } from "./component-library.js";
 import type { ComponentType } from "./component-library.js";
-import { EdgesLayer } from "./canvas-edge-graphic.js";
-import type { DragState, PendingEdge } from "./canvas-edge-graphic.js";
 import {
-  chooseBestHandles,
-  createNodeData,
   DEFAULT_DROP_POSITION,
   DEFAULT_LOCKED_NODE_IDS,
   DEFAULT_OVERLOADED_NODE_IDS,
-  getHandlePosition,
-  getNextNodeId,
-  isConnectionValid,
-  removeNodeAndConnections,
   snapPositionToGrid,
-  withDefaultEdgeShape,
-  withDefaultNodeShape,
 } from "./canvas-logic.js";
-import type { ArchitectureNodeData, HandleSide, PixiEdge, PixiNode } from "./canvas-logic.js";
-import { PixiNodeGraphic } from "./canvas-node-graphic.js";
+import type { ArchitectureNodeData, PixiEdge, PixiNode } from "./canvas-logic.js";
+import { CanvasPixiRenderer } from "./canvas-pixi-renderer.js";
+import {
+  addEdge,
+  buildInitialGraph,
+  deselectAll,
+  moveNode,
+  openEdgeContextMenu,
+  openNodeContextMenu,
+  placeNode,
+  removeFromMenu,
+  removeSelectedEdge,
+  removeSelectedNode,
+  selectEdge,
+  selectNode,
+  setEdgesAnimated,
+} from "./canvas-state.js";
+import type { CanvasGraph, ContextMenuState } from "./canvas-state.js";
 
-const BACKGROUND_GAP = 24;
 const CANVAS_BACKGROUND = "#f8f5ec";
 
 type ArchitectureCanvasNode = PixiNode;
 type Edge = PixiEdge;
-
-interface NodeContextMenu {
-  kind: "node";
-  nodeId: string;
-  x: number;
-  y: number;
-}
-
-interface EdgeContextMenu {
-  edgeId: string;
-  kind: "edge";
-  x: number;
-  y: number;
-}
-
-type ContextMenuState = EdgeContextMenu | NodeContextMenu;
 
 interface GameCanvasProps {
   componentToPlace?: ComponentType | null;
@@ -59,291 +46,12 @@ interface GameCanvasProps {
   overloadedNodeIds?: string[];
 }
 
-interface PixiCanvasContentProps {
-  draggingRef: { current: DragState | null };
-  edges: PixiEdge[];
-  isLocked: boolean;
-  isSimulating: boolean;
-  lockedNodeIds: string[];
-  nodeContainerRefs: { current: Map<string, Container> };
-  nodes: PixiNode[];
-  onEdgeClick: (edgeId: string) => void;
-  onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
-  onHandleClick: (nodeId: string, side: HandleSide, kind: "source" | "target") => void;
-  onNodeContextMenu: (nodeId: string, pos: { clientX: number; clientY: number }) => void;
-  onNodePointerDown: (nodeId: string, e: FederatedPointerEvent) => void;
-  onNodeSelect: (nodeId: string) => void;
-  onPaneClick: () => void;
-  onStagePointerMove: (e: FederatedPointerEvent) => void;
-  onStagePointerUp: () => void;
-  overloadedNodeIds: string[];
-  pendingEdge: PendingEdge | null;
-  selectedNodeId: string | null;
-  stageHeight: number;
-  stageWidth: number;
-}
-
-const PixiCanvasContent = ({
-  nodes,
-  edges,
-  stageWidth,
-  stageHeight,
-  isSimulating,
-  draggingRef,
-  nodeContainerRefs,
-  overloadedNodeIds,
-  selectedNodeId,
-  lockedNodeIds,
-  isLocked,
-  pendingEdge,
-  onNodePointerDown,
-  onNodeSelect,
-  onNodeContextMenu,
-  onHandleClick,
-  onEdgeClick,
-  onEdgeContextMenu,
-  onStagePointerMove,
-  onStagePointerUp,
-  onPaneClick,
-}: PixiCanvasContentProps) => {
-  const { app, isInitialised } = useApplication() as ReturnType<typeof useApplication> & {
-    isInitialised: boolean;
-  };
-
-  useEffect(() => {
-    if (!isInitialised) {
-      return;
-    }
-    const { stage } = app;
-    stage.eventMode = "static";
-    stage.hitArea = app.screen;
-
-    const onClick = onPaneClick,
-      onMove = onStagePointerMove,
-      onUp = onStagePointerUp;
-
-    stage.on("pointermove", onMove);
-    stage.on("pointerup", onUp);
-    stage.on("pointerupoutside", onUp);
-    stage.on("click", onClick);
-
-    return () => {
-      stage.off("pointermove", onMove);
-      stage.off("pointerup", onUp);
-      stage.off("pointerupoutside", onUp);
-      stage.off("click", onClick);
-    };
-  }, [app, isInitialised, onStagePointerMove, onStagePointerUp, onPaneClick]);
-
-  const drawDotGrid = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      for (let gx = BACKGROUND_GAP; gx < stageWidth; gx += BACKGROUND_GAP) {
-        for (let gy = BACKGROUND_GAP; gy < stageHeight; gy += BACKGROUND_GAP) {
-          g.circle(gx, gy, 0.8);
-          g.fill({ alpha: 0.18, color: 0x1a2744 });
-        }
-      }
-    },
-    [stageWidth, stageHeight],
-  );
-
-  return (
-    <pixiContainer>
-      <pixiGraphics draw={drawDotGrid} />
-      <EdgesLayer
-        draggingRef={draggingRef}
-        edges={edges}
-        isSimulating={isSimulating}
-        nodeContainerRefs={nodeContainerRefs}
-        nodes={nodes}
-        onEdgeClick={onEdgeClick}
-        onEdgeContextMenu={onEdgeContextMenu}
-        pendingEdge={pendingEdge}
-      />
-      <pixiContainer>
-        {nodes.map((node) => (
-          <PixiNodeGraphic
-            key={node.id}
-            containerRefs={nodeContainerRefs}
-            isLocked={isLocked || lockedNodeIds.includes(node.id)}
-            isOverloaded={overloadedNodeIds.includes(node.id)}
-            isPendingConnection={pendingEdge !== null}
-            isSelected={selectedNodeId === node.id}
-            node={node}
-            onContextMenu={onNodeContextMenu}
-            onHandleClick={onHandleClick}
-            onPointerDown={onNodePointerDown}
-            onSelect={onNodeSelect}
-          />
-        ))}
-      </pixiContainer>
-    </pixiContainer>
-  );
-};
-
-const useCanvasKeyboard = (
-  graph: { edges: Edge[]; nodes: PixiNode[] },
-  selectedNodeId: string | null,
-  lockedNodeIds: string[],
-  setters: {
-    setContextMenu: (s: ContextMenuState | null) => void;
-    setEdges: (fn: (current: Edge[]) => Edge[]) => void;
-    setNodes: (fn: (current: PixiNode[]) => PixiNode[]) => void;
-    setPendingEdge: (p: PendingEdge | null) => void;
-    setSelectedNodeId: (id: string | null) => void;
-  },
-) => {
-  const { setContextMenu, setEdges, setNodes, setSelectedNodeId, setPendingEdge } = setters;
-  const { edges, nodes } = graph;
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelectedNodeId(null);
-        setPendingEdge(null);
-        setContextMenu(null);
-        return;
-      }
-      if (event.key !== "Delete") {
-        return;
-      }
-
-      if (selectedNodeId !== null) {
-        if (lockedNodeIds.includes(selectedNodeId)) {
-          return;
-        }
-        const next = removeNodeAndConnections(selectedNodeId, nodes, edges);
-        setNodes(() => next.nodes);
-        setEdges(() => next.edges);
-        setSelectedNodeId(null);
-        setContextMenu(null);
-        return;
-      }
-
-      const selectedEdge = edges.find((e) => e.selected === true);
-      if (selectedEdge !== undefined) {
-        setEdges((current) => current.filter((e) => e.id !== selectedEdge.id));
-        setContextMenu(null);
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [
-    edges,
-    lockedNodeIds,
-    nodes,
-    selectedNodeId,
-    setContextMenu,
-    setEdges,
-    setNodes,
-    setSelectedNodeId,
-    setPendingEdge,
-  ]);
-};
-
-const useCanvasPointerHandlers = (
-  nodeContainerRefs: { current: Map<string, Container> },
-  draggingRef: { current: DragState | null },
-  setNodes: (fn: (current: PixiNode[]) => PixiNode[]) => void,
-  setPendingEdge: (fn: (prev: PendingEdge | null) => PendingEdge | null) => void,
-) => {
-  const onNodePointerDown = useCallback((nodeId: string, e: FederatedPointerEvent) => {
-    const container = nodeContainerRefs.current.get(nodeId);
-    if (container === undefined) {
-      return;
-    }
-    draggingRef.current = {
-      nodeId,
-      offsetX: e.globalX - container.x,
-      offsetY: e.globalY - container.y,
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const onStagePointerMove = useCallback((e: FederatedPointerEvent) => {
-    const drag = draggingRef.current;
-    if (drag !== null) {
-      const container = nodeContainerRefs.current.get(drag.nodeId);
-      if (container !== undefined) {
-        container.x = e.globalX - drag.offsetX;
-        container.y = e.globalY - drag.offsetY;
-      }
-      return;
-    }
-    setPendingEdge((prev) => (prev === null ? null : { ...prev, x: e.globalX, y: e.globalY }));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const onStagePointerUp = useCallback(() => {
-    const drag = draggingRef.current;
-    if (drag === null) {
-      return;
-    }
-    draggingRef.current = null;
-    const container = nodeContainerRefs.current.get(drag.nodeId);
-    if (container === undefined) {
-      return;
-    }
-    const snapped = snapPositionToGrid({ x: container.x, y: container.y });
-    container.x = snapped.x;
-    container.y = snapped.y;
-    setNodes((current) =>
-      current.map((n) => (n.id === drag.nodeId ? { ...n, position: snapped } : n)),
-    );
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return { onNodePointerDown, onStagePointerMove, onStagePointerUp };
-};
-
-const useCanvasEdgeConnection = (
-  refs: {
-    draggingRef: { current: DragState | null };
-    nodesRef: { current: PixiNode[] };
-    pendingEdgeRef: { current: PendingEdge | null };
-  },
-  setPendingEdge: (p: PendingEdge | null) => void,
-  setEdges: (fn: (current: Edge[]) => Edge[]) => void,
-) => {
-  const { draggingRef, nodesRef, pendingEdgeRef } = refs;
-  const onHandleClick = useCallback(
-    (nodeId: string, side: HandleSide, kind: "source" | "target") => {
-      if (kind === "source") {
-        draggingRef.current = null;
-        const node = nodesRef.current.find((n) => n.id === nodeId);
-        if (node === undefined) {
-          return;
-        }
-        const pos = getHandlePosition(node, side);
-        setPendingEdge({ sourceHandle: side, sourceNodeId: nodeId, x: pos.x, y: pos.y });
-        return;
-      }
-      const pending = pendingEdgeRef.current;
-      if (pending === null) {
-        return;
-      }
-      const sourceNode = nodesRef.current.find((n) => n.id === pending.sourceNodeId);
-      const targetNode = nodesRef.current.find((n) => n.id === nodeId);
-      if (sourceNode === undefined || targetNode === undefined) {
-        setPendingEdge(null);
-        return;
-      }
-      if (!isConnectionValid(sourceNode.data.componentType, targetNode.data.componentType)) {
-        setPendingEdge(null);
-        return;
-      }
-      const edgeId = `edge-${pending.sourceNodeId}-${nodeId}-${Date.now()}`;
-      setEdges((current) => [
-        ...current,
-        { animated: false, id: edgeId, source: pending.sourceNodeId, target: nodeId },
-      ]);
-      setPendingEdge(null);
-    },
-    [], // eslint-disable-line react-hooks/exhaustive-deps
-  );
-
-  return { onHandleClick };
+const relativeTo = (
+  clientPos: { clientX: number; clientY: number },
+  ref: { current: HTMLDivElement | null },
+): { x: number; y: number } => {
+  const rect = ref.current?.getBoundingClientRect();
+  return { x: clientPos.clientX - (rect?.left ?? 0), y: clientPos.clientY - (rect?.top ?? 0) };
 };
 
 const GameCanvas = ({
@@ -359,21 +67,12 @@ const GameCanvas = ({
   onStateChange,
   overloadedNodeIds = DEFAULT_OVERLOADED_NODE_IDS,
 }: GameCanvasProps) => {
-  const [nodes, setNodes] = useState<PixiNode[]>(() => initialNodes.map(withDefaultNodeShape));
-  const [edges, setEdges] = useState<Edge[]>(() => initialEdges.map(withDefaultEdgeShape));
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [pendingEdge, setPendingEdge] = useState<PendingEdge | null>(null);
-  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(
-    initialContextMenu ?? null,
-  );
+  const [graph, setGraph] = useState<CanvasGraph>(() => ({
+    ...buildInitialGraph(initialNodes, initialEdges),
+    contextMenu: initialContextMenu ?? null,
+  }));
   const [stageSize, setStageSize] = useState({ height: 0, width: 0 });
-  const draggingRef = useRef<DragState | null>(null),
-    dropzoneRef = useRef<HTMLDivElement>(null),
-    nodeContainerRefs = useRef<Map<string, Container>>(new Map()),
-    nodesRef = useRef(nodes),
-    pendingEdgeRef = useRef(pendingEdge);
-  nodesRef.current = nodes;
-  pendingEdgeRef.current = pendingEdge;
+  const dropzoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const el = dropzoneRef.current;
@@ -394,55 +93,46 @@ const GameCanvas = ({
   }, []);
 
   useEffect(() => {
-    setEdges((current) => current.map((e) => ({ ...e, animated: isSimulating })));
+    setGraph((g) => setEdgesAnimated(g, isSimulating));
   }, [isSimulating]);
 
   useEffect(() => {
-    onSelectedNodeChange?.(selectedNodeId);
-  }, [selectedNodeId, onSelectedNodeChange]);
+    onSelectedNodeChange?.(graph.selectedNodeId);
+  }, [graph.selectedNodeId, onSelectedNodeChange]);
 
   useEffect(() => {
-    onStateChange?.(nodes, edges);
-  }, [nodes, edges, onStateChange]);
+    onStateChange?.(graph.nodes, graph.edges);
+  }, [graph.nodes, graph.edges, onStateChange]);
 
   useEffect(() => {
     if (componentToPlace === null || componentToPlace === undefined || isLocked) {
       return;
     }
-    setNodes((current) => {
-      const nextNode: PixiNode = {
-        data: createNodeData(componentToPlace),
-        id: getNextNodeId(componentToPlace, current),
-        position: snapPositionToGrid(DEFAULT_DROP_POSITION),
-        type: "architecture",
-      };
-      return [...current, nextNode];
-    });
-    setSelectedNodeId(null);
-    setContextMenu(null);
+    setGraph((g) => placeNode(g, componentToPlace, snapPositionToGrid(DEFAULT_DROP_POSITION)));
     onComponentPlaced?.();
   }, [componentToPlace, isLocked, onComponentPlaced]);
 
-  useCanvasKeyboard({ edges, nodes }, selectedNodeId, lockedNodeIds, {
-    setContextMenu,
-    setEdges,
-    setNodes,
-    setPendingEdge,
-    setSelectedNodeId,
-  });
-
-  const { onNodePointerDown, onStagePointerMove, onStagePointerUp } = useCanvasPointerHandlers(
-    nodeContainerRefs,
-    draggingRef,
-    setNodes,
-    setPendingEdge,
-  );
-
-  const { onHandleClick } = useCanvasEdgeConnection(
-    { draggingRef, nodesRef, pendingEdgeRef },
-    setPendingEdge,
-    setEdges,
-  );
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setGraph((g) => deselectAll(g));
+        return;
+      }
+      if (event.key !== "Delete") {
+        return;
+      }
+      setGraph((g) => {
+        if (g.selectedNodeId !== null) {
+          return removeSelectedNode(g, lockedNodeIds);
+        }
+        return removeSelectedEdge(g);
+      });
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [lockedNodeIds]);
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -463,82 +153,44 @@ const GameCanvas = ({
       x: event.clientX - bounds.left,
       y: event.clientY - bounds.top,
     });
-    setNodes((current) => {
-      const nextNode: PixiNode = {
-        data: createNodeData(componentType),
-        id: getNextNodeId(componentType, current),
-        position,
-        type: "architecture",
-      };
-      return [...current, nextNode];
-    });
-    setSelectedNodeId(null);
-    setContextMenu(null);
-  };
-
-  const handleRemoveFromMenu = () => {
-    if (contextMenu === null) {
-      return;
-    }
-    if (contextMenu.kind === "node") {
-      const next = removeNodeAndConnections(contextMenu.nodeId, nodes, edges);
-      setNodes(() => next.nodes);
-      setEdges(() => next.edges);
-      setSelectedNodeId(null);
-    } else {
-      setEdges((current) => current.filter((e) => e.id !== contextMenu.edgeId));
-    }
-    setContextMenu(null);
+    setGraph((g) => placeNode(g, componentType, position));
   };
 
   const onNodeSelect = useCallback((nodeId: string) => {
-    setSelectedNodeId(nodeId);
-    setEdges((current) => current.map((e) => ({ ...e, selected: false })));
-    setContextMenu(null);
+    setGraph((g) => selectNode(g, nodeId));
   }, []);
 
-  const onPaneClick = useCallback(() => {
-    setSelectedNodeId(null);
-    setPendingEdge(null);
-    setContextMenu(null);
+  const onEdgeSelect = useCallback((edgeId: string) => {
+    setGraph((g) => selectEdge(g, edgeId));
   }, []);
 
-  const onEdgeClick = useCallback((edgeId: string) => {
-    setEdges((current) => current.map((e) => ({ ...e, selected: e.id === edgeId })));
-    setSelectedNodeId(null);
-    setContextMenu(null);
-  }, []);
+  const onNodeContextMenu = useCallback(
+    (nodeId: string, clientPos: { clientX: number; clientY: number }) => {
+      const pos = relativeTo(clientPos, dropzoneRef);
+      setGraph((g) => openNodeContextMenu(g, nodeId, pos, lockedNodeIds));
+    },
+    [lockedNodeIds],
+  );
 
   const onEdgeContextMenu = useCallback(
-    (edgeId: string, pos: { clientX: number; clientY: number }) => {
-      const rect = dropzoneRef.current?.getBoundingClientRect();
-      setContextMenu({
-        edgeId,
-        kind: "edge",
-        x: pos.clientX - (rect?.left ?? 0),
-        y: pos.clientY - (rect?.top ?? 0),
-      });
-      setSelectedNodeId(null);
+    (edgeId: string, clientPos: { clientX: number; clientY: number }) => {
+      const pos = relativeTo(clientPos, dropzoneRef);
+      setGraph((g) => openEdgeContextMenu(g, edgeId, pos));
     },
     [],
   );
 
-  const onNodeContextMenu = useCallback(
-    (nodeId: string, pos: { clientX: number; clientY: number }) => {
-      if (lockedNodeIds.includes(nodeId)) {
-        return;
-      }
-      setSelectedNodeId(nodeId);
-      const rect = dropzoneRef.current?.getBoundingClientRect();
-      setContextMenu({
-        kind: "node",
-        nodeId,
-        x: pos.clientX - (rect?.left ?? 0),
-        y: pos.clientY - (rect?.top ?? 0),
-      });
-    },
-    [lockedNodeIds],
-  );
+  const onEdgeCreated = useCallback((sourceNodeId: string, targetNodeId: string) => {
+    setGraph((g) => addEdge(g, sourceNodeId, targetNodeId));
+  }, []);
+
+  const onNodeDragEnd = useCallback((nodeId: string, position: { x: number; y: number }) => {
+    setGraph((g) => moveNode(g, nodeId, position));
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setGraph((g) => deselectAll(g));
+  }, []);
 
   return (
     <div data-testid="game-canvas" style={{ height: "100%", position: "relative", width: "100%" }}>
@@ -558,51 +210,41 @@ const GameCanvas = ({
         }}
       >
         {stageSize.width > 0 && stageSize.height > 0 && (
-          <Application
-            antialias
-            autoDensity
-            background={0xf8f5ec}
-            resolution={window.devicePixelRatio}
+          <CanvasPixiRenderer
+            edges={graph.edges}
+            isLocked={isLocked}
+            isSimulating={isSimulating}
+            lockedNodeIds={lockedNodeIds}
+            nodes={graph.nodes}
+            onEdgeContextMenu={onEdgeContextMenu}
+            onEdgeCreated={onEdgeCreated}
+            onEdgeSelect={onEdgeSelect}
+            onNodeContextMenu={onNodeContextMenu}
+            onNodeDragEnd={onNodeDragEnd}
+            onNodeSelect={onNodeSelect}
+            onPaneClick={onPaneClick}
+            overloadedNodeIds={overloadedNodeIds}
             resizeTo={dropzoneRef}
-          >
-            <PixiCanvasContent
-              draggingRef={draggingRef}
-              edges={edges}
-              isLocked={isLocked}
-              isSimulating={isSimulating}
-              lockedNodeIds={lockedNodeIds}
-              nodeContainerRefs={nodeContainerRefs}
-              nodes={nodes}
-              onEdgeClick={onEdgeClick}
-              onEdgeContextMenu={onEdgeContextMenu}
-              onHandleClick={onHandleClick}
-              onNodeContextMenu={onNodeContextMenu}
-              onNodePointerDown={onNodePointerDown}
-              onNodeSelect={onNodeSelect}
-              onPaneClick={onPaneClick}
-              onStagePointerMove={onStagePointerMove}
-              onStagePointerUp={onStagePointerUp}
-              overloadedNodeIds={overloadedNodeIds}
-              pendingEdge={pendingEdge}
-              selectedNodeId={selectedNodeId}
-              stageHeight={stageSize.height}
-              stageWidth={stageSize.width}
-            />
-          </Application>
+            selectedNodeId={graph.selectedNodeId}
+            stageHeight={stageSize.height}
+            stageWidth={stageSize.width}
+          />
         )}
       </div>
 
-      {contextMenu !== null && (
+      {graph.contextMenu !== null && (
         <div
           style={{
-            left: `${contextMenu.x}px`,
+            left: `${graph.contextMenu.x}px`,
             position: "absolute",
-            top: `${contextMenu.y}px`,
+            top: `${graph.contextMenu.y}px`,
             zIndex: 10,
           }}
         >
           <button
-            onClick={handleRemoveFromMenu}
+            onClick={() => {
+              setGraph((g) => removeFromMenu(g));
+            }}
             style={{
               background: "#1a2744",
               border: "none",
@@ -621,5 +263,5 @@ const GameCanvas = ({
   );
 };
 
-export { GameCanvas, chooseBestHandles, isConnectionValid, snapPositionToGrid };
+export { GameCanvas };
 export type { ArchitectureCanvasNode, ArchitectureNodeData, Edge };
