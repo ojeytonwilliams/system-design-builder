@@ -167,8 +167,9 @@ const useGameActions = ({
       });
 
       updateFromGraph(nodes);
+      setGraphState({ edges, nodes });
     },
-    [appendEvent, graphState, updateFromGraph],
+    [appendEvent, graphState, setGraphState, updateFromGraph],
   );
 
   const handleSelectedNodeChange = useCallback(

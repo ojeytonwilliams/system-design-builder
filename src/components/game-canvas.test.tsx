@@ -7,6 +7,8 @@ beforeAll(() => {
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
+const noop = () => {};
+
 const INITIAL_NODES_TWO = [
   {
     data: { componentType: "users" },
@@ -32,8 +34,17 @@ const LOCKED_USERS_NODE = [
 ];
 
 describe("game canvas", () => {
-  it("drops a palette item onto the canvas and renders its label", () => {
-    render(<GameCanvas />);
+  it("drops a palette item onto the canvas and calls onStateChange with the new node", () => {
+    const onStateChange = vi.fn<() => void>();
+    render(
+      <GameCanvas
+        edges={[]}
+        nodes={[]}
+        onSelectedNodeChange={noop}
+        onStateChange={onStateChange}
+        selectedNodeId={null}
+      />,
+    );
     const dropzone = screen.getByTestId("game-canvas-dropzone");
 
     vi.spyOn(dropzone, "getBoundingClientRect").mockReturnValue({
@@ -54,53 +65,69 @@ describe("game canvas", () => {
       dataTransfer: { getData: () => "server" },
     });
 
-    expect(screen.getByTestId("canvas-node-server-1")).toHaveAttribute(
-      "data-label",
-      "Small Server",
+    expect(onStateChange).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: "server-1" })]),
+      expect.any(Array),
     );
   });
 
   it("places a queued component when componentToPlace is provided", () => {
     const onComponentPlaced = vi.fn<() => void>();
+    const onStateChange = vi.fn<() => void>();
 
-    render(<GameCanvas componentToPlace="server" onComponentPlaced={onComponentPlaced} />);
+    render(
+      <GameCanvas
+        componentToPlace="server"
+        edges={[]}
+        nodes={[]}
+        onComponentPlaced={onComponentPlaced}
+        onSelectedNodeChange={noop}
+        onStateChange={onStateChange}
+        selectedNodeId={null}
+      />,
+    );
 
-    expect(screen.getByTestId("canvas-node-server-1")).toBeInTheDocument();
+    expect(onStateChange).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ id: "server-1" })]),
+      expect.any(Array),
+    );
     expect(onComponentPlaced).toHaveBeenCalledOnce();
   });
 
   it("removes a selected node and its connected edges when Delete is pressed", () => {
+    const onStateChange = vi.fn<() => void>();
     render(
       <GameCanvas
-        initialEdges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
-        initialNodes={[
-          {
-            data: { componentType: "users" },
-            id: "users-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-          {
-            data: { componentType: "server" },
-            id: "server-1",
-            position: { x: 96, y: 0 },
-            type: "architecture",
-          },
-        ]}
+        edges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
+        nodes={[...INITIAL_NODES_TWO]}
+        onSelectedNodeChange={noop}
+        onStateChange={onStateChange}
+        selectedNodeId="server-1"
       />,
     );
 
-    fireEvent.click(screen.getByTestId("canvas-node-server-1"));
     fireEvent.keyDown(window, { key: "Delete" });
 
-    expect(screen.queryByTestId("canvas-node-server-1")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("canvas-edge-edge-1")).not.toBeInTheDocument();
+    expect(onStateChange).toHaveBeenCalledWith(
+      expect.not.arrayContaining([expect.objectContaining({ id: "server-1" })]),
+      [],
+    );
   });
 });
 
 describe("locked mode", () => {
-  it("does not place a node when isLocked is true and a palette item is dropped", () => {
-    render(<GameCanvas isLocked />);
+  it("does not call onStateChange when isLocked is true and a palette item is dropped", () => {
+    const onStateChange = vi.fn<() => void>();
+    render(
+      <GameCanvas
+        edges={[]}
+        isLocked
+        nodes={[]}
+        onSelectedNodeChange={noop}
+        onStateChange={onStateChange}
+        selectedNodeId={null}
+      />,
+    );
     const dropzone = screen.getByTestId("game-canvas-dropzone");
 
     vi.spyOn(dropzone, "getBoundingClientRect").mockReturnValue({
@@ -121,14 +148,22 @@ describe("locked mode", () => {
       dataTransfer: { getData: () => "server" },
     });
 
-    expect(screen.queryByTestId("canvas-node-server-1")).not.toBeInTheDocument();
+    expect(onStateChange).not.toHaveBeenCalled();
   });
 });
 
 describe("onStateChange callback", () => {
   it("fires with updated nodes after a node is dropped", () => {
     const onStateChange = vi.fn<() => void>();
-    render(<GameCanvas onStateChange={onStateChange} />);
+    render(
+      <GameCanvas
+        edges={[]}
+        nodes={[]}
+        onSelectedNodeChange={noop}
+        onStateChange={onStateChange}
+        selectedNodeId={null}
+      />,
+    );
     const dropzone = screen.getByTestId("game-canvas-dropzone");
 
     vi.spyOn(dropzone, "getBoundingClientRect").mockReturnValue({
@@ -160,7 +195,8 @@ describe("overloaded node state", () => {
   it("renders overloaded styling for nodes included in overloadedNodeIds", () => {
     render(
       <GameCanvas
-        initialNodes={[
+        edges={[]}
+        nodes={[
           {
             data: { componentType: "server" },
             id: "server-1",
@@ -168,7 +204,10 @@ describe("overloaded node state", () => {
             type: "architecture",
           },
         ]}
+        onSelectedNodeChange={noop}
+        onStateChange={noop}
         overloadedNodeIds={["server-1"]}
+        selectedNodeId={null}
       />,
     );
 
@@ -176,31 +215,31 @@ describe("overloaded node state", () => {
   });
 
   it("enters overloaded state immediately when node id is added", () => {
+    const node = {
+      data: { componentType: "server" as const },
+      id: "server-1",
+      position: { x: 0, y: 0 },
+      type: "architecture" as const,
+    };
     const { rerender } = render(
       <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
+        edges={[]}
+        nodes={[node]}
+        onSelectedNodeChange={noop}
+        onStateChange={noop}
         overloadedNodeIds={[]}
+        selectedNodeId={null}
       />,
     );
 
     rerender(
       <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
+        edges={[]}
+        nodes={[node]}
+        onSelectedNodeChange={noop}
+        onStateChange={noop}
         overloadedNodeIds={["server-1"]}
+        selectedNodeId={null}
       />,
     );
 
@@ -208,31 +247,31 @@ describe("overloaded node state", () => {
   });
 
   it("returns a node to normal state when it is removed from overloadedNodeIds", () => {
+    const node = {
+      data: { componentType: "server" as const },
+      id: "server-1",
+      position: { x: 0, y: 0 },
+      type: "architecture" as const,
+    };
     const { rerender } = render(
       <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
+        edges={[]}
+        nodes={[node]}
+        onSelectedNodeChange={noop}
+        onStateChange={noop}
         overloadedNodeIds={["server-1"]}
+        selectedNodeId={null}
       />,
     );
 
     rerender(
       <GameCanvas
-        initialNodes={[
-          {
-            data: { componentType: "server" },
-            id: "server-1",
-            position: { x: 0, y: 0 },
-            type: "architecture",
-          },
-        ]}
+        edges={[]}
+        nodes={[node]}
+        onSelectedNodeChange={noop}
+        onStateChange={noop}
         overloadedNodeIds={[]}
+        selectedNodeId={null}
       />,
     );
 
@@ -246,7 +285,8 @@ describe("escape key", () => {
 
     render(
       <GameCanvas
-        initialNodes={[
+        edges={[]}
+        nodes={[
           {
             data: { componentType: "server" },
             id: "server-1",
@@ -255,11 +295,10 @@ describe("escape key", () => {
           },
         ]}
         onSelectedNodeChange={onSelectedNodeChange}
+        onStateChange={noop}
+        selectedNodeId={null}
       />,
     );
-
-    fireEvent.click(screen.getByTestId("canvas-node-server-1"));
-    onSelectedNodeChange.mockClear();
 
     fireEvent.keyDown(window, { key: "Escape" });
 
@@ -269,49 +308,68 @@ describe("escape key", () => {
 
 describe("edge deletion", () => {
   it("removes a selected edge when Delete is pressed", () => {
+    const onStateChange = vi.fn<() => void>();
     render(
       <GameCanvas
-        initialEdges={[{ id: "edge-1", selected: true, source: "users-1", target: "server-1" }]}
-        initialNodes={[...INITIAL_NODES_TWO]}
+        edges={[{ id: "edge-1", selected: true, source: "users-1", target: "server-1" }]}
+        nodes={[...INITIAL_NODES_TWO]}
+        onSelectedNodeChange={noop}
+        onStateChange={onStateChange}
+        selectedNodeId={null}
       />,
     );
 
     fireEvent.keyDown(window, { key: "Delete" });
 
-    expect(screen.queryByTestId("canvas-edge-edge-1")).not.toBeInTheDocument();
+    expect(onStateChange).toHaveBeenCalledWith(expect.any(Array), []);
   });
 
   it("clicking Remove in the edge context menu removes the edge", () => {
+    const onStateChange = vi.fn<() => void>();
     render(
       <GameCanvas
+        edges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
         initialContextMenu={{ edgeId: "edge-1", kind: "edge", x: 200, y: 100 }}
-        initialEdges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
-        initialNodes={[...INITIAL_NODES_TWO]}
+        nodes={[...INITIAL_NODES_TWO]}
+        onSelectedNodeChange={noop}
+        onStateChange={onStateChange}
+        selectedNodeId={null}
       />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /remove/iv }));
 
     expect(screen.queryByRole("button", { name: /remove/iv })).not.toBeInTheDocument();
+    expect(onStateChange).toHaveBeenCalledWith(expect.any(Array), []);
   });
 });
 
 describe("locked nodes", () => {
-  it("does not remove a locked node when Delete is pressed", () => {
-    render(<GameCanvas initialNodes={LOCKED_USERS_NODE} lockedNodeIds={["users-1"]} />);
+  it("does not call onStateChange when Delete is pressed on a locked node", () => {
+    const onStateChange = vi.fn<() => void>();
+    render(
+      <GameCanvas
+        edges={[]}
+        lockedNodeIds={["users-1"]}
+        nodes={LOCKED_USERS_NODE}
+        onSelectedNodeChange={noop}
+        onStateChange={onStateChange}
+        selectedNodeId="users-1"
+      />,
+    );
 
-    fireEvent.click(screen.getByTestId("canvas-node-users-1"));
     fireEvent.keyDown(window, { key: "Delete" });
 
-    expect(screen.getByTestId("canvas-node-users-1")).toBeInTheDocument();
+    expect(onStateChange).not.toHaveBeenCalled();
   });
 });
 
 describe("static graph rendering", () => {
-  it("renders nodes from initialNodes", () => {
+  it("renders nodes from nodes prop", () => {
     render(
       <GameCanvas
-        initialNodes={[
+        edges={[]}
+        nodes={[
           {
             data: { componentType: "server" },
             id: "server-1",
@@ -319,6 +377,9 @@ describe("static graph rendering", () => {
             type: "architecture",
           },
         ]}
+        onSelectedNodeChange={noop}
+        onStateChange={noop}
+        selectedNodeId={null}
       />,
     );
 
@@ -328,11 +389,14 @@ describe("static graph rendering", () => {
     );
   });
 
-  it("renders edges from initialEdges", () => {
+  it("renders edges from edges prop", () => {
     render(
       <GameCanvas
-        initialEdges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
-        initialNodes={[...INITIAL_NODES_TWO]}
+        edges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
+        nodes={[...INITIAL_NODES_TWO]}
+        onSelectedNodeChange={noop}
+        onStateChange={noop}
+        selectedNodeId={null}
       />,
     );
 

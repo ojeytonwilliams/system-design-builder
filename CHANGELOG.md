@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.11] - 2026-05-15
+
+### Refactoring
+
+- **`GameCanvas` maintained a private copy of the graph that diverged from `GameLayoutContent`**: `GameCanvas` owned `nodes`, `edges`, and `selectedNodeId` as internal state and only notified the parent via `onStateChange`/`onSelectedNodeChange` effects. This left `GameLayoutContent`'s `graphState` perpetually stale — budget calculations, design-mode overload detection, and the simulation tick all ran against data from the last level load rather than the live canvas. Converted `GameCanvas` to a fully controlled component: `nodes`, `edges`, and `selectedNodeId` are now required props owned by `GameLayoutContent`; only the context menu (an ephemeral UI detail the parent has no use for) remains internal. `handleGraphChange` now calls `setGraphState` so the parent is the single source of truth. The vestigial `setEdgesAnimated` effect was also removed — the renderer drives animation from its `isSimulating` prop, not an `animated` flag on edges.
+
 ## [2.3.10] - 2026-05-15
 
 ### Refactoring

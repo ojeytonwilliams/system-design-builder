@@ -1,5 +1,5 @@
 import type { DragEvent } from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { isComponentType } from "./component-library.js";
 import type { ComponentType } from "./component-library.js";
 import {
@@ -12,7 +12,6 @@ import type { ArchitectureNodeData, PixiEdge, PixiNode } from "./canvas-logic.js
 import { CanvasPixiRenderer } from "./canvas-pixi-renderer.js";
 import {
   addEdge,
-  buildInitialGraph,
   deselectAll,
   moveNode,
   openEdgeContextMenu,
@@ -23,7 +22,6 @@ import {
   removeSelectedNode,
   selectEdge,
   selectNode,
-  setEdgesAnimated,
 } from "./canvas-state.js";
 import type { CanvasGraph, ContextMenuState } from "./canvas-state.js";
 
@@ -34,16 +32,17 @@ type Edge = PixiEdge;
 
 interface GameCanvasProps {
   componentToPlace?: ComponentType | null;
+  edges: Edge[];
   initialContextMenu?: ContextMenuState;
-  initialEdges?: Edge[];
-  initialNodes?: ArchitectureCanvasNode[];
   isLocked?: boolean;
   isSimulating?: boolean;
   lockedNodeIds?: string[];
+  nodes: ArchitectureCanvasNode[];
   onComponentPlaced?: () => void;
-  onSelectedNodeChange?: (nodeId: string | null) => void;
-  onStateChange?: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
+  onSelectedNodeChange: (nodeId: string | null) => void;
+  onStateChange: (nodes: ArchitectureCanvasNode[], edges: Edge[]) => void;
   overloadedNodeIds?: string[];
+  selectedNodeId: string | null;
 }
 
 const relativeTo = (
@@ -56,21 +55,21 @@ const relativeTo = (
 
 const GameCanvas = ({
   componentToPlace,
+  edges,
   initialContextMenu,
-  initialEdges = [],
-  initialNodes = [],
   isLocked = false,
   isSimulating = false,
   lockedNodeIds = DEFAULT_LOCKED_NODE_IDS,
+  nodes,
   onComponentPlaced,
   onSelectedNodeChange,
   onStateChange,
   overloadedNodeIds = DEFAULT_OVERLOADED_NODE_IDS,
+  selectedNodeId,
 }: GameCanvasProps) => {
-  const [graph, setGraph] = useState<CanvasGraph>(() => ({
-    ...buildInitialGraph(initialNodes, initialEdges),
-    contextMenu: initialContextMenu ?? null,
-  }));
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(
+    initialContextMenu ?? null,
+  );
   const [stageSize, setStageSize] = useState({ height: 0, width: 0 });
   const dropzoneRef = useRef<HTMLDivElement>(null);
 
@@ -93,46 +92,55 @@ const GameCanvas = ({
   }, []);
 
   useEffect(() => {
-    setGraph((g) => setEdgesAnimated(g, isSimulating));
-  }, [isSimulating]);
-
-  useEffect(() => {
-    onSelectedNodeChange?.(graph.selectedNodeId);
-  }, [graph.selectedNodeId, onSelectedNodeChange]);
-
-  useEffect(() => {
-    onStateChange?.(graph.nodes, graph.edges);
-  }, [graph.nodes, graph.edges, onStateChange]);
-
-  useEffect(() => {
     if (componentToPlace === null || componentToPlace === undefined || isLocked) {
       return;
     }
-    setGraph((g) => placeNode(g, componentToPlace, snapPositionToGrid(DEFAULT_DROP_POSITION)));
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = placeNode(current, componentToPlace, snapPositionToGrid(DEFAULT_DROP_POSITION));
+    onStateChange(next.nodes, next.edges);
+    onSelectedNodeChange(next.selectedNodeId);
+    setContextMenu(next.contextMenu);
     onComponentPlaced?.();
-  }, [componentToPlace, isLocked, onComponentPlaced]);
+  }, [componentToPlace, isLocked, onComponentPlaced, onSelectedNodeChange, onStateChange]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setGraph((g) => deselectAll(g));
+        onSelectedNodeChange(null);
+        setContextMenu(null);
         return;
       }
       if (event.key !== "Delete") {
         return;
       }
-      setGraph((g) => {
-        if (g.selectedNodeId !== null) {
-          return removeSelectedNode(g, lockedNodeIds);
+      const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+      if (current.selectedNodeId === null) {
+        const next = removeSelectedEdge(current);
+        if (next !== current) {
+          onStateChange(next.nodes, next.edges);
         }
-        return removeSelectedEdge(g);
-      });
+      } else {
+        const next = removeSelectedNode(current, lockedNodeIds);
+        if (next !== current) {
+          onStateChange(next.nodes, next.edges);
+          onSelectedNodeChange(next.selectedNodeId);
+          setContextMenu(next.contextMenu);
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [lockedNodeIds]);
+  }, [
+    contextMenu,
+    edges,
+    lockedNodeIds,
+    nodes,
+    onSelectedNodeChange,
+    onStateChange,
+    selectedNodeId,
+  ]);
 
   const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -153,44 +161,62 @@ const GameCanvas = ({
       x: event.clientX - bounds.left,
       y: event.clientY - bounds.top,
     });
-    setGraph((g) => placeNode(g, componentType, position));
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = placeNode(current, componentType, position);
+    onStateChange(next.nodes, next.edges);
+    onSelectedNodeChange(next.selectedNodeId);
+    setContextMenu(next.contextMenu);
   };
 
-  const onNodeSelect = useCallback((nodeId: string) => {
-    setGraph((g) => selectNode(g, nodeId));
-  }, []);
+  const onNodeSelect = (nodeId: string) => {
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = selectNode(current, nodeId);
+    onSelectedNodeChange(next.selectedNodeId);
+    setContextMenu(next.contextMenu);
+  };
 
-  const onEdgeSelect = useCallback((edgeId: string) => {
-    setGraph((g) => selectEdge(g, edgeId));
-  }, []);
+  const onEdgeSelect = (edgeId: string) => {
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = selectEdge(current, edgeId);
+    onStateChange(next.nodes, next.edges);
+    onSelectedNodeChange(next.selectedNodeId);
+    setContextMenu(next.contextMenu);
+  };
 
-  const onNodeContextMenu = useCallback(
-    (nodeId: string, clientPos: { clientX: number; clientY: number }) => {
-      const pos = relativeTo(clientPos, dropzoneRef);
-      setGraph((g) => openNodeContextMenu(g, nodeId, pos, lockedNodeIds));
-    },
-    [lockedNodeIds],
-  );
+  const onNodeContextMenu = (nodeId: string, clientPos: { clientX: number; clientY: number }) => {
+    const pos = relativeTo(clientPos, dropzoneRef);
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = openNodeContextMenu(current, nodeId, pos, lockedNodeIds);
+    onSelectedNodeChange(next.selectedNodeId);
+    setContextMenu(next.contextMenu);
+  };
 
-  const onEdgeContextMenu = useCallback(
-    (edgeId: string, clientPos: { clientX: number; clientY: number }) => {
-      const pos = relativeTo(clientPos, dropzoneRef);
-      setGraph((g) => openEdgeContextMenu(g, edgeId, pos));
-    },
-    [],
-  );
+  const onEdgeContextMenu = (edgeId: string, clientPos: { clientX: number; clientY: number }) => {
+    const pos = relativeTo(clientPos, dropzoneRef);
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = openEdgeContextMenu(current, edgeId, pos);
+    onSelectedNodeChange(next.selectedNodeId);
+    setContextMenu(next.contextMenu);
+  };
 
-  const onEdgeCreated = useCallback((sourceNodeId: string, targetNodeId: string) => {
-    setGraph((g) => addEdge(g, sourceNodeId, targetNodeId));
-  }, []);
+  const onEdgeCreated = (sourceNodeId: string, targetNodeId: string) => {
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = addEdge(current, sourceNodeId, targetNodeId);
+    onStateChange(next.nodes, next.edges);
+  };
 
-  const onNodeDragEnd = useCallback((nodeId: string, position: { x: number; y: number }) => {
-    setGraph((g) => moveNode(g, nodeId, position));
-  }, []);
+  const onNodeDragEnd = (nodeId: string, position: { x: number; y: number }) => {
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = moveNode(current, nodeId, position);
+    onStateChange(next.nodes, next.edges);
+  };
 
-  const onPaneClick = useCallback(() => {
-    setGraph((g) => deselectAll(g));
-  }, []);
+  const onPaneClick = () => {
+    const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+    const next = deselectAll(current);
+    onSelectedNodeChange(next.selectedNodeId);
+    setContextMenu(next.contextMenu);
+  };
 
   return (
     <div data-testid="game-canvas" style={{ height: "100%", position: "relative", width: "100%" }}>
@@ -211,11 +237,11 @@ const GameCanvas = ({
       >
         {stageSize.width > 0 && stageSize.height > 0 && (
           <CanvasPixiRenderer
-            edges={graph.edges}
+            edges={edges}
             isLocked={isLocked}
             isSimulating={isSimulating}
             lockedNodeIds={lockedNodeIds}
-            nodes={graph.nodes}
+            nodes={nodes}
             onEdgeContextMenu={onEdgeContextMenu}
             onEdgeCreated={onEdgeCreated}
             onEdgeSelect={onEdgeSelect}
@@ -225,25 +251,29 @@ const GameCanvas = ({
             onPaneClick={onPaneClick}
             overloadedNodeIds={overloadedNodeIds}
             resizeTo={dropzoneRef}
-            selectedNodeId={graph.selectedNodeId}
+            selectedNodeId={selectedNodeId}
             stageHeight={stageSize.height}
             stageWidth={stageSize.width}
           />
         )}
       </div>
 
-      {graph.contextMenu !== null && (
+      {contextMenu !== null && (
         <div
           style={{
-            left: `${graph.contextMenu.x}px`,
+            left: `${contextMenu.x}px`,
             position: "absolute",
-            top: `${graph.contextMenu.y}px`,
+            top: `${contextMenu.y}px`,
             zIndex: 10,
           }}
         >
           <button
             onClick={() => {
-              setGraph((g) => removeFromMenu(g));
+              const current: CanvasGraph = { contextMenu, edges, nodes, selectedNodeId };
+              const next = removeFromMenu(current);
+              onStateChange(next.nodes, next.edges);
+              onSelectedNodeChange(next.selectedNodeId);
+              setContextMenu(next.contextMenu);
             }}
             style={{
               background: "#1a2744",

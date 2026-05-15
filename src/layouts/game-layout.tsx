@@ -223,16 +223,17 @@ const GameLayoutContent = ({
         <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           <GameCanvas
             componentToPlace={queuedComponentType}
-            initialEdges={levelStartEdges}
-            initialNodes={levelStartNodes}
+            edges={graphState.edges}
             isLocked={isLocked}
             isSimulating={mode === "SIMULATE"}
             key={canvasKey}
             lockedNodeIds={currentLevel.lockedNodeIds}
+            nodes={graphState.nodes}
             onComponentPlaced={handleComponentPlaced}
             onSelectedNodeChange={handleSelectedNodeChange}
             onStateChange={handleGraphChange}
             overloadedNodeIds={overloadedNodeIds}
+            selectedNodeId={selectedNodeId}
           />
         </main>
         <aside
