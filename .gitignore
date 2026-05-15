@@ -4,3 +4,6 @@
 
 # Astro
 /.astro
+
+# Local claude settings
+.claude/settings.local.json
