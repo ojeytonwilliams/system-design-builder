@@ -14,7 +14,7 @@ const level2: LevelDefinition = {
     "Adding a Load Balancer split the traffic evenly across your two servers.",
     "Distributing requests across multiple machines is called load balancing.",
   ],
-  id: 2,
+  id: "-Mju6K9TsVnrtEPjTJ5Q5",
   lockedNodeIds: ["users-1", "server-1", "server-2", "db-1"],
   monthlyBudget: 150,
   objectiveText: "Both servers are overloaded. Add a Load Balancer to split the traffic.",

@@ -1,21 +1,22 @@
 type LevelStatus = "active" | "completed" | "locked";
 
 interface LevelStripItem {
-  id: number;
+  id: string;
   title: string;
 }
 
 interface LevelStripProps {
-  completedLevelIds: number[];
-  currentLevelId: number;
+  completedLevelIds: string[];
+  currentLevelId: string;
   levels: LevelStripItem[];
-  onSelectLevel: (id: number) => void;
+  onSelectLevel: (id: string) => void;
 }
 
 const getLevelStatus = (
-  levelId: number,
-  currentLevelId: number,
-  completedLevelIds: number[],
+  levelId: string,
+  currentLevelId: string,
+  completedLevelIds: string[],
+  levels: LevelStripItem[],
 ): LevelStatus => {
   if (completedLevelIds.includes(levelId)) {
     return "completed";
@@ -25,7 +26,10 @@ const getLevelStatus = (
     return "active";
   }
 
-  return "locked";
+  const index = levels.findIndex((l) => l.id === levelId);
+  const allPriorCompleted = levels.slice(0, index).every((l) => completedLevelIds.includes(l.id));
+
+  return allPriorCompleted ? "active" : "locked";
 };
 
 const LevelStrip = ({
@@ -45,8 +49,8 @@ const LevelStrip = ({
       padding: "0.4rem 1rem",
     }}
   >
-    {levels.map((level) => {
-      const status = getLevelStatus(level.id, currentLevelId, completedLevelIds);
+    {levels.map((level, index) => {
+      const status = getLevelStatus(level.id, currentLevelId, completedLevelIds, levels);
       const isInteractive = status !== "locked";
 
       let background = "#1e2e54";
@@ -91,7 +95,7 @@ const LevelStrip = ({
             padding: "0.3rem 0.6rem",
           }}
         >
-          {level.id}
+          {index + 1}
         </button>
       );
     })}

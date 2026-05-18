@@ -14,7 +14,7 @@ const level4: LevelDefinition = {
     "The cache intercepted 60% of database reads, dramatically reducing the load on the DB.",
     "Storing frequently accessed data in memory to avoid repeated database queries is called caching.",
   ],
-  id: 4,
+  id: "azDjm5Azo_N_Jq1lvjb4G",
   lockedNodeIds: ["users-1", "lb-1", "server-1", "server-2", "db-1"],
   monthlyBudget: 280,
   objectiveText: "The database is still overloaded. Add a Cache to reduce DB reads.",

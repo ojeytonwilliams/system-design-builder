@@ -5,10 +5,10 @@ describe("level definitions", () => {
     expect(LEVELS).toHaveLength(6);
   });
 
-  it("levels have sequential ids from 1 to 6", () => {
-    LEVELS.forEach((level, index) => {
-      expect(level.id).toBe(index + 1);
-    });
+  it("each level has a unique string id", () => {
+    const ids = LEVELS.map((l) => l.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    ids.forEach((id) => expectTypeOf(id).toBeString());
   });
 
   it("each level has a positive trafficTarget", () => {
@@ -54,13 +54,13 @@ describe("level definitions", () => {
   });
 
   it("level 1 has authored edges in the starting layout", () => {
-    const level = getLevelById(1);
+    const level = getLevelById(LEVELS[0]!.id);
 
     expect(level?.startingEdges.length).toBeGreaterThan(0);
   });
 
   it("level 1 has server and db available but not users", () => {
-    const level = getLevelById(1);
+    const level = getLevelById(LEVELS[0]!.id);
 
     expect(level?.availableComponents).toContain("server");
     expect(level?.availableComponents).toContain("db");
@@ -68,13 +68,13 @@ describe("level definitions", () => {
   });
 
   it("level 6 has cache available", () => {
-    const level = getLevelById(6);
+    const level = getLevelById(LEVELS[5]!.id);
 
     expect(level?.availableComponents).toContain("cache");
   });
 
   it("level 6 has a non-zero cacheHitRate", () => {
-    const level = getLevelById(6);
+    const level = getLevelById(LEVELS[5]!.id);
 
     expect(level?.cacheHitRate).toBeGreaterThan(0);
   });
@@ -82,14 +82,13 @@ describe("level definitions", () => {
 
 describe(getLevelById, () => {
   it("returns the level with the given id", () => {
-    expect(getLevelById(1)?.id).toBe(1);
-    expect(getLevelById(3)?.id).toBe(3);
-    expect(getLevelById(6)?.id).toBe(6);
+    LEVELS.forEach((level) => {
+      expect(getLevelById(level.id)?.id).toBe(level.id);
+    });
   });
 
   it("returns undefined for an id that does not exist", () => {
-    expect(getLevelById(0)).toBeUndefined();
-    expect(getLevelById(7)).toBeUndefined();
-    expect(getLevelById(99)).toBeUndefined();
+    expect(getLevelById("")).toBeUndefined();
+    expect(getLevelById("nonexistent")).toBeUndefined();
   });
 });

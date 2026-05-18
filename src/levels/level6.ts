@@ -14,7 +14,7 @@ const level6: LevelDefinition = {
     "You scaled every layer of the stack: compute, caching, and the database.",
     "Designing a system where every layer has enough capacity is called full-stack scaling.",
   ],
-  id: 6,
+  id: "_quYqGvc5gWDbxLiwocDx",
   lockedNodeIds: ["users-1", "lb-1"],
   monthlyBudget: 300,
   objectiveText: "The whole system is struggling under high traffic. Scale it to handle 220 req/s.",

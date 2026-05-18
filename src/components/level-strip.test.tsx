@@ -7,7 +7,12 @@ const noop = () => undefined;
 describe("level strip", () => {
   it("renders a level progression navigation region", () => {
     render(
-      <LevelStrip completedLevelIds={[]} currentLevelId={1} levels={LEVELS} onSelectLevel={noop} />,
+      <LevelStrip
+        completedLevelIds={[]}
+        currentLevelId={LEVELS[0]!.id}
+        levels={LEVELS}
+        onSelectLevel={noop}
+      />,
     );
 
     expect(screen.getByRole("navigation", { name: /level progression/iv })).toBeInTheDocument();
@@ -15,7 +20,12 @@ describe("level strip", () => {
 
   it("renders a button for each level", () => {
     render(
-      <LevelStrip completedLevelIds={[]} currentLevelId={1} levels={LEVELS} onSelectLevel={noop} />,
+      <LevelStrip
+        completedLevelIds={[]}
+        currentLevelId={LEVELS[0]!.id}
+        levels={LEVELS}
+        onSelectLevel={noop}
+      />,
     );
 
     LEVELS.forEach((level) => {
@@ -26,37 +36,73 @@ describe("level strip", () => {
   it("marks completed levels with data-status completed", () => {
     render(
       <LevelStrip
-        completedLevelIds={[1, 2]}
-        currentLevelId={3}
+        completedLevelIds={[LEVELS[0]!.id, LEVELS[1]!.id]}
+        currentLevelId={LEVELS[2]!.id}
         levels={LEVELS}
         onSelectLevel={noop}
       />,
     );
 
-    expect(screen.getByTestId("level-strip-level-1")).toHaveAttribute("data-status", "completed");
-    expect(screen.getByTestId("level-strip-level-2")).toHaveAttribute("data-status", "completed");
+    expect(screen.getByTestId(`level-strip-level-${LEVELS[0]!.id}`)).toHaveAttribute(
+      "data-status",
+      "completed",
+    );
+    expect(screen.getByTestId(`level-strip-level-${LEVELS[1]!.id}`)).toHaveAttribute(
+      "data-status",
+      "completed",
+    );
   });
 
   it("marks the current level with data-status active", () => {
     render(
       <LevelStrip
-        completedLevelIds={[1]}
-        currentLevelId={2}
+        completedLevelIds={[LEVELS[0]!.id]}
+        currentLevelId={LEVELS[1]!.id}
         levels={LEVELS}
         onSelectLevel={noop}
       />,
     );
 
-    expect(screen.getByTestId("level-strip-level-2")).toHaveAttribute("data-status", "active");
+    expect(screen.getByTestId(`level-strip-level-${LEVELS[1]!.id}`)).toHaveAttribute(
+      "data-status",
+      "active",
+    );
   });
 
-  it("marks levels after the current as locked", () => {
+  it("marks levels after the current as locked when prior levels are not completed", () => {
     render(
-      <LevelStrip completedLevelIds={[]} currentLevelId={1} levels={LEVELS} onSelectLevel={noop} />,
+      <LevelStrip
+        completedLevelIds={[]}
+        currentLevelId={LEVELS[0]!.id}
+        levels={LEVELS}
+        onSelectLevel={noop}
+      />,
     );
 
-    expect(screen.getByTestId("level-strip-level-2")).toHaveAttribute("data-status", "locked");
-    expect(screen.getByTestId("level-strip-level-6")).toHaveAttribute("data-status", "locked");
+    expect(screen.getByTestId(`level-strip-level-${LEVELS[1]!.id}`)).toHaveAttribute(
+      "data-status",
+      "locked",
+    );
+    expect(screen.getByTestId(`level-strip-level-${LEVELS[5]!.id}`)).toHaveAttribute(
+      "data-status",
+      "locked",
+    );
+  });
+
+  it("marks a level as active (not locked) when all prior levels are completed", () => {
+    render(
+      <LevelStrip
+        completedLevelIds={[LEVELS[0]!.id]}
+        currentLevelId={LEVELS[0]!.id}
+        levels={LEVELS}
+        onSelectLevel={noop}
+      />,
+    );
+
+    expect(screen.getByTestId(`level-strip-level-${LEVELS[1]!.id}`)).toHaveAttribute(
+      "data-status",
+      "active",
+    );
   });
 
   it("calls onSelectLevel with the level id when a completed level is clicked", () => {
@@ -64,16 +110,16 @@ describe("level strip", () => {
 
     render(
       <LevelStrip
-        completedLevelIds={[1]}
-        currentLevelId={2}
+        completedLevelIds={[LEVELS[0]!.id]}
+        currentLevelId={LEVELS[1]!.id}
         levels={LEVELS}
         onSelectLevel={onSelectLevel}
       />,
     );
 
-    fireEvent.click(screen.getByTestId("level-strip-level-1"));
+    fireEvent.click(screen.getByTestId(`level-strip-level-${LEVELS[0]!.id}`));
 
-    expect(onSelectLevel).toHaveBeenCalledWith(1);
+    expect(onSelectLevel).toHaveBeenCalledWith(LEVELS[0]!.id);
   });
 
   it("does not call onSelectLevel when a locked level is clicked", () => {
@@ -82,13 +128,13 @@ describe("level strip", () => {
     render(
       <LevelStrip
         completedLevelIds={[]}
-        currentLevelId={1}
+        currentLevelId={LEVELS[0]!.id}
         levels={LEVELS}
         onSelectLevel={onSelectLevel}
       />,
     );
 
-    fireEvent.click(screen.getByTestId("level-strip-level-2"));
+    fireEvent.click(screen.getByTestId(`level-strip-level-${LEVELS[1]!.id}`));
 
     expect(onSelectLevel).not.toHaveBeenCalled();
   });
@@ -99,14 +145,14 @@ describe("level strip", () => {
     render(
       <LevelStrip
         completedLevelIds={[]}
-        currentLevelId={1}
+        currentLevelId={LEVELS[0]!.id}
         levels={LEVELS}
         onSelectLevel={onSelectLevel}
       />,
     );
 
-    fireEvent.click(screen.getByTestId("level-strip-level-1"));
+    fireEvent.click(screen.getByTestId(`level-strip-level-${LEVELS[0]!.id}`));
 
-    expect(onSelectLevel).toHaveBeenCalledWith(1);
+    expect(onSelectLevel).toHaveBeenCalledWith(LEVELS[0]!.id);
   });
 });

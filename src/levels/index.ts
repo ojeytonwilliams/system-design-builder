@@ -8,7 +8,7 @@ import type { LevelDefinition } from "./types.js";
 
 const LEVELS: LevelDefinition[] = [level1, level2, level3, level4, level5, level6];
 
-const getLevelById = (id: number): LevelDefinition | undefined => LEVELS.find((l) => l.id === id);
+const getLevelById = (id: string): LevelDefinition | undefined => LEVELS.find((l) => l.id === id);
 
 export { LEVELS, getLevelById };
 export type { LevelDefinition };

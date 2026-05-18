@@ -12,15 +12,18 @@ describe("persistence", () => {
   });
 
   it("saves and restores completed levels", () => {
-    saveProgress([1, 2, 3]);
+    saveProgress(["id-a", "id-b", "id-c"]);
 
     const result = loadProgress();
 
-    expect(result.completedLevels).toStrictEqual([1, 2, 3]);
+    expect(result.completedLevels).toStrictEqual(["id-a", "id-b", "id-c"]);
   });
 
   it("returns empty completedLevels when the stored version does not match", () => {
-    localStorage.setItem("sdb_progress", JSON.stringify({ completedLevels: [1, 2], version: 0 }));
+    localStorage.setItem(
+      "sdb_progress",
+      JSON.stringify({ completedLevels: ["id-a", "id-b"], version: 0 }),
+    );
 
     const result = loadProgress();
 
@@ -44,35 +47,35 @@ describe("persistence", () => {
   });
 
   it("overwrites previously saved progress", () => {
-    saveProgress([1]);
-    saveProgress([1, 2]);
+    saveProgress(["id-a"]);
+    saveProgress(["id-a", "id-b"]);
 
     const result = loadProgress();
 
-    expect(result.completedLevels).toStrictEqual([1, 2]);
+    expect(result.completedLevels).toStrictEqual(["id-a", "id-b"]);
   });
 });
 
 describe(getFirstIncompleteLevel, () => {
-  const TOTAL = 6;
+  const ALL_IDS = ["a", "b", "c", "d", "e", "f"];
 
-  it("returns 1 when no levels are completed", () => {
-    expect(getFirstIncompleteLevel([], TOTAL)).toBe(1);
+  it("returns the first id when no levels are completed", () => {
+    expect(getFirstIncompleteLevel([], ALL_IDS)).toBe("a");
   });
 
-  it("returns 2 when only level 1 is completed", () => {
-    expect(getFirstIncompleteLevel([1], TOTAL)).toBe(2);
+  it("returns the second id when only the first is completed", () => {
+    expect(getFirstIncompleteLevel(["a"], ALL_IDS)).toBe("b");
   });
 
-  it("returns the next sequential level when several early levels are completed", () => {
-    expect(getFirstIncompleteLevel([1, 2, 3], TOTAL)).toBe(4);
+  it("returns the next id when several early levels are completed", () => {
+    expect(getFirstIncompleteLevel(["a", "b", "c"], ALL_IDS)).toBe("d");
   });
 
-  it("returns the total when all levels except the last are completed", () => {
-    expect(getFirstIncompleteLevel([1, 2, 3, 4, 5], TOTAL)).toBe(6);
+  it("returns the last id when all but the last are completed", () => {
+    expect(getFirstIncompleteLevel(["a", "b", "c", "d", "e"], ALL_IDS)).toBe("f");
   });
 
-  it("returns the total (not beyond) when every level is completed", () => {
-    expect(getFirstIncompleteLevel([1, 2, 3, 4, 5, 6], TOTAL)).toBe(TOTAL);
+  it("returns the last id (not beyond) when every level is completed", () => {
+    expect(getFirstIncompleteLevel(["a", "b", "c", "d", "e", "f"], ALL_IDS)).toBe("f");
   });
 });

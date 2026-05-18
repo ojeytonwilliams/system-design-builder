@@ -14,7 +14,7 @@ const level1: LevelDefinition = {
     "Swapping to a larger server gave you more capacity to handle the traffic.",
     "Choosing bigger hardware to handle more load is called vertical scaling.",
   ],
-  id: 1,
+  id: "NMjN-fqxEfKXbExqPUizn",
   lockedNodeIds: ["users-1", "db-1"],
   monthlyBudget: 150,
   objectiveText: "Your server is overloaded. Fix the architecture to handle 70 req/s.",

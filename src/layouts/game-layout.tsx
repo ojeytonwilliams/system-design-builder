@@ -182,7 +182,7 @@ const GameLayoutContent = ({
     >
       <TopBar
         currentReqPerSec={currentTrafficRate}
-        levelNumber={currentLevel.id}
+        levelNumber={LEVELS.findIndex((l) => l.id === currentLevel.id) + 1}
         levelTitle={currentLevel.title}
         mode={mode}
         monthlyBudget={effectiveLevelConfig.monthlyBudget}

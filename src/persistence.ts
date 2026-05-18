@@ -2,7 +2,7 @@ const STORAGE_KEY = "sdb_progress";
 const SCHEMA_VERSION = 1;
 
 interface PersistedProgress {
-  completedLevels: number[];
+  completedLevels: string[];
   version: number;
 }
 
@@ -41,20 +41,23 @@ const loadProgress = (): PersistedProgress => {
   }
 };
 
-const saveProgress = (completedLevels: number[]): void => {
+const saveProgress = (completedLevels: string[]): void => {
   const data: PersistedProgress = { completedLevels, version: SCHEMA_VERSION };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 };
 
-const getFirstIncompleteLevel = (completedLevels: number[], totalLevels: number): number => {
-  for (let i = 1; i <= totalLevels; i++) {
-    if (!completedLevels.includes(i)) {
-      return i;
+const getFirstIncompleteLevel = (
+  completedLevelIds: string[],
+  orderedLevelIds: string[],
+): string => {
+  for (const id of orderedLevelIds) {
+    if (!completedLevelIds.includes(id)) {
+      return id;
     }
   }
 
-  return totalLevels;
+  return orderedLevelIds.at(-1) ?? "";
 };
 
 export { getFirstIncompleteLevel, loadProgress, saveProgress };

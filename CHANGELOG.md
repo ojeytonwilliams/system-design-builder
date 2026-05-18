@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.15] - 2026-05-18
+
+### Refactoring
+
+- **Level IDs were sequential integers, making level ordering load-bearing**: The "next level" was computed as `currentLevel.id + 1`, which silently broke whenever levels were added, removed, or reordered. Persisted progress stored the same integers, so any reordering would corrupt a player's save. Replaced all six level IDs with stable nanoid strings. `getFirstIncompleteLevel` now receives an ordered list of IDs instead of a total count; `handleContinue` uses index-based lookup instead of arithmetic; `getLevelById` accepts a string. The display label (`1`, `2` … `6`) is derived from array position at render time, so visual ordering remains correct without coupling it to identity.
+- **`scripts/new-level.mjs` added**: New scaffolding script generates a level file with a pre-assigned nanoid and prints the import line needed for `src/levels/index.ts`, eliminating the manual ID-assignment step when authoring a new level.
+
 ## [2.3.14] - 2026-05-18
 
 ### Refactoring

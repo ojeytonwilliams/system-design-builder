@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
-import { getLevelById } from "../levels/index.js";
+import { LEVELS, getLevelById } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
 import type { LevelConfig, SimulationMode } from "../simulation/types.js";
 
@@ -23,7 +23,7 @@ interface UseGameActionsParams {
     newEdges: ArchitectureEdge[];
     newNodes: ArchitectureNode[];
   };
-  markLevelComplete: (levelId: number) => void;
+  markLevelComplete: (levelId: string) => void;
   mode: SimulationMode;
   previousAvailableComponentsRef: RefObject<ComponentType[]>;
   resetEvents: (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void;
@@ -45,7 +45,7 @@ interface UseGameActionsResult {
   handleLoadLevel: (level: LevelDefinition) => void;
   handlePlaceComponent: (componentType: ComponentType) => void;
   handleReplay: () => void;
-  handleSelectLevel: (levelId: number) => void;
+  handleSelectLevel: (levelId: string) => void;
   handleSelectedNodeChange: (nodeId: string | null) => void;
   handleToggleTraffic: () => void;
   handleWin: () => void;
@@ -107,7 +107,8 @@ const useGameActions = ({
   }, [currentLevel.id, markLevelComplete, setShowEndScreen]);
 
   const handleContinue = useCallback(() => {
-    const nextLevel = getLevelById(currentLevel.id + 1);
+    const currentIndex = LEVELS.findIndex((l) => l.id === currentLevel.id);
+    const nextLevel = LEVELS[currentIndex + 1];
 
     if (nextLevel === undefined) {
       setShowEndScreen(false);
@@ -122,7 +123,7 @@ const useGameActions = ({
   }, [currentLevel, handleLoadLevel]);
 
   const handleSelectLevel = useCallback(
-    (levelId: number) => {
+    (levelId: string) => {
       const level = getLevelById(levelId);
 
       if (level !== undefined) {

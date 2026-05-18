@@ -14,7 +14,7 @@ const level3: LevelDefinition = {
     "Upgrading to a larger database gave it enough capacity to keep up with traffic.",
     "Scaling up a database to handle more queries is called vertical database scaling.",
   ],
-  id: 3,
+  id: "qDAgOLxhctiFfYmAfBSxb",
   lockedNodeIds: ["users-1", "lb-1", "server-1", "server-2"],
   monthlyBudget: 180,
   objectiveText: "The database is overloaded. Upgrade it to handle 85 req/s.",

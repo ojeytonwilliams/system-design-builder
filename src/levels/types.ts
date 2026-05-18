@@ -33,7 +33,7 @@ interface LevelDefinition {
   coachMessages: CoachMessage[];
   componentUnlocks: ComponentUnlock[];
   feedbackText: string[];
-  id: number;
+  id: string;
   lockedNodeIds: string[];
   monthlyBudget: number;
   objectiveText: string;

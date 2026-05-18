@@ -14,7 +14,7 @@ const level5: LevelDefinition = {
     "Using smaller servers with a load balancer matched the performance of larger servers at lower cost.",
     "Choosing the right-sized components for your budget is called right-sizing your infrastructure.",
   ],
-  id: 5,
+  id: "L3yW5XZioYZiysSFXxpID",
   lockedNodeIds: ["users-1", "lb-1", "cache-1", "db-1"],
   monthlyBudget: 220,
   objectiveText: "Redesign within the $220/mo budget to handle 120 req/s.",

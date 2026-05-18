@@ -12,12 +12,12 @@ interface LoadLevelResult {
 
 interface UseLevelResult {
   canvasKey: number;
-  completedLevels: number[];
+  completedLevels: string[];
   currentLevel: LevelDefinition;
   levelStartEdges: ArchitectureEdge[];
   levelStartNodes: ArchitectureNode[];
   loadLevel: (level: LevelDefinition) => LoadLevelResult;
-  markLevelComplete: (levelId: number) => void;
+  markLevelComplete: (levelId: string) => void;
 }
 
 const useLevel = (
@@ -26,11 +26,14 @@ const useLevel = (
 ): UseLevelResult => {
   const hasInitialNodes = initialNodes.length > 0;
 
-  const [currentLevelId, setCurrentLevelId] = useState<number>(() => {
+  const [currentLevelId, setCurrentLevelId] = useState<string>(() => {
     const progress = loadProgress();
-    return getFirstIncompleteLevel(progress.completedLevels, LEVELS.length);
+    return getFirstIncompleteLevel(
+      progress.completedLevels,
+      LEVELS.map((l) => l.id),
+    );
   });
-  const [completedLevels, setCompletedLevels] = useState<number[]>(
+  const [completedLevels, setCompletedLevels] = useState<string[]>(
     () => loadProgress().completedLevels,
   );
 
@@ -56,7 +59,7 @@ const useLevel = (
     return { newEdges, newNodes };
   }, []);
 
-  const markLevelComplete = useCallback((levelId: number) => {
+  const markLevelComplete = useCallback((levelId: string) => {
     setCompletedLevels((prev) => {
       const updated = [...new Set([...prev, levelId])];
 
