@@ -131,7 +131,7 @@ const useSimulationTick = ({
     return () => {
       clearInterval(interval);
     };
-  }, [mode, resetKey, effectiveLevelConfig]);
+  }, [mode, resetKey]);
 };
 
 export { useSimulationTick };
