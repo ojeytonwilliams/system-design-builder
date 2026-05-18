@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.14] - 2026-05-18
+
+### Refactoring
+
+- **`useSimulationTick` read stale props through an ever-growing dependency array**: The interval callback inside the simulation tick `useEffect` closed over `nodes`, `edges`, `currentLevel`, `effectiveLevelConfig`, and six callbacks, forcing all of them into the dependency array and risking either stale reads or spurious interval restarts if any value changed mid-simulation. Extracted the callback body into `useEffectEvent`, which reads its captured values at call time without being reactive to them. The `useEffect` dependency array now contains only the three values that should actually restart the interval: `mode`, `resetKey`, and `effectiveLevelConfig`.
+
 ## [2.3.13] - 2026-05-15
 
 ### Refactoring
