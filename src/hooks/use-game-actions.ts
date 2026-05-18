@@ -3,7 +3,7 @@ import type { RefObject } from "react";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
-import { LEVELS, getLevelById } from "../levels/index.js";
+import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
 import type { LevelConfig, SimulationMode } from "../simulation/types.js";
 
@@ -107,8 +107,8 @@ const useGameActions = ({
   }, [currentLevel.id, markLevelComplete, setShowEndScreen]);
 
   const handleContinue = useCallback(() => {
-    const currentIndex = LEVELS.findIndex((l) => l.id === currentLevel.id);
-    const nextLevel = LEVELS[currentIndex + 1];
+    const currentIndex = levelRegistry.levels.findIndex((l) => l.id === currentLevel.id);
+    const nextLevel = levelRegistry.levels[currentIndex + 1];
 
     if (nextLevel === undefined) {
       setShowEndScreen(false);
@@ -124,7 +124,7 @@ const useGameActions = ({
 
   const handleSelectLevel = useCallback(
     (levelId: string) => {
-      const level = getLevelById(levelId);
+      const level = levelRegistry.getLevelById(levelId);
 
       if (level !== undefined) {
         handleLoadLevel(level);

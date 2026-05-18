@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.16] - 2026-05-18
+
+### Refactoring
+
+- **Level logic was scattered across module-scope closures, damaging testability**: `getLevelById`, `getLevelNumber`, `isLevelUnlocked`, and `getFirstIncompleteLevel` all closed over the module-level `LEVELS` array, so mocking the exported `LEVELS` in tests had no effect on their behaviour. Converted `src/levels/index.ts` into a `LevelRegistry` class whose methods operate on `this.levels`, and exported a `levelRegistry` singleton constructed with the real levels. Tests can now inject a different array via `new LevelRegistry(testLevels)` without re-implementing any logic. Removed the redundant `LEVELS` export — all call sites use `levelRegistry.levels` instead.
+- **Test fixtures extracted for level unit tests**: Added `src/levels/test-fixtures.ts` with three minimal but complete `LevelDefinition` objects. `level-strip.test.tsx` and the `LevelRegistry` describe block in `index.test.ts` now use the fixture, removing the dependency on real level content and eliminating the `vi.hoisted` workaround and its associated lint-disable comment.
+- **`game-layout.test.tsx` moved to `src/integration-tests/`**: The file was co-located with `game-layout.tsx` as if it were a unit test, but it renders the full game with real dependencies (simulation engine, level registry, persistence, component unlocks). Moving it to the integration-tests directory makes the distinction explicit per project conventions.
+
 ## [2.3.15] - 2026-05-18
 
 ### Refactoring

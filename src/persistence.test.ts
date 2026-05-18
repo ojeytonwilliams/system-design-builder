@@ -1,4 +1,4 @@
-import { getFirstIncompleteLevel, loadProgress, saveProgress } from "./persistence.js";
+import { loadProgress, saveProgress } from "./persistence.js";
 
 describe("persistence", () => {
   beforeEach(() => {
@@ -53,29 +53,5 @@ describe("persistence", () => {
     const result = loadProgress();
 
     expect(result.completedLevels).toStrictEqual(["id-a", "id-b"]);
-  });
-});
-
-describe(getFirstIncompleteLevel, () => {
-  const ALL_IDS = ["a", "b", "c", "d", "e", "f"];
-
-  it("returns the first id when no levels are completed", () => {
-    expect(getFirstIncompleteLevel([], ALL_IDS)).toBe("a");
-  });
-
-  it("returns the second id when only the first is completed", () => {
-    expect(getFirstIncompleteLevel(["a"], ALL_IDS)).toBe("b");
-  });
-
-  it("returns the next id when several early levels are completed", () => {
-    expect(getFirstIncompleteLevel(["a", "b", "c"], ALL_IDS)).toBe("d");
-  });
-
-  it("returns the last id when all but the last are completed", () => {
-    expect(getFirstIncompleteLevel(["a", "b", "c", "d", "e"], ALL_IDS)).toBe("f");
-  });
-
-  it("returns the last id (not beyond) when every level is completed", () => {
-    expect(getFirstIncompleteLevel(["a", "b", "c", "d", "e", "f"], ALL_IDS)).toBe("f");
   });
 });

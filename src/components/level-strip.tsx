@@ -1,14 +1,10 @@
-type LevelStatus = "active" | "completed" | "locked";
+import { levelRegistry } from "../levels/index.js";
 
-interface LevelStripItem {
-  id: string;
-  title: string;
-}
+type LevelStatus = "active" | "completed" | "locked";
 
 interface LevelStripProps {
   completedLevelIds: string[];
   currentLevelId: string;
-  levels: LevelStripItem[];
   onSelectLevel: (id: string) => void;
 }
 
@@ -16,7 +12,6 @@ const getLevelStatus = (
   levelId: string,
   currentLevelId: string,
   completedLevelIds: string[],
-  levels: LevelStripItem[],
 ): LevelStatus => {
   if (completedLevelIds.includes(levelId)) {
     return "completed";
@@ -26,18 +21,10 @@ const getLevelStatus = (
     return "active";
   }
 
-  const index = levels.findIndex((l) => l.id === levelId);
-  const allPriorCompleted = levels.slice(0, index).every((l) => completedLevelIds.includes(l.id));
-
-  return allPriorCompleted ? "active" : "locked";
+  return levelRegistry.isLevelUnlocked(levelId, completedLevelIds) ? "active" : "locked";
 };
 
-const LevelStrip = ({
-  completedLevelIds,
-  currentLevelId,
-  levels,
-  onSelectLevel,
-}: LevelStripProps) => (
+const LevelStrip = ({ completedLevelIds, currentLevelId, onSelectLevel }: LevelStripProps) => (
   <nav
     aria-label="Level progression"
     style={{
@@ -49,8 +36,8 @@ const LevelStrip = ({
       padding: "0.4rem 1rem",
     }}
   >
-    {levels.map((level, index) => {
-      const status = getLevelStatus(level.id, currentLevelId, completedLevelIds, levels);
+    {levelRegistry.levels.map((level) => {
+      const status = getLevelStatus(level.id, currentLevelId, completedLevelIds);
       const isInteractive = status !== "locked";
 
       let background = "#1e2e54";
@@ -95,7 +82,7 @@ const LevelStrip = ({
             padding: "0.3rem 0.6rem",
           }}
         >
-          {index + 1}
+          {levelRegistry.getLevelNumber(level.id)}
         </button>
       );
     })}

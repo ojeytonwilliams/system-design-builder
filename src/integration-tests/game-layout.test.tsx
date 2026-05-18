@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { GameLayout } from "./game-layout.js";
-import { LEVELS } from "../levels/index.js";
+import { GameLayout } from "../layouts/game-layout.js";
+import { levelRegistry } from "../levels/index.js";
 import { loadProgress } from "../persistence.js";
 import type { LevelConfig } from "../simulation/types.js";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
@@ -309,18 +309,18 @@ describe("level system", () => {
       vi.advanceTimersByTime(4000);
     });
 
-    expect(loadProgress().completedLevels).toContain(LEVELS[0]!.id);
+    expect(loadProgress().completedLevels).toContain(levelRegistry.levels[0]!.id);
   });
 
   it("starts on the first incomplete level derived from saved progress", () => {
     localStorage.setItem(
       "sdb_progress",
-      JSON.stringify({ completedLevels: [LEVELS[0]!.id], version: 1 }),
+      JSON.stringify({ completedLevels: [levelRegistry.levels[0]!.id], version: 1 }),
     );
 
     render(<GameLayout />);
 
-    expect(screen.getByTestId(`level-strip-level-${LEVELS[1]!.id}`)).toHaveAttribute(
+    expect(screen.getByTestId(`level-strip-level-${levelRegistry.levels[1]!.id}`)).toHaveAttribute(
       "data-status",
       "active",
     );
@@ -329,7 +329,7 @@ describe("level system", () => {
   it("loads the correct canvas nodes and resources for the first incomplete level on page load", () => {
     localStorage.setItem(
       "sdb_progress",
-      JSON.stringify({ completedLevels: [LEVELS[0]!.id], version: 1 }),
+      JSON.stringify({ completedLevels: [levelRegistry.levels[0]!.id], version: 1 }),
     );
 
     render(<GameLayout />);
@@ -355,7 +355,7 @@ describe("level system", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/iv }));
 
-    expect(screen.getByTestId(`level-strip-level-${LEVELS[1]!.id}`)).toHaveAttribute(
+    expect(screen.getByTestId(`level-strip-level-${levelRegistry.levels[1]!.id}`)).toHaveAttribute(
       "data-status",
       "active",
     );
@@ -410,12 +410,12 @@ describe("level progression strip", () => {
   it("marks completed levels as completed in the strip", () => {
     localStorage.setItem(
       "sdb_progress",
-      JSON.stringify({ completedLevels: [LEVELS[0]!.id], version: 1 }),
+      JSON.stringify({ completedLevels: [levelRegistry.levels[0]!.id], version: 1 }),
     );
 
     render(<GameLayout />);
 
-    expect(screen.getByTestId(`level-strip-level-${LEVELS[0]!.id}`)).toHaveAttribute(
+    expect(screen.getByTestId(`level-strip-level-${levelRegistry.levels[0]!.id}`)).toHaveAttribute(
       "data-status",
       "completed",
     );
@@ -424,11 +424,14 @@ describe("level progression strip", () => {
   it("selecting a completed level from the strip loads that level", () => {
     localStorage.setItem(
       "sdb_progress",
-      JSON.stringify({ completedLevels: [LEVELS[0]!.id, LEVELS[1]!.id], version: 1 }),
+      JSON.stringify({
+        completedLevels: [levelRegistry.levels[0]!.id, levelRegistry.levels[1]!.id],
+        version: 1,
+      }),
     );
 
     render(<GameLayout />);
-    fireEvent.click(screen.getByTestId(`level-strip-level-${LEVELS[0]!.id}`));
+    fireEvent.click(screen.getByTestId(`level-strip-level-${levelRegistry.levels[0]!.id}`));
 
     expect(screen.getByText(/first request/iv)).toBeInTheDocument();
   });
@@ -456,7 +459,10 @@ describe("coach panel", () => {
     // Level 3 has a coachMessage at atSecond: 2 about the database bottleneck
     localStorage.setItem(
       "sdb_progress",
-      JSON.stringify({ completedLevels: [LEVELS[0]!.id, LEVELS[1]!.id], version: 1 }),
+      JSON.stringify({
+        completedLevels: [levelRegistry.levels[0]!.id, levelRegistry.levels[1]!.id],
+        version: 1,
+      }),
     );
 
     render(
@@ -507,7 +513,10 @@ describe("event log", () => {
   it("logs placement and connections in chronological order", () => {
     localStorage.setItem(
       "sdb_progress",
-      JSON.stringify({ completedLevels: [LEVELS[0]!.id, LEVELS[1]!.id], version: 1 }),
+      JSON.stringify({
+        completedLevels: [levelRegistry.levels[0]!.id, levelRegistry.levels[1]!.id],
+        version: 1,
+      }),
     );
 
     render(

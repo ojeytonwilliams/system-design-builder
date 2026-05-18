@@ -1,9 +1,9 @@
 import { useCallback, useState } from "react";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
-import { LEVELS, getLevelById } from "../levels/index.js";
+import { levelRegistry } from "../levels/index.js";
 import { level1 } from "../levels/level1.js";
 import type { LevelDefinition } from "../levels/types.js";
-import { getFirstIncompleteLevel, loadProgress, saveProgress } from "../persistence.js";
+import { loadProgress, saveProgress } from "../persistence.js";
 
 interface LoadLevelResult {
   newEdges: ArchitectureEdge[];
@@ -28,16 +28,13 @@ const useLevel = (
 
   const [currentLevelId, setCurrentLevelId] = useState<string>(() => {
     const progress = loadProgress();
-    return getFirstIncompleteLevel(
-      progress.completedLevels,
-      LEVELS.map((l) => l.id),
-    );
+    return levelRegistry.getFirstIncompleteLevel(progress.completedLevels);
   });
   const [completedLevels, setCompletedLevels] = useState<string[]>(
     () => loadProgress().completedLevels,
   );
 
-  const currentLevel = getLevelById(currentLevelId) ?? level1;
+  const currentLevel = levelRegistry.getLevelById(currentLevelId) ?? level1;
 
   const [levelStartNodes, setLevelStartNodes] = useState<ArchitectureNode[]>(() =>
     hasInitialNodes ? initialNodes : currentLevel.startingNodes,

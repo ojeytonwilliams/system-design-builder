@@ -10,7 +10,7 @@ import { Inspector } from "../components/inspector.js";
 import { LevelStrip } from "../components/level-strip.js";
 import { Resources } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
-import { LEVELS } from "../levels/index.js";
+import { levelRegistry } from "../levels/index.js";
 import { useCompactLayout } from "../hooks/use-compact-layout.js";
 import { useComponentUnlocks } from "../hooks/use-component-unlocks.js";
 import { useDesignModeOverloads } from "../hooks/use-design-mode-overloads.js";
@@ -182,7 +182,7 @@ const GameLayoutContent = ({
     >
       <TopBar
         currentReqPerSec={currentTrafficRate}
-        levelNumber={LEVELS.findIndex((l) => l.id === currentLevel.id) + 1}
+        levelNumber={levelRegistry.getLevelNumber(currentLevel.id)}
         levelTitle={currentLevel.title}
         mode={mode}
         monthlyBudget={effectiveLevelConfig.monthlyBudget}
@@ -196,7 +196,6 @@ const GameLayoutContent = ({
       <LevelStrip
         completedLevelIds={completedLevels}
         currentLevelId={currentLevel.id}
-        levels={LEVELS}
         onSelectLevel={handleSelectLevel}
       />
       <div

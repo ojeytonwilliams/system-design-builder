@@ -47,17 +47,4 @@ const saveProgress = (completedLevels: string[]): void => {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 };
 
-const getFirstIncompleteLevel = (
-  completedLevelIds: string[],
-  orderedLevelIds: string[],
-): string => {
-  for (const id of orderedLevelIds) {
-    if (!completedLevelIds.includes(id)) {
-      return id;
-    }
-  }
-
-  return orderedLevelIds.at(-1) ?? "";
-};
-
-export { getFirstIncompleteLevel, loadProgress, saveProgress };
+export { loadProgress, saveProgress };
