@@ -101,7 +101,7 @@
         ],
         /* Generally this is a little neater, but there are lot of false positives.
     Consider simply disabling if the allowedPrefixes balloons */
-        "jest/prefer-lowercase-title": [
+        "vitest/prefer-lowercase-title": [
           "error",
           {
             "allowedPrefixes": [
@@ -117,7 +117,8 @@
               "CONNECT",
               /* Standard acronyms */
               "URL"
-            ]
+            ],
+            "ignore": ["describe"]
           }
         ]
       }

@@ -12,7 +12,7 @@ const edgeAB: ArchitectureEdge = { id: "edge-1", source: "users-1", target: "ser
 const emptyState: GraphState = { edges: [], nodes: [] };
 
 describe(graphReducer, () => {
-  describe("pLACE_NODE", () => {
+  describe("PLACE_NODE", () => {
     it("adds a node with the correct component type", () => {
       const next = graphReducer(emptyState, {
         componentType: "server",
@@ -62,7 +62,7 @@ describe(graphReducer, () => {
     });
   });
 
-  describe("aDD_EDGE", () => {
+  describe("ADD_EDGE", () => {
     it("adds an edge between compatible nodes", () => {
       const state: GraphState = { edges: [], nodes: [nodeA, nodeB] };
       const next = graphReducer(state, {
@@ -106,7 +106,7 @@ describe(graphReducer, () => {
     });
   });
 
-  describe("mOVE_NODE", () => {
+  describe("MOVE_NODE", () => {
     it("updates the position of the target node", () => {
       const state: GraphState = { edges: [], nodes: [nodeB] };
       const next = graphReducer(state, {
@@ -138,7 +138,7 @@ describe(graphReducer, () => {
     });
   });
 
-  describe("rEMOVE_NODE", () => {
+  describe("REMOVE_NODE", () => {
     it("removes the node by id", () => {
       const state: GraphState = { edges: [], nodes: [nodeA, nodeB] };
       const next = graphReducer(state, { nodeId: "server-1", type: "REMOVE_NODE" });
@@ -160,7 +160,7 @@ describe(graphReducer, () => {
     });
   });
 
-  describe("rEMOVE_EDGE", () => {
+  describe("REMOVE_EDGE", () => {
     it("removes the edge by id", () => {
       const state: GraphState = { edges: [edgeAB], nodes: [nodeA, nodeB] };
       const next = graphReducer(state, { edgeId: "edge-1", type: "REMOVE_EDGE" });
@@ -182,7 +182,7 @@ describe(graphReducer, () => {
     });
   });
 
-  describe("lOAD_LEVEL", () => {
+  describe("LOAD_LEVEL", () => {
     it("sets nodes and edges from the level", () => {
       const next = graphReducer(emptyState, {
         edges: [edgeAB],

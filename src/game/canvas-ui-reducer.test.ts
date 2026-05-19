@@ -4,7 +4,7 @@ import type { CanvasUIState } from "./canvas-ui-reducer.js";
 const emptyState: CanvasUIState = { contextMenu: null, selectedEdgeId: null };
 
 describe(canvasUIReducer, () => {
-  describe("sELECT_NODE", () => {
+  describe("SELECT_NODE", () => {
     it("clears contextMenu", () => {
       const state: CanvasUIState = {
         contextMenu: { kind: "node", nodeId: "server-1", x: 0, y: 0 },
@@ -19,7 +19,7 @@ describe(canvasUIReducer, () => {
     });
   });
 
-  describe("sELECT_EDGE", () => {
+  describe("SELECT_EDGE", () => {
     it("sets selectedEdgeId", () => {
       const next = canvasUIReducer(emptyState, { edgeId: "edge-1", type: "SELECT_EDGE" });
       expect(next.selectedEdgeId).toBe("edge-1");
@@ -36,7 +36,7 @@ describe(canvasUIReducer, () => {
     });
   });
 
-  describe("dESELECT_ALL", () => {
+  describe("DESELECT_ALL", () => {
     it("clears selectedEdgeId", () => {
       const state: CanvasUIState = { contextMenu: null, selectedEdgeId: "edge-1" };
       expect(canvasUIReducer(state, { type: "DESELECT_ALL" }).selectedEdgeId).toBeNull();
@@ -51,7 +51,7 @@ describe(canvasUIReducer, () => {
     });
   });
 
-  describe("oPEN_NODE_CONTEXT_MENU", () => {
+  describe("OPEN_NODE_CONTEXT_MENU", () => {
     it("sets a node context menu at the given position", () => {
       const next = canvasUIReducer(emptyState, {
         nodeId: "server-1",
@@ -74,7 +74,7 @@ describe(canvasUIReducer, () => {
     });
   });
 
-  describe("oPEN_EDGE_CONTEXT_MENU", () => {
+  describe("OPEN_EDGE_CONTEXT_MENU", () => {
     it("sets an edge context menu at the given position", () => {
       const next = canvasUIReducer(emptyState, {
         edgeId: "edge-1",
@@ -97,7 +97,7 @@ describe(canvasUIReducer, () => {
     });
   });
 
-  describe("cLOSE_CONTEXT_MENU", () => {
+  describe("CLOSE_CONTEXT_MENU", () => {
     it("clears contextMenu", () => {
       const state: CanvasUIState = {
         contextMenu: { kind: "node", nodeId: "server-1", x: 0, y: 0 },
