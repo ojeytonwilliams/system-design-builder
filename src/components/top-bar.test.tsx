@@ -45,8 +45,8 @@ describe("top bar", () => {
     expect(onStartTraffic).toHaveBeenCalledOnce();
   });
 
-  it("shows Stop Traffic label when mode is SIMULATE", () => {
-    render(<TopBar mode="SIMULATE" onStartTraffic={vi.fn<() => void>()} />);
+  it("shows Stop Traffic label when simulating", () => {
+    render(<TopBar isSimulating onStartTraffic={vi.fn<() => void>()} />);
 
     expect(screen.getByRole("button", { name: /stop traffic/iv })).toBeInTheDocument();
   });

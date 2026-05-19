@@ -33,6 +33,4 @@ interface FlowConfig {
   trafficRate: number;
 }
 
-type SimulationMode = "DESIGN" | "SIMULATE";
-
-export type { FlowConfig, GraphEdge, GraphNode, LevelConfig, SimulationMode, TrafficSnapshot };
+export type { FlowConfig, GraphEdge, GraphNode, LevelConfig, TrafficSnapshot };

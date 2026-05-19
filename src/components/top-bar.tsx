@@ -1,10 +1,8 @@
-import type { SimulationMode } from "../simulation/types.js";
-
 interface TopBarProps {
   currentReqPerSec?: number;
+  isSimulating?: boolean;
   levelNumber?: number;
   levelTitle?: string;
-  mode?: SimulationMode;
   monthlyBudget?: number;
   objectiveText?: string;
   onStartTraffic?: () => void;
@@ -16,9 +14,9 @@ interface TopBarProps {
 
 const TopBar = ({
   currentReqPerSec = 0,
+  isSimulating = false,
   levelNumber,
   levelTitle,
-  mode = "DESIGN",
   monthlyBudget,
   objectiveText,
   onStartTraffic,
@@ -27,7 +25,6 @@ const TopBar = ({
   totalMonthlyCost,
   trafficTarget,
 }: TopBarProps) => {
-  const isSimulating = mode === "SIMULATE";
   let buttonLabel = "Start Traffic";
   let buttonBackground = "#e5634d";
 

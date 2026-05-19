@@ -11,12 +11,6 @@ const emptySnapshot: TrafficSnapshot = {};
 
 describe("simulation store", () => {
   describe("initial state", () => {
-    it("starts in DESIGN mode", () => {
-      const { result } = renderHook(() => useSimulation(), { wrapper });
-
-      expect(result.current.mode).toBe("DESIGN");
-    });
-
     it("starts with zero current traffic rate", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
@@ -30,26 +24,30 @@ describe("simulation store", () => {
     });
   });
 
-  describe("startSimulation", () => {
-    it("transitions to SIMULATE mode", () => {
-      const { result } = renderHook(() => useSimulation(), { wrapper });
-
-      act(() => {
-        result.current.startSimulation();
-      });
-
-      expect(result.current.mode).toBe("SIMULATE");
-    });
-
-    it("resets current traffic rate to zero", () => {
+  describe("resetSimulation", () => {
+    it("clears current traffic rate to zero", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
       act(() => {
         result.current.tick(emptySnapshot, 50);
-        result.current.startSimulation();
+        result.current.resetSimulation();
       });
 
       expect(result.current.currentTrafficRate).toBe(0);
+    });
+
+    it("clears node states", () => {
+      const snapshot: TrafficSnapshot = {
+        "server-1": { droppedOps: 0, handledOps: 50, incomingOps: 50 },
+      };
+      const { result } = renderHook(() => useSimulation(), { wrapper });
+
+      act(() => {
+        result.current.tick(snapshot, 50);
+        result.current.resetSimulation();
+      });
+
+      expect(Object.keys(result.current.nodeStates)).toHaveLength(0);
     });
   });
 
@@ -87,27 +85,12 @@ describe("simulation store", () => {
 
       expect(result.current.nodeStates["server-1"]?.handledOps).toBe(50);
     });
-  });
 
-  describe("endSimulation", () => {
-    it("returns to DESIGN mode", () => {
+    it("preserves the final traffic rate until reset", () => {
       const { result } = renderHook(() => useSimulation(), { wrapper });
 
       act(() => {
-        result.current.startSimulation();
-        result.current.endSimulation();
-      });
-
-      expect(result.current.mode).toBe("DESIGN");
-    });
-
-    it("preserves the final traffic rate after simulation ends", () => {
-      const { result } = renderHook(() => useSimulation(), { wrapper });
-
-      act(() => {
-        result.current.startSimulation();
         result.current.tick(emptySnapshot, 90);
-        result.current.endSimulation();
       });
 
       expect(result.current.currentTrafficRate).toBe(90);

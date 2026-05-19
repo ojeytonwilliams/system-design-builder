@@ -17,6 +17,7 @@ import { useEventLog } from "../hooks/use-event-log.js";
 import { useGameActions } from "../hooks/use-game-actions.js";
 import { useInspectorData } from "../hooks/use-inspector-data.js";
 import { useLevel } from "../hooks/use-level.js";
+import { usePhase } from "../hooks/use-phase.js";
 import { useSimulationTick } from "../hooks/use-simulation-tick.js";
 import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
@@ -51,8 +52,8 @@ const GameScene = ({
   loadLevel,
   markLevelComplete,
 }: GameSceneProps) => {
-  const { currentTrafficRate, endSimulation, mode, nodeStates, startSimulation, tick } =
-    useSimulation();
+  const { currentTrafficRate, nodeStates, resetSimulation, tick } = useSimulation();
+  const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
   const isCompactLayout = useCompactLayout(MOBILE_LAYOUT_BREAKPOINT);
@@ -62,7 +63,6 @@ const GameScene = ({
   const [coachMessage, setCoachMessage] = useState(`Mission: ${currentLevel.objectiveText}`);
   const [queuedComponentType, setQueuedComponentType] = useState<ComponentType | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [showEndScreen, setShowEndScreen] = useState(false);
 
   const [graphState, setGraphState] = useState(() => ({
     edges: initialEdges,
@@ -83,16 +83,25 @@ const GameScene = ({
   );
   const remainingBudget = levelConfig.monthlyBudget - totalMonthlyCost;
 
-  const designModeOverloadedNodeIds = useDesignModeOverloads(mode, graphState, levelConfig);
+  const isSimulating = phase === "SIMULATING";
+
+  const designModeOverloadedNodeIds = useDesignModeOverloads(isSimulating, graphState, levelConfig);
   const simulationOverloadedNodeIds = Object.entries(nodeStates)
     .filter(([, s]) => s.droppedOps > 0)
     .map(([id]) => id);
-  const overloadedNodeIds =
-    mode === "SIMULATE" ? simulationOverloadedNodeIds : designModeOverloadedNodeIds;
+  const overloadedNodeIds = isSimulating
+    ? simulationOverloadedNodeIds
+    : designModeOverloadedNodeIds;
 
   useEffect(() => {
     resetEvents(graphState.nodes, graphState.edges);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (isSimulating) {
+      resetSimulation();
+    }
+  }, [isSimulating, resetSimulation]);
 
   useEffect(() => {
     const newlyUnlocked = availableComponents.filter(
@@ -122,13 +131,13 @@ const GameScene = ({
   } = useGameActions({
     appendEvent,
     currentLevel,
+    dispatchPhase,
     effectiveLevelConfig: levelConfig,
-    endSimulation,
     graphState,
     isRunnable,
     loadLevel,
     markLevelComplete,
-    mode,
+    phase,
     previousAvailableComponentsRef,
     resetEvents,
     resetForLevel,
@@ -136,8 +145,6 @@ const GameScene = ({
     setGraphState,
     setQueuedComponentType,
     setSelectedNodeId,
-    setShowEndScreen,
-    startSimulation,
     totalMonthlyCost,
     updateFromGraph,
   });
@@ -146,18 +153,16 @@ const GameScene = ({
     appendEvent,
     applySnapshot,
     currentLevel,
+    dispatchPhase,
     edges: graphState.edges,
     effectiveLevelConfig: levelConfig,
-    endSimulation,
-    mode,
+    isSimulating,
     nodes: graphState.nodes,
     onWin: handleWin,
     resetKey: canvasKey,
     setCoachMessage,
     tick,
   });
-
-  const isLocked = mode === "SIMULATE";
 
   return (
     <div
@@ -173,9 +178,9 @@ const GameScene = ({
     >
       <TopBar
         currentReqPerSec={currentTrafficRate}
+        isSimulating={isSimulating}
         levelNumber={levelRegistry.getLevelNumber(currentLevel.id)}
         levelTitle={currentLevel.title}
-        mode={mode}
         monthlyBudget={levelConfig.monthlyBudget}
         objectiveText={currentLevel.objectiveText}
         onStartTraffic={handleToggleTraffic}
@@ -205,7 +210,7 @@ const GameScene = ({
           >
             <Resources
               availableComponents={availableComponents}
-              isDisabled={isLocked}
+              isDisabled={isSimulating}
               onPlaceComponent={handlePlaceComponent}
             />
           </section>
@@ -214,8 +219,8 @@ const GameScene = ({
           <GameCanvas
             componentToPlace={queuedComponentType}
             edges={graphState.edges}
-            isLocked={isLocked}
-            isSimulating={mode === "SIMULATE"}
+            isLocked={isSimulating}
+            isSimulating={isSimulating}
             key={canvasKey}
             lockedNodeIds={currentLevel.lockedNodeIds}
             nodes={graphState.nodes}
@@ -256,13 +261,13 @@ const GameScene = ({
             <Resources
               availableComponents={availableComponents}
               isCompact
-              isDisabled={isLocked}
+              isDisabled={isSimulating}
               onPlaceComponent={handlePlaceComponent}
             />
           </section>
         )}
       </div>
-      {showEndScreen && (
+      {phase === "WON" && (
         <EndOfLevelScreen
           feedbackLines={currentLevel.feedbackText}
           monthlyBudget={levelConfig.monthlyBudget}

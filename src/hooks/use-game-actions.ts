@@ -3,9 +3,10 @@ import type { RefObject } from "react";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
+import type { Phase, PhaseAction } from "../game/phase-machine.js";
 import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
-import type { LevelConfig, SimulationMode } from "../simulation/types.js";
+import type { LevelConfig } from "../simulation/types.js";
 
 interface GraphSnapshot {
   edges: ArchitectureEdge[];
@@ -15,8 +16,8 @@ interface GraphSnapshot {
 interface UseGameActionsParams {
   appendEvent: (text: string) => void;
   currentLevel: LevelDefinition;
+  dispatchPhase: (action: PhaseAction) => void;
   effectiveLevelConfig: LevelConfig;
-  endSimulation: () => void;
   graphState: GraphSnapshot;
   isRunnable: boolean;
   loadLevel: (level: LevelDefinition) => {
@@ -24,7 +25,7 @@ interface UseGameActionsParams {
     newNodes: ArchitectureNode[];
   };
   markLevelComplete: (levelId: string) => void;
-  mode: SimulationMode;
+  phase: Phase;
   previousAvailableComponentsRef: RefObject<ComponentType[]>;
   resetEvents: (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void;
   resetForLevel: (level: LevelDefinition, nodes: ArchitectureNode[]) => void;
@@ -32,8 +33,6 @@ interface UseGameActionsParams {
   setGraphState: (state: GraphSnapshot) => void;
   setQueuedComponentType: (type: ComponentType | null) => void;
   setSelectedNodeId: (id: string | null) => void;
-  setShowEndScreen: (show: boolean) => void;
-  startSimulation: () => void;
   totalMonthlyCost: number;
   updateFromGraph: (nodes: ArchitectureNode[]) => void;
 }
@@ -54,13 +53,13 @@ interface UseGameActionsResult {
 const useGameActions = ({
   appendEvent,
   currentLevel,
+  dispatchPhase,
   effectiveLevelConfig,
-  endSimulation,
   graphState,
   isRunnable,
   loadLevel,
   markLevelComplete,
-  mode,
+  phase,
   previousAvailableComponentsRef,
   resetEvents,
   resetForLevel,
@@ -68,8 +67,6 @@ const useGameActions = ({
   setGraphState,
   setQueuedComponentType,
   setSelectedNodeId,
-  setShowEndScreen,
-  startSimulation,
   totalMonthlyCost,
   updateFromGraph,
 }: UseGameActionsParams): UseGameActionsResult => {
@@ -80,15 +77,14 @@ const useGameActions = ({
       previousAvailableComponentsRef.current = level.availableComponents;
       setCoachMessage(`Mission: ${level.objectiveText}`);
       setSelectedNodeId(null);
-      setShowEndScreen(false);
       setQueuedComponentType(null);
       resetEvents(newNodes, newEdges);
       resetForLevel(level, newNodes);
       setGraphState({ edges: newEdges, nodes: newNodes });
-      endSimulation();
+      dispatchPhase({ type: "LOAD_LEVEL" });
     },
     [
-      endSimulation,
+      dispatchPhase,
       loadLevel,
       previousAvailableComponentsRef,
       resetEvents,
@@ -97,26 +93,25 @@ const useGameActions = ({
       setGraphState,
       setQueuedComponentType,
       setSelectedNodeId,
-      setShowEndScreen,
     ],
   );
 
   const handleWin = useCallback(() => {
-    setShowEndScreen(true);
+    dispatchPhase({ type: "WIN" });
     markLevelComplete(currentLevel.id);
-  }, [currentLevel.id, markLevelComplete, setShowEndScreen]);
+  }, [currentLevel.id, dispatchPhase, markLevelComplete]);
 
   const handleContinue = useCallback(() => {
     const currentIndex = levelRegistry.levels.findIndex((l) => l.id === currentLevel.id);
     const nextLevel = levelRegistry.levels[currentIndex + 1];
 
     if (nextLevel === undefined) {
-      setShowEndScreen(false);
+      dispatchPhase({ type: "LOAD_LEVEL" });
       return;
     }
 
     handleLoadLevel(nextLevel);
-  }, [currentLevel.id, handleLoadLevel, setShowEndScreen]);
+  }, [currentLevel.id, dispatchPhase, handleLoadLevel]);
 
   const handleReplay = useCallback(() => {
     handleLoadLevel(currentLevel);
@@ -184,12 +179,12 @@ const useGameActions = ({
   );
 
   const handleToggleTraffic = useCallback(() => {
-    if (mode === "SIMULATE") {
-      endSimulation();
+    if (phase === "SIMULATING") {
+      dispatchPhase({ type: "STOP_SIMULATION" });
     } else if (isRunnable) {
-      startSimulation();
+      dispatchPhase({ type: "START_SIMULATION" });
     }
-  }, [endSimulation, isRunnable, mode, startSimulation]);
+  }, [dispatchPhase, isRunnable, phase]);
 
   return {
     handleComponentPlaced,

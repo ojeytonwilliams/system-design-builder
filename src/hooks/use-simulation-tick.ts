@@ -1,9 +1,10 @@
 import { useEffect, useEffectEvent, useRef } from "react";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
+import type { PhaseAction } from "../game/phase-machine.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { toGraphEdge, toGraphNode } from "../layouts/graph-adapters.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "../simulation/engine.js";
-import type { LevelConfig, SimulationMode, TrafficSnapshot } from "../simulation/types.js";
+import type { LevelConfig, TrafficSnapshot } from "../simulation/types.js";
 
 const WIN_SUSTAIN_SECONDS = 3;
 
@@ -11,10 +12,10 @@ interface UseSimulationTickParams {
   appendEvent: (text: string) => void;
   applySnapshot: (snapshot: TrafficSnapshot, nodes: ArchitectureNode[]) => void;
   currentLevel: LevelDefinition;
+  dispatchPhase: (action: PhaseAction) => void;
   edges: ArchitectureEdge[];
   effectiveLevelConfig: LevelConfig;
-  endSimulation: () => void;
-  mode: SimulationMode;
+  isSimulating: boolean;
   nodes: ArchitectureNode[];
   onWin: () => void;
   resetKey: number;
@@ -26,10 +27,10 @@ const useSimulationTick = ({
   appendEvent,
   applySnapshot,
   currentLevel,
+  dispatchPhase,
   edges,
   effectiveLevelConfig,
-  endSimulation,
-  mode,
+  isSimulating,
   nodes,
   onWin,
   resetKey,
@@ -60,7 +61,7 @@ const useSimulationTick = ({
     });
 
     if (elapsedSeconds >= effectiveLevelConfig.timeout) {
-      endSimulation();
+      dispatchPhase({ type: "TIMEOUT" });
       return;
     }
 
@@ -110,13 +111,12 @@ const useSimulationTick = ({
     tick(snapshot, rate);
 
     if (sustainedNoDropSecondsRef.current >= WIN_SUSTAIN_SECONDS) {
-      endSimulation();
       onWin();
     }
   });
 
   useEffect(() => {
-    if (mode !== "SIMULATE") {
+    if (!isSimulating) {
       return;
     }
 
@@ -131,7 +131,7 @@ const useSimulationTick = ({
     return () => {
       clearInterval(interval);
     };
-  }, [mode, resetKey]);
+  }, [isSimulating, resetKey]);
 };
 
 export { useSimulationTick };

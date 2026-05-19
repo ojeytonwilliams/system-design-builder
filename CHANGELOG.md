@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.18] - 2026-05-19
+
+### Refactoring
+
+- **Game phase was split across two scopes with no defined transitions**: `SimulationMode` (`"DESIGN" | "SIMULATE"`) lived in the simulation context while `showEndScreen` lived as local component state, together encoding the phase implicitly. There was no `FAILED` phase — a simulation timeout silently dropped the player back to design mode with no feedback. Invalid transitions (e.g. `handleWin` firing when already on the end screen) were caught by defensive checks scattered across hooks. Introduced a `phaseReducer` pure function in `src/game/phase-machine.ts` with four explicit phases (`DESIGN`, `SIMULATING`, `WON`, `FAILED`) and five named actions; invalid transitions are no-ops by construction rather than guarded at every call site. `GameScene` owns the phase via `usePhase` (`useReducer` over the pure reducer) and derives `isSimulating` from it. `SimulationMode` is removed — `TopBar` and `useDesignModeOverloads` now accept `isSimulating: boolean` directly. The simulation store is simplified to tick data only (`currentTrafficRate`, `nodeStates`, `resetSimulation`); `startSimulation` and `endSimulation` are gone. The reducer is tested as a plain function with no React rendering required.
+
 ## [2.3.17] - 2026-05-19
 
 ### Refactoring

@@ -28,27 +28,27 @@ const baseConfig: LevelConfig = {
 };
 
 describe("design-mode overload detection", () => {
-  it("returns an empty array when mode is SIMULATE even if traffic exceeds capacity", () => {
+  it("returns an empty array when simulating even if traffic exceeds capacity", () => {
     const graphState = { edges, nodes };
-    const { result } = renderHook(() => useDesignModeOverloads("SIMULATE", graphState, baseConfig));
+    const { result } = renderHook(() => useDesignModeOverloads(true, graphState, baseConfig));
 
     expect(result.current).toStrictEqual([]);
   });
 
-  it("returns an empty array when traffic start is below server capacity in DESIGN mode", () => {
+  it("returns an empty array when traffic start is below server capacity in design mode", () => {
     const lowTrafficConfig: LevelConfig = { ...baseConfig, trafficStart: 10 };
     const graphState = { edges, nodes };
     const { result } = renderHook(() =>
-      useDesignModeOverloads("DESIGN", graphState, lowTrafficConfig),
+      useDesignModeOverloads(false, graphState, lowTrafficConfig),
     );
 
     expect(result.current).toStrictEqual([]);
   });
 
-  it("returns overloaded node ids in DESIGN mode when trafficStart exceeds node capacity", () => {
+  it("returns overloaded node ids in design mode when trafficStart exceeds node capacity", () => {
     // server capacity = 50, trafficStart = 150 → overloaded
     const graphState = { edges, nodes };
-    const { result } = renderHook(() => useDesignModeOverloads("DESIGN", graphState, baseConfig));
+    const { result } = renderHook(() => useDesignModeOverloads(false, graphState, baseConfig));
 
     expect(result.current).toContain("server-1");
     expect(result.current).not.toContain("users-1");

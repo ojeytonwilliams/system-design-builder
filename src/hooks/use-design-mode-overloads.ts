@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import { toGraphEdge, toGraphNode } from "../layouts/graph-adapters.js";
 import { computeTrafficFlow } from "../simulation/engine.js";
-import type { LevelConfig, SimulationMode } from "../simulation/types.js";
+import type { LevelConfig } from "../simulation/types.js";
 
 interface GraphState {
   edges: ArchitectureEdge[];
@@ -10,12 +10,12 @@ interface GraphState {
 }
 
 const useDesignModeOverloads = (
-  mode: SimulationMode,
+  isSimulating: boolean,
   graphState: GraphState,
   effectiveLevelConfig: LevelConfig,
 ): string[] =>
   useMemo(() => {
-    if (mode === "SIMULATE") {
+    if (isSimulating) {
       return [];
     }
 
@@ -31,6 +31,6 @@ const useDesignModeOverloads = (
     return Object.entries(snapshot)
       .filter(([, s]) => s.droppedOps > 0)
       .map(([id]) => id);
-  }, [mode, graphState, effectiveLevelConfig]);
+  }, [isSimulating, graphState, effectiveLevelConfig]);
 
 export { useDesignModeOverloads };
