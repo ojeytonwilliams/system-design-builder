@@ -18,6 +18,7 @@ const testLevels: LevelDefinition[] = [
     trafficPeak: 10,
     trafficStart: 10,
     trafficTarget: 10,
+    winSustainSeconds: 3,
   },
   {
     availableComponents: ["server", "server-large"],
@@ -36,6 +37,7 @@ const testLevels: LevelDefinition[] = [
     trafficPeak: 20,
     trafficStart: 20,
     trafficTarget: 20,
+    winSustainSeconds: 3,
   },
   {
     availableComponents: ["server", "server-large", "db"],
@@ -54,6 +56,7 @@ const testLevels: LevelDefinition[] = [
     trafficPeak: 30,
     trafficStart: 30,
     trafficTarget: 30,
+    winSustainSeconds: 3,
   },
 ];
 

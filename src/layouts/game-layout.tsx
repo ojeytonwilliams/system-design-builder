@@ -18,6 +18,7 @@ import { useGameActions } from "../hooks/use-game-actions.js";
 import { useInspectorData } from "../hooks/use-inspector-data.js";
 import { useLevel } from "../hooks/use-level.js";
 import { usePhase } from "../hooks/use-phase.js";
+import { useSimulationSnapshot } from "../hooks/use-simulation-snapshot.js";
 import { useSimulationTick } from "../hooks/use-simulation-tick.js";
 import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
@@ -25,7 +26,6 @@ import { graphReducer } from "../game/graph-reducer.js";
 import { toGraphEdge, toGraphNode } from "./graph-adapters.js";
 import { hasRunnablePath } from "../simulation/engine.js";
 import type { LevelConfig } from "../simulation/types.js";
-import { SimulationProvider, useSimulation } from "../store.js";
 
 const MOBILE_LAYOUT_BREAKPOINT = 768;
 
@@ -53,7 +53,7 @@ const GameScene = ({
   loadLevel,
   markLevelComplete,
 }: GameSceneProps) => {
-  const { currentTrafficRate, nodeStates, resetSimulation, tick } = useSimulation();
+  const { currentTrafficRate, nodeStates } = useSimulationSnapshot();
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
@@ -97,12 +97,6 @@ const GameScene = ({
   useEffect(() => {
     resetEvents(graphState.nodes, graphState.edges);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (isSimulating) {
-      resetSimulation();
-    }
-  }, [isSimulating, resetSimulation]);
 
   useEffect(() => {
     const newlyUnlocked = availableComponents.filter(
@@ -176,7 +170,6 @@ const GameScene = ({
     onWin: handleWin,
     resetKey: canvasKey,
     setCoachMessage,
-    tick,
   });
 
   return (
@@ -308,21 +301,20 @@ const GameLayout = () => {
     trafficPeak: currentLevel.trafficPeak,
     trafficStart: currentLevel.trafficStart,
     trafficTarget: currentLevel.trafficTarget,
+    winSustainSeconds: currentLevel.winSustainSeconds,
   };
 
   return (
-    <SimulationProvider>
-      <GameScene
-        canvasKey={canvasKey}
-        completedLevels={completedLevels}
-        currentLevel={currentLevel}
-        initialEdges={currentLevel.startingEdges}
-        initialNodes={currentLevel.startingNodes}
-        levelConfig={levelConfig}
-        loadLevel={loadLevel}
-        markLevelComplete={markLevelComplete}
-      />
-    </SimulationProvider>
+    <GameScene
+      canvasKey={canvasKey}
+      completedLevels={completedLevels}
+      currentLevel={currentLevel}
+      initialEdges={currentLevel.startingEdges}
+      initialNodes={currentLevel.startingNodes}
+      levelConfig={levelConfig}
+      loadLevel={loadLevel}
+      markLevelComplete={markLevelComplete}
+    />
   );
 };
 

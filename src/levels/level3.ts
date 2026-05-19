@@ -57,6 +57,7 @@ const level3: LevelDefinition = {
   trafficPeak: 85,
   trafficStart: 85,
   trafficTarget: 85,
+  winSustainSeconds: 10,
 };
 
 export { level3 };

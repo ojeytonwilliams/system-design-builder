@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.20] - 2026-05-19
+
+### Refactoring
+
+- **Win detection was hardcoded and untestable**: A module-level `WIN_SUSTAIN_SECONDS = 3` constant was baked into the simulation context, and the win condition itself — sustaining target traffic with no dropped requests — was implicit in an effect inside a hook that could only be exercised through full React rendering. Extracted `computeNextSimState` as a pure function in `src/simulation/simulation-store.ts` that owns all per-tick state transitions: overload detection and edge events (`STARTED`/`RESOLVED`), sustained-seconds accumulation, win detection, and timeout. `winSustainSeconds` is now a first-class field on `LevelConfig` and `LevelDefinition`, making the threshold configurable per level. `SimulationStore` is a plain class (`subscribe` / `getSnapshot` / `applyTick` / `reset`) that integrates with React via `useSyncExternalStore` inside `useSimulationSnapshot`. The `SimulationProvider` React context and `useSimulation` hook are deleted — the store is a module-level singleton that any component can connect to without an ancestor provider. Overload transition logging is kept synchronous inside the `onTick` callback (using a ref) to avoid React batching swallowing intermediate store states that would otherwise be lost across `act()` boundaries.
+
 ## [2.3.19] - 2026-05-19
 
 ### Refactoring

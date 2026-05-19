@@ -7,9 +7,8 @@ import { level1 } from "../levels/level1.js";
 import { level3 } from "../levels/level3.js";
 import { loadProgress } from "../persistence.js";
 import type { LevelConfig } from "../simulation/types.js";
-import { SimulationProvider } from "../store.js";
 
-// Win after 10 sustained seconds: traffic=40 < server capacity=50, no drops
+// Win after 3 sustained seconds: traffic=40 < server capacity=50, no drops
 const winLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
@@ -17,6 +16,7 @@ const winLevelConfig: LevelConfig = {
   trafficPeak: 40,
   trafficStart: 40,
   trafficTarget: 40,
+  winSustainSeconds: 3,
 };
 
 const testLevelConfig: LevelConfig = {
@@ -26,6 +26,7 @@ const testLevelConfig: LevelConfig = {
   trafficPeak: 100,
   trafficStart: 100,
   trafficTarget: 100,
+  winSustainSeconds: 10,
 };
 
 // 150 req/s on a 50 req/s server = 300% load
@@ -36,6 +37,7 @@ const overloadLevelConfig: LevelConfig = {
   trafficPeak: 150,
   trafficStart: 150,
   trafficTarget: 150,
+  winSustainSeconds: 10,
 };
 
 // Traffic ramps down from 100 → 0 over 4 seconds:
@@ -49,6 +51,7 @@ const resolvingOverloadLevelConfig: LevelConfig = {
   trafficPeak: 0,
   trafficStart: 100,
   trafficTarget: 40,
+  winSustainSeconds: 10,
 };
 
 const overloadNodes: ArchitectureNode[] = [
@@ -98,6 +101,7 @@ const defaultSceneProps = {
     trafficPeak: 0,
     trafficStart: 0,
     trafficTarget: 0,
+    winSustainSeconds: 10,
   } as LevelConfig,
   loadLevel: (): { newEdges: ArchitectureEdge[]; newNodes: ArchitectureNode[] } => ({
     newEdges: [],
@@ -109,18 +113,16 @@ const defaultSceneProps = {
 const renderScene = (overrides: Partial<typeof defaultSceneProps> = {}) => {
   const p = { ...defaultSceneProps, ...overrides };
   return render(
-    <SimulationProvider>
-      <GameScene
-        canvasKey={p.canvasKey}
-        completedLevels={p.completedLevels}
-        currentLevel={p.currentLevel}
-        initialEdges={p.initialEdges}
-        initialNodes={p.initialNodes}
-        levelConfig={p.levelConfig}
-        loadLevel={p.loadLevel}
-        markLevelComplete={p.markLevelComplete}
-      />
-    </SimulationProvider>,
+    <GameScene
+      canvasKey={p.canvasKey}
+      completedLevels={p.completedLevels}
+      currentLevel={p.currentLevel}
+      initialEdges={p.initialEdges}
+      initialNodes={p.initialNodes}
+      levelConfig={p.levelConfig}
+      loadLevel={p.loadLevel}
+      markLevelComplete={p.markLevelComplete}
+    />,
   );
 };
 
@@ -137,18 +139,16 @@ const GameSceneHarness = ({
   const { canvasKey, completedLevels, currentLevel, loadLevel, markLevelComplete } = useLevel();
 
   return (
-    <SimulationProvider>
-      <GameScene
-        canvasKey={canvasKey}
-        completedLevels={completedLevels}
-        currentLevel={currentLevel}
-        initialEdges={initialEdges}
-        initialNodes={initialNodes}
-        levelConfig={levelConfig}
-        loadLevel={loadLevel}
-        markLevelComplete={markLevelComplete}
-      />
-    </SimulationProvider>
+    <GameScene
+      canvasKey={canvasKey}
+      completedLevels={completedLevels}
+      currentLevel={currentLevel}
+      initialEdges={initialEdges}
+      initialNodes={initialNodes}
+      levelConfig={levelConfig}
+      loadLevel={loadLevel}
+      markLevelComplete={markLevelComplete}
+    />
   );
 };
 
@@ -600,6 +600,7 @@ describe("budget enforcement", () => {
       trafficPeak: 40,
       trafficStart: 40,
       trafficTarget: 40,
+      winSustainSeconds: 10,
     };
 
     renderScene({

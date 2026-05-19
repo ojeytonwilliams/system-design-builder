@@ -25,6 +25,7 @@ const baseConfig: LevelConfig = {
   trafficPeak: 150,
   trafficStart: 150,
   trafficTarget: 150,
+  winSustainSeconds: 10,
 };
 
 describe("design-mode overload detection", () => {

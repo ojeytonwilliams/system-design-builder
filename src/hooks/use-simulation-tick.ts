@@ -4,9 +4,9 @@ import type { PhaseAction } from "../game/phase-machine.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { toGraphEdge, toGraphNode } from "../layouts/graph-adapters.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "../simulation/engine.js";
+import { simulationStore } from "../simulation/simulation-store.js";
 import type { LevelConfig, TrafficSnapshot } from "../simulation/types.js";
-
-const WIN_SUSTAIN_SECONDS = 3;
+import { useSimulationSnapshot } from "./use-simulation-snapshot.js";
 
 interface UseSimulationTickParams {
   appendEvent: (text: string) => void;
@@ -20,7 +20,6 @@ interface UseSimulationTickParams {
   onWin: () => void;
   resetKey: number;
   setCoachMessage: (message: string) => void;
-  tick: (snapshot: TrafficSnapshot, rate: number) => void;
 }
 
 const useSimulationTick = ({
@@ -35,19 +34,19 @@ const useSimulationTick = ({
   onWin,
   resetKey,
   setCoachMessage,
-  tick,
 }: UseSimulationTickParams): void => {
   const shownCoachMessageRef = useRef<Set<number>>(new Set());
   const hasSeenOverloadThisLevelRef = useRef(false);
   const hasSnapshotOverloadRef = useRef(false);
-  const sustainedNoDropSecondsRef = useRef(0);
 
-  // Reset mutable tick state when the level changes
+  const simSnapshot = useSimulationSnapshot();
+
+  // Reset per-level state (and the store) whenever the level changes
   useEffect(() => {
+    simulationStore.reset();
     shownCoachMessageRef.current = new Set();
     hasSeenOverloadThisLevelRef.current = false;
     hasSnapshotOverloadRef.current = false;
-    sustainedNoDropSecondsRef.current = 0;
   }, [resetKey]);
 
   const onTick = useEffectEvent((elapsedSeconds: number) => {
@@ -55,15 +54,9 @@ const useSimulationTick = ({
       if (elapsedSeconds < message.atSecond || shownCoachMessageRef.current.has(index)) {
         return;
       }
-
       shownCoachMessageRef.current.add(index);
       setCoachMessage(message.text);
     });
-
-    if (elapsedSeconds >= effectiveLevelConfig.timeout) {
-      dispatchPhase({ type: "TIMEOUT" });
-      return;
-    }
 
     const rate = getLinearTrafficRate({
       elapsed: elapsedSeconds,
@@ -74,17 +67,26 @@ const useSimulationTick = ({
 
     const graphNodes = nodes.map(toGraphNode);
     const graphEdges = edges.map(toGraphEdge);
-    const snapshot = computeTrafficFlow(graphNodes, graphEdges, {
+    const trafficSnapshot = computeTrafficFlow(graphNodes, graphEdges, {
       cacheHitRate: effectiveLevelConfig.cacheHitRate,
       trafficRate: rate,
     });
 
-    const hasOverload = Object.values(snapshot).some((s) => s.droppedOps > 0);
+    simulationStore.applyTick({
+      elapsed: elapsedSeconds,
+      levelConfig: effectiveLevelConfig,
+      rate,
+      trafficSnapshot,
+    });
+    applySnapshot(trafficSnapshot, nodes);
+
+    // Overload transition detection runs synchronously per tick to avoid
+    // React batching multiple transitions into a single render cycle.
+    const hasOverload = Object.values(trafficSnapshot).some((s) => s.droppedOps > 0);
     const hadOverload = hasSnapshotOverloadRef.current;
 
     if (!hadOverload && hasOverload) {
       appendEvent("Overload started");
-
       if (!hasSeenOverloadThisLevelRef.current) {
         setCoachMessage(
           "Overload detected. Add capacity or spread traffic to reduce dropped requests.",
@@ -98,21 +100,6 @@ const useSimulationTick = ({
     }
 
     hasSnapshotOverloadRef.current = hasOverload;
-
-    const atOrAboveTarget = rate >= effectiveLevelConfig.trafficTarget;
-
-    if (atOrAboveTarget && !hasOverload) {
-      sustainedNoDropSecondsRef.current += 1;
-    } else {
-      sustainedNoDropSecondsRef.current = 0;
-    }
-
-    applySnapshot(snapshot, nodes);
-    tick(snapshot, rate);
-
-    if (sustainedNoDropSecondsRef.current >= WIN_SUSTAIN_SECONDS) {
-      onWin();
-    }
   });
 
   useEffect(() => {
@@ -120,7 +107,7 @@ const useSimulationTick = ({
       return;
     }
 
-    sustainedNoDropSecondsRef.current = 0;
+    simulationStore.reset();
     let elapsedSeconds = 0;
 
     const interval = setInterval(() => {
@@ -132,6 +119,18 @@ const useSimulationTick = ({
       clearInterval(interval);
     };
   }, [isSimulating, resetKey]);
+
+  useEffect(() => {
+    if (simSnapshot.isWon && isSimulating) {
+      onWin();
+    }
+  }, [simSnapshot.isWon, isSimulating, onWin]);
+
+  useEffect(() => {
+    if (simSnapshot.isTimedOut && isSimulating) {
+      dispatchPhase({ type: "TIMEOUT" });
+    }
+  }, [simSnapshot.isTimedOut, isSimulating, dispatchPhase]);
 };
 
 export { useSimulationTick };
