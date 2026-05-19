@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.19] - 2026-05-19
+
+### Refactoring
+
+- **`canvas-state.ts` contained reducer logic without a reducer, and `graphState` was mutated with coarse, semantically opaque `setGraphState` calls**: Every `GameCanvas` event handler manually assembled a `CanvasGraph` from four pieces of scattered state, passed it through a pure transition function, then re-split the result across three destinations (`onStateChange`, `onSelectedNodeChange`, `setContextMenu`). Meanwhile `handleGraphChange` in `GameScene` closed over `graphState` to compute a diff for the event log, forcing it to be recreated on every canvas edit and producing unnecessary re-renders. Replaced this with two reducers. `graphReducer` (`src/game/graph-reducer.ts`) owns nodes and edges in `GameScene` via `useReducer`; its actions — `PLACE_NODE`, `ADD_EDGE`, `MOVE_NODE`, `REMOVE_NODE`, `REMOVE_EDGE`, `LOAD_LEVEL` — carry domain logic (connection validation, ID generation, cascading deletion) that previously lived in `canvas-state.ts`. `dispatchGraph` is passed as a prop to `GameCanvas`, replacing the `onStateChange` callback. `canvasUIReducer` (`src/game/canvas-ui-reducer.ts`) owns `{ contextMenu, selectedEdgeId }` locally in `GameCanvas`; `selectedEdgeId` replaces the `selected` boolean that was embedded in edge objects, separating UI selection state from graph topology. Fine-grained actions make the intent at each call site explicit; cross-cutting actions (e.g. place node + clear selection) double-dispatch to both reducers — React 18 batches these into a single render. Event log entries are fired directly at dispatch time via `onNodePlaced` / `onEdgeCreated` callbacks, eliminating the diff-based `handleGraphChange` and the `previousGraphRef` workaround it required. `canvas-state.ts` and its tests are deleted; behaviour is covered by the new reducer test suites.
+
 ## [2.3.18] - 2026-05-19
 
 ### Refactoring

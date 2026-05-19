@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
 import { Coach } from "../components/coach.js";
@@ -21,6 +21,7 @@ import { usePhase } from "../hooks/use-phase.js";
 import { useSimulationTick } from "../hooks/use-simulation-tick.js";
 import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
+import { graphReducer } from "../game/graph-reducer.js";
 import { toGraphEdge, toGraphNode } from "./graph-adapters.js";
 import { hasRunnablePath } from "../simulation/engine.js";
 import type { LevelConfig } from "../simulation/types.js";
@@ -64,10 +65,10 @@ const GameScene = ({
   const [queuedComponentType, setQueuedComponentType] = useState<ComponentType | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
-  const [graphState, setGraphState] = useState(() => ({
+  const [graphState, dispatchGraph] = useReducer(graphReducer, {
     edges: initialEdges,
     nodes: initialNodes,
-  }));
+  });
 
   const previousAvailableComponentsRef = useRef<ComponentType[]>(currentLevel.availableComponents);
 
@@ -118,10 +119,27 @@ const GameScene = ({
     previousAvailableComponentsRef.current = availableComponents;
   }, [appendEvent, availableComponents]);
 
+  useEffect(() => {
+    updateFromGraph(graphState.nodes);
+  }, [graphState.nodes, updateFromGraph]);
+
+  const handleNodePlaced = useCallback(
+    (componentType: ComponentType) => {
+      appendEvent(`Component placed: ${COMPONENT_LIBRARY[componentType].label}`);
+    },
+    [appendEvent],
+  );
+
+  const handleEdgeCreated = useCallback(
+    (sourceId: string, targetId: string) => {
+      appendEvent(`Connection created: ${sourceId} → ${targetId}`);
+    },
+    [appendEvent],
+  );
+
   const {
     handleComponentPlaced,
     handleContinue,
-    handleGraphChange,
     handlePlaceComponent,
     handleReplay,
     handleSelectLevel,
@@ -129,11 +147,10 @@ const GameScene = ({
     handleToggleTraffic,
     handleWin,
   } = useGameActions({
-    appendEvent,
     currentLevel,
+    dispatchGraph,
     dispatchPhase,
     effectiveLevelConfig: levelConfig,
-    graphState,
     isRunnable,
     loadLevel,
     markLevelComplete,
@@ -142,11 +159,9 @@ const GameScene = ({
     resetEvents,
     resetForLevel,
     setCoachMessage,
-    setGraphState,
     setQueuedComponentType,
     setSelectedNodeId,
     totalMonthlyCost,
-    updateFromGraph,
   });
 
   useSimulationTick({
@@ -218,6 +233,7 @@ const GameScene = ({
         <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>
           <GameCanvas
             componentToPlace={queuedComponentType}
+            dispatchGraph={dispatchGraph}
             edges={graphState.edges}
             isLocked={isSimulating}
             isSimulating={isSimulating}
@@ -225,8 +241,9 @@ const GameScene = ({
             lockedNodeIds={currentLevel.lockedNodeIds}
             nodes={graphState.nodes}
             onComponentPlaced={handleComponentPlaced}
+            onEdgeCreated={handleEdgeCreated}
+            onNodePlaced={handleNodePlaced}
             onSelectedNodeChange={handleSelectedNodeChange}
-            onStateChange={handleGraphChange}
             overloadedNodeIds={overloadedNodeIds}
             selectedNodeId={selectedNodeId}
           />

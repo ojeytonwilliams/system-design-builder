@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import type { GraphAction } from "../game/graph-reducer.js";
 import { GameCanvas } from "./game-canvas.js";
 
 // oxlint-disable-next-line vitest/require-top-level-describe
@@ -31,14 +32,16 @@ const LOCKED_USERS_NODE = [
 ];
 
 describe("game canvas", () => {
-  it("drops a palette item onto the canvas and calls onStateChange with the new node", () => {
-    const onStateChange = vi.fn<() => void>();
+  it("dispatches PLACE_NODE when a component is dropped onto the canvas", () => {
+    const dispatchGraph = vi.fn<(action: GraphAction) => void>();
     render(
       <GameCanvas
+        dispatchGraph={dispatchGraph}
         edges={[]}
         nodes={[]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={onStateChange}
         selectedNodeId={null}
       />,
     );
@@ -62,66 +65,103 @@ describe("game canvas", () => {
       dataTransfer: { getData: () => "server" },
     });
 
-    expect(onStateChange).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ id: "server-1" })]),
-      expect.any(Array),
+    expect(dispatchGraph).toHaveBeenCalledWith(
+      expect.objectContaining({ componentType: "server", type: "PLACE_NODE" }),
     );
   });
 
-  it("places a queued component when componentToPlace is provided", () => {
+  it("calls onNodePlaced when a component is dropped onto the canvas", () => {
+    const onNodePlaced = vi.fn<(componentType: string) => void>();
+    render(
+      <GameCanvas
+        dispatchGraph={noop}
+        edges={[]}
+        nodes={[]}
+        onEdgeCreated={noop}
+        onNodePlaced={onNodePlaced}
+        onSelectedNodeChange={noop}
+        selectedNodeId={null}
+      />,
+    );
+    const dropzone = screen.getByTestId("game-canvas-dropzone");
+
+    vi.spyOn(dropzone, "getBoundingClientRect").mockReturnValue({
+      bottom: 500,
+      height: 500,
+      left: 20,
+      right: 820,
+      toJSON: () => ({}),
+      top: 20,
+      width: 800,
+      x: 20,
+      y: 20,
+    });
+
+    fireEvent.drop(dropzone, {
+      clientX: 145,
+      clientY: 117,
+      dataTransfer: { getData: () => "server" },
+    });
+
+    expect(onNodePlaced).toHaveBeenCalledWith("server");
+  });
+
+  it("dispatches PLACE_NODE when componentToPlace is provided", () => {
+    const dispatchGraph = vi.fn<(action: GraphAction) => void>();
     const onComponentPlaced = vi.fn<() => void>();
-    const onStateChange = vi.fn<() => void>();
 
     render(
       <GameCanvas
         componentToPlace="server"
+        dispatchGraph={dispatchGraph}
         edges={[]}
         nodes={[]}
         onComponentPlaced={onComponentPlaced}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={onStateChange}
         selectedNodeId={null}
       />,
     );
 
-    expect(onStateChange).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ id: "server-1" })]),
-      expect.any(Array),
+    expect(dispatchGraph).toHaveBeenCalledWith(
+      expect.objectContaining({ componentType: "server", type: "PLACE_NODE" }),
     );
     expect(onComponentPlaced).toHaveBeenCalledOnce();
   });
 
-  it("removes a selected node and its connected edges when Delete is pressed", () => {
-    const onStateChange = vi.fn<() => void>();
+  it("dispatches REMOVE_NODE when Delete is pressed on a selected node", () => {
+    const dispatchGraph = vi.fn<(action: GraphAction) => void>();
     render(
       <GameCanvas
+        dispatchGraph={dispatchGraph}
         edges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
         nodes={[...INITIAL_NODES_TWO]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={onStateChange}
         selectedNodeId="server-1"
       />,
     );
 
     fireEvent.keyDown(window, { key: "Delete" });
 
-    expect(onStateChange).toHaveBeenCalledWith(
-      expect.not.arrayContaining([expect.objectContaining({ id: "server-1" })]),
-      [],
-    );
+    expect(dispatchGraph).toHaveBeenCalledWith({ nodeId: "server-1", type: "REMOVE_NODE" });
   });
 });
 
 describe("locked mode", () => {
-  it("does not call onStateChange when isLocked is true and a palette item is dropped", () => {
-    const onStateChange = vi.fn<() => void>();
+  it("does not dispatch when isLocked is true and a palette item is dropped", () => {
+    const dispatchGraph = vi.fn<(action: GraphAction) => void>();
     render(
       <GameCanvas
+        dispatchGraph={dispatchGraph}
         edges={[]}
         isLocked
         nodes={[]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={onStateChange}
         selectedNodeId={null}
       />,
     );
@@ -145,46 +185,7 @@ describe("locked mode", () => {
       dataTransfer: { getData: () => "server" },
     });
 
-    expect(onStateChange).not.toHaveBeenCalled();
-  });
-});
-
-describe("onStateChange callback", () => {
-  it("fires with updated nodes after a node is dropped", () => {
-    const onStateChange = vi.fn<() => void>();
-    render(
-      <GameCanvas
-        edges={[]}
-        nodes={[]}
-        onSelectedNodeChange={noop}
-        onStateChange={onStateChange}
-        selectedNodeId={null}
-      />,
-    );
-    const dropzone = screen.getByTestId("game-canvas-dropzone");
-
-    vi.spyOn(dropzone, "getBoundingClientRect").mockReturnValue({
-      bottom: 500,
-      height: 500,
-      left: 20,
-      right: 820,
-      toJSON: () => ({}),
-      top: 20,
-      width: 800,
-      x: 20,
-      y: 20,
-    });
-
-    fireEvent.drop(dropzone, {
-      clientX: 145,
-      clientY: 117,
-      dataTransfer: { getData: () => "server" },
-    });
-
-    expect(onStateChange).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ id: "server-1" })]),
-      expect.any(Array),
-    );
+    expect(dispatchGraph).not.toHaveBeenCalled();
   });
 });
 
@@ -192,6 +193,7 @@ describe("overloaded node state", () => {
   it("renders overloaded styling for nodes included in overloadedNodeIds", () => {
     render(
       <GameCanvas
+        dispatchGraph={noop}
         edges={[]}
         nodes={[
           {
@@ -200,8 +202,9 @@ describe("overloaded node state", () => {
             position: { x: 0, y: 0 },
           },
         ]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={noop}
         overloadedNodeIds={["server-1"]}
         selectedNodeId={null}
       />,
@@ -218,10 +221,12 @@ describe("overloaded node state", () => {
     };
     const { rerender } = render(
       <GameCanvas
+        dispatchGraph={noop}
         edges={[]}
         nodes={[node]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={noop}
         overloadedNodeIds={[]}
         selectedNodeId={null}
       />,
@@ -229,10 +234,12 @@ describe("overloaded node state", () => {
 
     rerender(
       <GameCanvas
+        dispatchGraph={noop}
         edges={[]}
         nodes={[node]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={noop}
         overloadedNodeIds={["server-1"]}
         selectedNodeId={null}
       />,
@@ -249,10 +256,12 @@ describe("overloaded node state", () => {
     };
     const { rerender } = render(
       <GameCanvas
+        dispatchGraph={noop}
         edges={[]}
         nodes={[node]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={noop}
         overloadedNodeIds={["server-1"]}
         selectedNodeId={null}
       />,
@@ -260,10 +269,12 @@ describe("overloaded node state", () => {
 
     rerender(
       <GameCanvas
+        dispatchGraph={noop}
         edges={[]}
         nodes={[node]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={noop}
         overloadedNodeIds={[]}
         selectedNodeId={null}
       />,
@@ -274,11 +285,12 @@ describe("overloaded node state", () => {
 });
 
 describe("escape key", () => {
-  it("pressing Escape calls onSelectedNodeChange with null to close the inspector", () => {
+  it("pressing Escape calls onSelectedNodeChange with null", () => {
     const onSelectedNodeChange = vi.fn<() => void>();
 
     render(
       <GameCanvas
+        dispatchGraph={noop}
         edges={[]}
         nodes={[
           {
@@ -287,8 +299,9 @@ describe("escape key", () => {
             position: { x: 0, y: 0 },
           },
         ]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={onSelectedNodeChange}
-        onStateChange={noop}
         selectedNodeId={null}
       />,
     );
@@ -300,32 +313,37 @@ describe("escape key", () => {
 });
 
 describe("edge deletion", () => {
-  it("removes a selected edge when Delete is pressed", () => {
-    const onStateChange = vi.fn<() => void>();
+  it("dispatches REMOVE_EDGE when Delete is pressed with a selected edge", () => {
+    const dispatchGraph = vi.fn<(action: GraphAction) => void>();
     render(
       <GameCanvas
-        edges={[{ id: "edge-1", selected: true, source: "users-1", target: "server-1" }]}
+        dispatchGraph={dispatchGraph}
+        edges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
+        initialSelectedEdgeId="edge-1"
         nodes={[...INITIAL_NODES_TWO]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={onStateChange}
         selectedNodeId={null}
       />,
     );
 
     fireEvent.keyDown(window, { key: "Delete" });
 
-    expect(onStateChange).toHaveBeenCalledWith(expect.any(Array), []);
+    expect(dispatchGraph).toHaveBeenCalledWith({ edgeId: "edge-1", type: "REMOVE_EDGE" });
   });
 
-  it("clicking Remove in the edge context menu removes the edge", () => {
-    const onStateChange = vi.fn<() => void>();
+  it("clicking Remove in the edge context menu dispatches REMOVE_EDGE", () => {
+    const dispatchGraph = vi.fn<(action: GraphAction) => void>();
     render(
       <GameCanvas
+        dispatchGraph={dispatchGraph}
         edges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
         initialContextMenu={{ edgeId: "edge-1", kind: "edge", x: 200, y: 100 }}
         nodes={[...INITIAL_NODES_TWO]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={onStateChange}
         selectedNodeId={null}
       />,
     );
@@ -333,27 +351,29 @@ describe("edge deletion", () => {
     fireEvent.click(screen.getByRole("button", { name: /remove/iv }));
 
     expect(screen.queryByRole("button", { name: /remove/iv })).not.toBeInTheDocument();
-    expect(onStateChange).toHaveBeenCalledWith(expect.any(Array), []);
+    expect(dispatchGraph).toHaveBeenCalledWith({ edgeId: "edge-1", type: "REMOVE_EDGE" });
   });
 });
 
 describe("locked nodes", () => {
-  it("does not call onStateChange when Delete is pressed on a locked node", () => {
-    const onStateChange = vi.fn<() => void>();
+  it("does not dispatch when Delete is pressed on a locked node", () => {
+    const dispatchGraph = vi.fn<(action: GraphAction) => void>();
     render(
       <GameCanvas
+        dispatchGraph={dispatchGraph}
         edges={[]}
         lockedNodeIds={["users-1"]}
         nodes={LOCKED_USERS_NODE}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={onStateChange}
         selectedNodeId="users-1"
       />,
     );
 
     fireEvent.keyDown(window, { key: "Delete" });
 
-    expect(onStateChange).not.toHaveBeenCalled();
+    expect(dispatchGraph).not.toHaveBeenCalled();
   });
 });
 
@@ -361,6 +381,7 @@ describe("static graph rendering", () => {
   it("renders nodes from nodes prop", () => {
     render(
       <GameCanvas
+        dispatchGraph={noop}
         edges={[]}
         nodes={[
           {
@@ -369,8 +390,9 @@ describe("static graph rendering", () => {
             position: { x: 0, y: 0 },
           },
         ]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={noop}
         selectedNodeId={null}
       />,
     );
@@ -384,10 +406,12 @@ describe("static graph rendering", () => {
   it("renders edges from edges prop", () => {
     render(
       <GameCanvas
+        dispatchGraph={noop}
         edges={[{ id: "edge-1", source: "users-1", target: "server-1" }]}
         nodes={[...INITIAL_NODES_TWO]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        onStateChange={noop}
         selectedNodeId={null}
       />,
     );
