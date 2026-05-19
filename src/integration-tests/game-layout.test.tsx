@@ -1,9 +1,13 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { GameLayout } from "../layouts/game-layout.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
+import { useLevel } from "../hooks/use-level.js";
+import { GameLayout, GameScene } from "../layouts/game-layout.js";
 import { levelRegistry } from "../levels/index.js";
+import { level1 } from "../levels/level1.js";
+import { level3 } from "../levels/level3.js";
 import { loadProgress } from "../persistence.js";
 import type { LevelConfig } from "../simulation/types.js";
-import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
+import { SimulationProvider } from "../store.js";
 
 // Win after 10 sustained seconds: traffic=40 < server capacity=50, no drops
 const winLevelConfig: LevelConfig = {
@@ -80,6 +84,74 @@ const unlockedLevel3Nodes: ArchitectureNode[] = [
 
 const overloadEdges: ArchitectureEdge[] = [{ id: "edge-1", source: "users-1", target: "server-1" }];
 
+// Default props for GameScene in tests — override per-test as needed
+const defaultSceneProps = {
+  canvasKey: 0,
+  completedLevels: [] as string[],
+  currentLevel: level1,
+  initialEdges: [] as ArchitectureEdge[],
+  initialNodes: [] as ArchitectureNode[],
+  levelConfig: {
+    cacheHitRate: 0,
+    monthlyBudget: 99999,
+    timeout: 60,
+    trafficPeak: 0,
+    trafficStart: 0,
+    trafficTarget: 0,
+  } as LevelConfig,
+  loadLevel: (): { newEdges: ArchitectureEdge[]; newNodes: ArchitectureNode[] } => ({
+    newEdges: [],
+    newNodes: [],
+  }),
+  markLevelComplete: (): void => {},
+};
+
+const renderScene = (overrides: Partial<typeof defaultSceneProps> = {}) => {
+  const p = { ...defaultSceneProps, ...overrides };
+  return render(
+    <SimulationProvider>
+      <GameScene
+        canvasKey={p.canvasKey}
+        completedLevels={p.completedLevels}
+        currentLevel={p.currentLevel}
+        initialEdges={p.initialEdges}
+        initialNodes={p.initialNodes}
+        levelConfig={p.levelConfig}
+        loadLevel={p.loadLevel}
+        markLevelComplete={p.markLevelComplete}
+      />
+    </SimulationProvider>,
+  );
+};
+
+// Wrapper for tests that need real level-progression state (loadLevel / markLevelComplete)
+const GameSceneHarness = ({
+  initialEdges,
+  initialNodes,
+  levelConfig,
+}: {
+  initialEdges: ArchitectureEdge[];
+  initialNodes: ArchitectureNode[];
+  levelConfig: LevelConfig;
+}) => {
+  const { canvasKey, completedLevels, currentLevel, loadLevel, markLevelComplete } = useLevel();
+
+  return (
+    <SimulationProvider>
+      <GameScene
+        canvasKey={canvasKey}
+        completedLevels={completedLevels}
+        currentLevel={currentLevel}
+        initialEdges={initialEdges}
+        initialNodes={initialNodes}
+        levelConfig={levelConfig}
+        loadLevel={loadLevel}
+        markLevelComplete={markLevelComplete}
+      />
+    </SimulationProvider>
+  );
+};
+
 // oxlint-disable-next-line vitest/require-top-level-describe
 beforeAll(() => {
   // The pixi mocks replace the pixi elements with custom elements that react
@@ -129,13 +201,11 @@ describe("simulation mode", () => {
   });
 
   it("clicking Start Traffic transitions to simulate mode", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={testLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: testLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
@@ -143,13 +213,11 @@ describe("simulation mode", () => {
   });
 
   it("clicking Stop Traffic returns to design mode", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={testLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: testLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     fireEvent.click(screen.getByRole("button", { name: /stop traffic/iv }));
@@ -158,13 +226,11 @@ describe("simulation mode", () => {
   });
 
   it("simulation ends automatically after the timeout expires", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={testLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: testLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
@@ -176,13 +242,11 @@ describe("simulation mode", () => {
   });
 
   it("inspector load field reflects overloaded state for the selected node", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={overloadLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: overloadLevelConfig,
+    });
 
     fireEvent.click(screen.getByTestId("canvas-node-server-1"));
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
@@ -195,13 +259,11 @@ describe("simulation mode", () => {
   });
 
   it("returns the selected node to normal load state when traffic drops below capacity", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={resolvingOverloadLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: resolvingOverloadLevelConfig,
+    });
 
     fireEvent.click(screen.getByTestId("canvas-node-server-1"));
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
@@ -242,13 +304,11 @@ describe("level system", () => {
   });
 
   it("shows the end-of-level screen when win condition is met", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={winLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: winLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
@@ -259,13 +319,11 @@ describe("level system", () => {
   });
 
   it("replay button dismisses end-of-level screen and returns to design mode", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={winLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: winLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
@@ -278,13 +336,11 @@ describe("level system", () => {
   });
 
   it("continue button dismisses end-of-level screen", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={winLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: winLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
@@ -297,7 +353,7 @@ describe("level system", () => {
 
   it("saves completed level to localStorage when a level is won", () => {
     render(
-      <GameLayout
+      <GameSceneHarness
         initialEdges={overloadEdges}
         initialNodes={overloadNodes}
         levelConfig={winLevelConfig}
@@ -342,7 +398,7 @@ describe("level system", () => {
 
   it("loads the next level after continue is clicked", () => {
     render(
-      <GameLayout
+      <GameSceneHarness
         initialEdges={overloadEdges}
         initialNodes={overloadNodes}
         levelConfig={winLevelConfig}
@@ -380,13 +436,13 @@ describe("level context UI", () => {
 
 describe("simulation gating", () => {
   it("start traffic button is disabled when canvas has no runnable path", () => {
-    render(<GameLayout initialNodes={overloadNodes} initialEdges={[]} />);
+    renderScene({ initialEdges: [], initialNodes: overloadNodes });
 
     expect(screen.getByRole("button", { name: /start traffic/iv })).toBeDisabled();
   });
 
   it("start traffic button is enabled when users node has an outgoing connection", () => {
-    render(<GameLayout initialEdges={overloadEdges} initialNodes={overloadNodes} />);
+    renderScene({ initialEdges: overloadEdges, initialNodes: overloadNodes });
 
     expect(screen.getByRole("button", { name: /start traffic/iv })).not.toBeDisabled();
   });
@@ -457,21 +513,12 @@ describe("coach panel", () => {
 
   it("shows a timed coach message during simulation", () => {
     // Level 3 has a coachMessage at atSecond: 2 about the database bottleneck
-    localStorage.setItem(
-      "sdb_progress",
-      JSON.stringify({
-        completedLevels: [levelRegistry.levels[0]!.id, levelRegistry.levels[1]!.id],
-        version: 1,
-      }),
-    );
-
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={overloadLevelConfig}
-      />,
-    );
+    renderScene({
+      currentLevel: level3,
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: overloadLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
@@ -482,13 +529,11 @@ describe("coach panel", () => {
   });
 
   it("shows a coaching message the first time overload occurs in a level", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={overloadLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: overloadLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
@@ -511,21 +556,11 @@ describe("event log", () => {
   });
 
   it("logs placement and connections in chronological order", () => {
-    localStorage.setItem(
-      "sdb_progress",
-      JSON.stringify({
-        completedLevels: [levelRegistry.levels[0]!.id, levelRegistry.levels[1]!.id],
-        version: 1,
-      }),
-    );
-
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={unlockedLevel3Nodes}
-        levelConfig={resolvingOverloadLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: unlockedLevel3Nodes,
+      levelConfig: resolvingOverloadLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
@@ -539,13 +574,11 @@ describe("event log", () => {
   });
 
   it("logs overload start and resolution events", () => {
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={resolvingOverloadLevelConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: resolvingOverloadLevelConfig,
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
@@ -569,13 +602,11 @@ describe("budget enforcement", () => {
       trafficTarget: 40,
     };
 
-    render(
-      <GameLayout
-        initialEdges={overloadEdges}
-        initialNodes={overloadNodes}
-        levelConfig={tightBudgetConfig}
-      />,
-    );
+    renderScene({
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: tightBudgetConfig,
+    });
 
     fireEvent.click(screen.getByTestId("resource-item-server"));
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.17] - 2026-05-19
+
+### Refactoring
+
+- **`GameLayout` accepted three props that were only ever passed in tests, leaking test seams into the public API**: `initialEdges`, `initialNodes`, and `levelConfig` were never supplied by any production call site — they existed solely so integration tests could inject specific traffic configs and graph states. This forced the component to handle two execution paths and spawned `resolveEffectiveLevelConfig` purely to reconcile the injected value with the level definition when no prop was given. Extracted `GameScene` (the former `GameLayoutContent`) as an exported component with explicit required props; `GameLayout` is now a zero-prop orchestrator that calls `useLevel()`, derives the level config from the current level, and wires everything into `GameScene` inside `SimulationProvider`. Tests that need scenario-specific configs or graphs render `GameScene` directly; the two tests that require real level-progression state (persistence and level transitions) use a `GameSceneHarness` wrapper that supplies a live `useLevel()` hook. `resolveEffectiveLevelConfig` and its test were deleted — there is no longer an optional override to resolve.
+
 ## [2.3.16] - 2026-05-18
 
 ### Refactoring

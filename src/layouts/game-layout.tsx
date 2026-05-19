@@ -10,7 +10,6 @@ import { Inspector } from "../components/inspector.js";
 import { LevelStrip } from "../components/level-strip.js";
 import { Resources } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
-import { levelRegistry } from "../levels/index.js";
 import { useCompactLayout } from "../hooks/use-compact-layout.js";
 import { useComponentUnlocks } from "../hooks/use-component-unlocks.js";
 import { useDesignModeOverloads } from "../hooks/use-design-mode-overloads.js";
@@ -19,48 +18,46 @@ import { useGameActions } from "../hooks/use-game-actions.js";
 import { useInspectorData } from "../hooks/use-inspector-data.js";
 import { useLevel } from "../hooks/use-level.js";
 import { useSimulationTick } from "../hooks/use-simulation-tick.js";
+import { levelRegistry } from "../levels/index.js";
+import type { LevelDefinition } from "../levels/types.js";
 import { toGraphEdge, toGraphNode } from "./graph-adapters.js";
-import { resolveEffectiveLevelConfig } from "./resolve-effective-level-config.js";
 import { hasRunnablePath } from "../simulation/engine.js";
 import type { LevelConfig } from "../simulation/types.js";
 import { SimulationProvider, useSimulation } from "../store.js";
 
 const MOBILE_LAYOUT_BREAKPOINT = 768;
 
-interface GameLayoutProps {
-  initialEdges?: ArchitectureEdge[];
-  initialNodes?: ArchitectureNode[];
-  levelConfig?: LevelConfig;
-}
-
-interface GameLayoutContentProps {
+interface GameSceneProps {
+  canvasKey: number;
+  completedLevels: string[];
+  currentLevel: LevelDefinition;
   initialEdges: ArchitectureEdge[];
   initialNodes: ArchitectureNode[];
-  levelConfig: LevelConfig | undefined;
+  levelConfig: LevelConfig;
+  loadLevel: (level: LevelDefinition) => {
+    newEdges: ArchitectureEdge[];
+    newNodes: ArchitectureNode[];
+  };
+  markLevelComplete: (levelId: string) => void;
 }
 
-const GameLayoutContent = ({
+const GameScene = ({
+  canvasKey,
+  completedLevels,
+  currentLevel,
   initialEdges,
   initialNodes,
-  levelConfig: propLevelConfig,
-}: GameLayoutContentProps) => {
+  levelConfig,
+  loadLevel,
+  markLevelComplete,
+}: GameSceneProps) => {
   const { currentTrafficRate, endSimulation, mode, nodeStates, startSimulation, tick } =
     useSimulation();
-
-  const {
-    canvasKey,
-    completedLevels,
-    currentLevel,
-    levelStartEdges,
-    levelStartNodes,
-    loadLevel,
-    markLevelComplete,
-  } = useLevel(initialNodes, initialEdges);
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
   const isCompactLayout = useCompactLayout(MOBILE_LAYOUT_BREAKPOINT);
   const { applySnapshot, availableComponents, resetForLevel, updateFromGraph } =
-    useComponentUnlocks(currentLevel, levelStartNodes);
+    useComponentUnlocks(currentLevel, initialNodes);
 
   const [coachMessage, setCoachMessage] = useState(`Mission: ${currentLevel.objectiveText}`);
   const [queuedComponentType, setQueuedComponentType] = useState<ComponentType | null>(null);
@@ -68,13 +65,11 @@ const GameLayoutContent = ({
   const [showEndScreen, setShowEndScreen] = useState(false);
 
   const [graphState, setGraphState] = useState(() => ({
-    edges: levelStartEdges,
-    nodes: levelStartNodes,
+    edges: initialEdges,
+    nodes: initialNodes,
   }));
 
   const previousAvailableComponentsRef = useRef<ComponentType[]>(currentLevel.availableComponents);
-
-  const effectiveLevelConfig = resolveEffectiveLevelConfig(propLevelConfig, currentLevel);
 
   const inspectorData = useInspectorData(selectedNodeId, graphState.nodes, nodeStates);
 
@@ -86,13 +81,9 @@ const GameLayoutContent = ({
     (sum, node) => sum + COMPONENT_LIBRARY[node.componentType].monthlyCost,
     0,
   );
-  const remainingBudget = effectiveLevelConfig.monthlyBudget - totalMonthlyCost;
+  const remainingBudget = levelConfig.monthlyBudget - totalMonthlyCost;
 
-  const designModeOverloadedNodeIds = useDesignModeOverloads(
-    mode,
-    graphState,
-    effectiveLevelConfig,
-  );
+  const designModeOverloadedNodeIds = useDesignModeOverloads(mode, graphState, levelConfig);
   const simulationOverloadedNodeIds = Object.entries(nodeStates)
     .filter(([, s]) => s.droppedOps > 0)
     .map(([id]) => id);
@@ -131,7 +122,7 @@ const GameLayoutContent = ({
   } = useGameActions({
     appendEvent,
     currentLevel,
-    effectiveLevelConfig,
+    effectiveLevelConfig: levelConfig,
     endSimulation,
     graphState,
     isRunnable,
@@ -156,7 +147,7 @@ const GameLayoutContent = ({
     applySnapshot,
     currentLevel,
     edges: graphState.edges,
-    effectiveLevelConfig,
+    effectiveLevelConfig: levelConfig,
     endSimulation,
     mode,
     nodes: graphState.nodes,
@@ -185,13 +176,13 @@ const GameLayoutContent = ({
         levelNumber={levelRegistry.getLevelNumber(currentLevel.id)}
         levelTitle={currentLevel.title}
         mode={mode}
-        monthlyBudget={effectiveLevelConfig.monthlyBudget}
+        monthlyBudget={levelConfig.monthlyBudget}
         objectiveText={currentLevel.objectiveText}
         onStartTraffic={handleToggleTraffic}
         remainingBudget={remainingBudget}
         startTrafficDisabled={!isRunnable}
         totalMonthlyCost={totalMonthlyCost}
-        trafficTarget={effectiveLevelConfig.trafficTarget}
+        trafficTarget={levelConfig.trafficTarget}
       />
       <LevelStrip
         completedLevelIds={completedLevels}
@@ -274,7 +265,7 @@ const GameLayoutContent = ({
       {showEndScreen && (
         <EndOfLevelScreen
           feedbackLines={currentLevel.feedbackText}
-          monthlyBudget={effectiveLevelConfig.monthlyBudget}
+          monthlyBudget={levelConfig.monthlyBudget}
           onContinue={handleContinue}
           onReplay={handleReplay}
           remainingBudget={remainingBudget}
@@ -285,14 +276,32 @@ const GameLayoutContent = ({
   );
 };
 
-const GameLayout = ({ initialEdges = [], initialNodes = [], levelConfig }: GameLayoutProps) => (
-  <SimulationProvider>
-    <GameLayoutContent
-      initialEdges={initialEdges}
-      initialNodes={initialNodes}
-      levelConfig={levelConfig}
-    />
-  </SimulationProvider>
-);
+const GameLayout = () => {
+  const { canvasKey, completedLevels, currentLevel, loadLevel, markLevelComplete } = useLevel();
 
-export { GameLayout };
+  const levelConfig: LevelConfig = {
+    cacheHitRate: currentLevel.cacheHitRate,
+    monthlyBudget: currentLevel.monthlyBudget,
+    timeout: currentLevel.timeout,
+    trafficPeak: currentLevel.trafficPeak,
+    trafficStart: currentLevel.trafficStart,
+    trafficTarget: currentLevel.trafficTarget,
+  };
+
+  return (
+    <SimulationProvider>
+      <GameScene
+        canvasKey={canvasKey}
+        completedLevels={completedLevels}
+        currentLevel={currentLevel}
+        initialEdges={currentLevel.startingEdges}
+        initialNodes={currentLevel.startingNodes}
+        levelConfig={levelConfig}
+        loadLevel={loadLevel}
+        markLevelComplete={markLevelComplete}
+      />
+    </SimulationProvider>
+  );
+};
+
+export { GameLayout, GameScene };
