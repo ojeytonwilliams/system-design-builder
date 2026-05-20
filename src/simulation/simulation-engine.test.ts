@@ -1,6 +1,6 @@
 import { SimulationEngine } from "./simulation-engine.js";
 import type { SimTick } from "./simulation-store.js";
-import type { LevelConfig, TrafficSnapshot } from "./types.js";
+import type { GraphNode, LevelConfig, TrafficSnapshot } from "./types.js";
 
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
@@ -103,5 +103,51 @@ describe(SimulationEngine, () => {
     const second = engine.getSnapshot();
 
     expect(first).toBe(second);
+  });
+});
+
+describe("tick", () => {
+  let engine: SimulationEngine;
+
+  beforeEach(() => {
+    engine = new SimulationEngine();
+  });
+
+  it("is a no-op when config has not been set", () => {
+    engine.setGraph([], []);
+    engine.tick(1);
+
+    expect(engine.getSnapshot().elapsedSeconds).toBe(0);
+  });
+
+  it("updates elapsed when config and graph are set", () => {
+    engine.setConfig(baseConfig);
+    engine.setGraph([], []);
+    engine.tick(1);
+
+    expect(engine.getSnapshot().elapsedSeconds).toBe(1);
+  });
+
+  it("notifies subscribers", () => {
+    engine.setConfig(baseConfig);
+    engine.setGraph([], []);
+    const listener = vi.fn<() => void>();
+    engine.subscribe(listener);
+    engine.tick(1);
+
+    expect(listener).toHaveBeenCalledOnce();
+  });
+
+  it("uses the graph nodes provided via setGraph", () => {
+    const node: GraphNode = {
+      capacity: 10,
+      id: "server-1",
+      type: "server",
+    };
+    engine.setConfig(baseConfig);
+    engine.setGraph([node], []);
+    engine.tick(1);
+
+    expect(engine.getSnapshot().nodeStates).toHaveProperty("server-1");
   });
 });

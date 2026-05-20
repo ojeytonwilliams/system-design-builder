@@ -59,7 +59,8 @@ const GameScene = ({
   engineRef.current ??= new SimulationEngine();
 
   const engine = engineRef.current;
-  const { currentTrafficRate, nodeStates } = useSimulationSnapshot(engine);
+  const { currentTrafficRate, elapsedSeconds, isTimedOut, isWon, nodeStates } =
+    useSimulationSnapshot(engine);
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
@@ -77,6 +78,8 @@ const GameScene = ({
   });
 
   const previousAvailableComponentsRef = useRef<ComponentType[]>(currentLevel.availableComponents);
+  const shownCoachMessageRef = useRef<Set<number>>(new Set());
+  const hasSeenOverloadThisLevelRef = useRef(false);
 
   const inspectorData = useInspectorData(selectedNodeId, graphState.nodes, nodeStates);
 
@@ -164,19 +167,70 @@ const GameScene = ({
     totalMonthlyCost,
   });
 
-  useSimulationTick({
-    appendEvent,
-    applySnapshot,
-    currentLevel,
-    dispatchPhase,
-    edges: graphState.edges,
-    effectiveLevelConfig: levelConfig,
-    engine,
-    isSimulating,
-    nodes: graphState.nodes,
-    onWin: handleWin,
-    setCoachMessage,
-  });
+  useEffect(() => {
+    engine.setGraph(graphState.nodes.map(toGraphNode), graphState.edges.map(toGraphEdge));
+  }, [graphState.nodes, graphState.edges, engine]);
+
+  useEffect(() => {
+    engine.setConfig(levelConfig);
+  }, [levelConfig, engine]);
+
+  useSimulationTick({ engine, isSimulating });
+
+  // Reset engine and per-level state whenever the level changes
+  useEffect(() => {
+    engine.reset();
+    shownCoachMessageRef.current = new Set();
+    hasSeenOverloadThisLevelRef.current = false;
+  }, [currentLevel.id, engine]);
+
+  // Direct subscription for overload event logging — runs synchronously per
+  // Engine notification so STARTED and RESOLVED on consecutive ticks are both captured
+  useEffect(
+    () =>
+      engine.subscribe(() => {
+        const snap = engine.getSnapshot();
+        if (snap.overloadEvent === "STARTED") {
+          appendEvent("Overload started");
+          if (!hasSeenOverloadThisLevelRef.current) {
+            setCoachMessage(
+              "Overload detected. Add capacity or spread traffic to reduce dropped requests.",
+            );
+            hasSeenOverloadThisLevelRef.current = true;
+          }
+        } else if (snap.overloadEvent === "RESOLVED") {
+          appendEvent("Overload resolved");
+        }
+      }),
+    [engine, appendEvent, setCoachMessage],
+  );
+
+  // Show timed coach messages as elapsed time advances
+  useEffect(() => {
+    currentLevel.coachMessages.forEach((message, index) => {
+      if (elapsedSeconds >= message.atSecond && !shownCoachMessageRef.current.has(index)) {
+        shownCoachMessageRef.current.add(index);
+        setCoachMessage(message.text);
+      }
+    });
+  }, [elapsedSeconds, currentLevel, setCoachMessage]);
+
+  // Apply traffic snapshot for component unlock tracking
+  useEffect(() => {
+    applySnapshot(nodeStates, graphState.nodes);
+  }, [nodeStates, applySnapshot, graphState.nodes]);
+
+  useEffect(() => {
+    if (isWon && isSimulating) {
+      handleWin();
+    }
+  }, [isWon, isSimulating, handleWin]);
+
+  useEffect(() => {
+    if (isTimedOut && isSimulating) {
+      dispatchPhase({ type: "TIMEOUT" });
+    }
+  }, [isTimedOut, isSimulating, dispatchPhase]);
 
   return (
     <div
