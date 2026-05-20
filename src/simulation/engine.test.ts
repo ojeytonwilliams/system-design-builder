@@ -1,4 +1,4 @@
-import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { computeTrafficFlow, getLinearTrafficRate, hasRunnablePath } from "./engine.js";
 
 const CACHE_HIT_RATE_NONE = 0;

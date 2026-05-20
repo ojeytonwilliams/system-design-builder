@@ -1,5 +1,5 @@
-import { COMPONENT_LIBRARY } from "./component-library.js";
-import type { ComponentType } from "./component-library.js";
+import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
+import type { ComponentType } from "../../domain/component-library.js";
 import { ResourceItem } from "./palette-item.js";
 
 interface ResourcesProps {

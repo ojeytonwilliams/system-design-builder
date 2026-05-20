@@ -1,19 +1,19 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { SimulationEngine } from "../simulation/simulation-engine.js";
-import { COMPONENT_LIBRARY } from "../components/component-library.js";
-import type { ComponentType } from "../components/component-library.js";
-import { Coach } from "../components/coach.js";
-import { EndOfLevelScreen } from "../components/end-of-level-screen.js";
-import { EventLog } from "../components/event-log.js";
-import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
-import { GameCanvas } from "../components/game-canvas.js";
-import { Inspector } from "../components/inspector.js";
-import { LevelStrip } from "../components/level-strip.js";
-import { Resources } from "../components/palette.js";
-import { TopBar } from "../components/top-bar.js";
-import { useCompactLayout } from "../hooks/use-compact-layout.js";
-import { useEventLog } from "../hooks/use-event-log.js";
-import { useLevel } from "../hooks/use-level.js";
+import { COMPONENT_LIBRARY } from "../domain/component-library.js";
+import type { ComponentType } from "../domain/component-library.js";
+import { Coach } from "./components/coach.js";
+import { EndOfLevelScreen } from "./components/end-of-level-screen.js";
+import { EventLog } from "./components/event-log.js";
+import type { ArchitectureEdge, ArchitectureNode } from "./components/game-canvas.js";
+import { GameCanvas } from "./components/game-canvas.js";
+import { Inspector } from "./components/inspector.js";
+import { LevelStrip } from "./components/level-strip.js";
+import { Resources } from "./components/palette.js";
+import { TopBar } from "./components/top-bar.js";
+import { useCompactLayout } from "./hooks/use-compact-layout.js";
+import { useEventLog } from "./hooks/use-event-log.js";
+import { useLevel } from "./hooks/use-level.js";
 import {
   continueLevel,
   loadLevel as executeLoadLevel,
@@ -23,9 +23,9 @@ import {
 import { getInspectorData } from "../game/node-analyser.js";
 import { placeComponent } from "../game/placement-actions.js";
 import { toggleTraffic, winLevel } from "../game/traffic-actions.js";
-import { usePhase } from "../hooks/use-phase.js";
-import { useSimulationSnapshot } from "../hooks/use-simulation-snapshot.js";
-import { useSimulationTick } from "../hooks/use-simulation-tick.js";
+import { usePhase } from "./hooks/use-phase.js";
+import { useSimulationSnapshot } from "./hooks/use-simulation-snapshot.js";
+import { useSimulationTick } from "./hooks/use-simulation-tick.js";
 import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { graphReducer } from "../game/graph-reducer.js";

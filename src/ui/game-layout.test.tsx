@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
-import { useLevel } from "../hooks/use-level.js";
-import { GameLayout, GameScene } from "../layouts/game-layout.js";
+import type { ArchitectureEdge, ArchitectureNode } from "./components/game-canvas.js";
+import { useLevel } from "./hooks/use-level.js";
+import { GameLayout, GameScene } from "./game-layout.js";
 import { levelRegistry } from "../levels/index.js";
 import { level1 } from "../levels/level1.js";
 import { level3 } from "../levels/level3.js";

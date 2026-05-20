@@ -2,9 +2,9 @@ import {
   getNextNodeId,
   isConnectionValid,
   removeNodeAndConnections,
-} from "../components/canvas-logic.js";
-import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
-import type { ComponentType } from "../components/component-library.js";
+} from "../domain/canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
+import type { ComponentType } from "../domain/component-library.js";
 
 interface GraphState {
   edges: ArchitectureEdge[];

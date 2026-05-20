@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { testLevels } from "../levels/test-fixtures.js";
+import { testLevels } from "../../levels/test-fixtures.js";
 import { LevelStrip } from "./level-strip.js";
 
-vi.mock(import("../levels/index.js"), async (importOriginal) => {
-  const { testLevels: fixtures } = await import("../levels/test-fixtures.js");
+vi.mock(import("../../levels/index.js"), async (importOriginal) => {
+  const { testLevels: fixtures } = await import("../../levels/test-fixtures.js");
   const mod = await importOriginal();
   return {
     ...mod,

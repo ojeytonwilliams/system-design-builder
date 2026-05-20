@@ -1,4 +1,4 @@
-import type { ComponentType } from "../components/component-library.js";
+import type { ComponentType } from "../domain/component-library.js";
 
 type PlaceResult =
   | { componentType: ComponentType; type: "QUEUED" }

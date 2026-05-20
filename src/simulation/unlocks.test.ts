@@ -1,4 +1,4 @@
-import type { ArchitectureNode } from "../components/canvas-logic.js";
+import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import {
   computeAvailableComponents,
   evaluateUnlockTrigger,

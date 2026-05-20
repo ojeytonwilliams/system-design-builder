@@ -1,6 +1,6 @@
-import { COMPONENT_LIBRARY } from "../components/component-library.js";
-import type { ComponentType } from "../components/component-library.js";
-import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
+import { COMPONENT_LIBRARY } from "../domain/component-library.js";
+import type { ComponentType } from "../domain/component-library.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import type { FlowConfig, TrafficSnapshot } from "./types.js";
 
 interface ForwardingOptions {

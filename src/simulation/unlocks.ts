@@ -1,5 +1,5 @@
-import type { ComponentType } from "../components/component-library.js";
-import type { ArchitectureNode } from "../components/canvas-logic.js";
+import type { ComponentType } from "../domain/component-library.js";
+import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import type { ComponentUnlock, UnlockTrigger } from "../levels/types.js";
 import type { TrafficSnapshot } from "./types.js";
 

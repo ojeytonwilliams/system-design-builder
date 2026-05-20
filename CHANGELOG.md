@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.25] - 2026-05-20
+
+### Refactoring
+
+- **Reorganised `src/` by conceptual layer** rather than technical category. `components/` conflated React UI files with foundational domain types; the latter are now in `src/domain/` (`component-library.ts`, `canvas-logic.ts`, `bezier-utils.ts`). All React components moved to `src/ui/components/`, hooks to `src/ui/hooks/`, and `game-layout.tsx` (with its integration test) into `src/ui/` — collapsing the single-file `layouts/` and `integration-tests/` folders. `hooks/` is gone as a top-level folder; its files now live alongside the UI layer they belong to. Layers in order of dependency: `domain` ← `simulation` ← `game` / `levels` ← `ui`.
+
 ## [2.3.24] - 2026-05-20
 
 ### Refactoring

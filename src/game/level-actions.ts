@@ -1,6 +1,6 @@
 import type { Dispatch } from "react";
-import type { ComponentType } from "../components/component-library.js";
-import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
+import type { ComponentType } from "../domain/component-library.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import type { LevelDefinition } from "../levels/types.js";
 import type { GraphAction } from "./graph-reducer.js";
 import type { PhaseAction } from "./phase-machine.js";

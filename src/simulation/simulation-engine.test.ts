@@ -1,4 +1,4 @@
-import type { ArchitectureNode } from "../components/canvas-logic.js";
+import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import { SimulationEngine } from "./simulation-engine.js";
 import type { SimTick } from "./simulation-store.js";
 import type { LevelConfig, TrafficSnapshot } from "./types.js";

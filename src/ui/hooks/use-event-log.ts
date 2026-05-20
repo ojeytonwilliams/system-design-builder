@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { COMPONENT_LIBRARY } from "../components/component-library.js";
+import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import type { EventLogEntry } from "../components/event-log.js";
 

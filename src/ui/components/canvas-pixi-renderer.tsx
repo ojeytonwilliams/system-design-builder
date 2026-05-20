@@ -2,16 +2,20 @@ import { Application, extend, useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { drawArrowHead, drawDashedBezier, getBezierControlPoints } from "./bezier-utils.js";
+import {
+  drawArrowHead,
+  drawDashedBezier,
+  getBezierControlPoints,
+} from "../../domain/bezier-utils.js";
 import {
   chooseBestHandles,
   getHandlePosition,
   NODE_MIN_HEIGHT,
   NODE_WIDTH,
   snapPositionToGrid,
-} from "./canvas-logic.js";
-import type { ArchitectureEdge, ArchitectureNode, HandleSide } from "./canvas-logic.js";
-import { COMPONENT_LIBRARY } from "./component-library.js";
+} from "../../domain/canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode, HandleSide } from "../../domain/canvas-logic.js";
+import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
 
 // oxlint-disable-next-line jest/require-hook
 extend({ Container, Graphics, Text });

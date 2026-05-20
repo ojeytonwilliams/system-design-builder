@@ -1,4 +1,4 @@
-import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { graphReducer } from "./graph-reducer.js";
 import type { GraphState } from "./graph-reducer.js";
 

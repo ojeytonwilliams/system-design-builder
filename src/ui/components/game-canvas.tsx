@@ -5,14 +5,14 @@ import {
   DEFAULT_LOCKED_NODE_IDS,
   DEFAULT_OVERLOADED_NODE_IDS,
   snapPositionToGrid,
-} from "./canvas-logic.js";
-import type { ArchitectureEdge, ArchitectureNode } from "./canvas-logic.js";
+} from "../../domain/canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../../domain/canvas-logic.js";
 import { CanvasPixiRenderer } from "./canvas-pixi-renderer.js";
-import { isComponentType } from "./component-library.js";
-import type { ComponentType } from "./component-library.js";
-import { canvasUIReducer } from "../game/canvas-ui-reducer.js";
-import type { ContextMenuState } from "../game/canvas-ui-reducer.js";
-import type { GraphAction } from "../game/graph-reducer.js";
+import { isComponentType } from "../../domain/component-library.js";
+import type { ComponentType } from "../../domain/component-library.js";
+import { canvasUIReducer } from "../../game/canvas-ui-reducer.js";
+import type { ContextMenuState } from "../../game/canvas-ui-reducer.js";
+import type { GraphAction } from "../../game/graph-reducer.js";
 
 const CANVAS_BACKGROUND = "#f8f5ec";
 

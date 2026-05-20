@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import type { SimulationEngine } from "../simulation/simulation-engine.js";
-import { SimulationLoop } from "../simulation/simulation-loop.js";
+import type { SimulationEngine } from "../../simulation/simulation-engine.js";
+import { SimulationLoop } from "../../simulation/simulation-loop.js";
 
 interface UseSimulationTickParams {
   engine: SimulationEngine;

@@ -1,5 +1,5 @@
-import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
-import type { ComponentType } from "../components/component-library.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
+import type { ComponentType } from "../domain/component-library.js";
 
 interface CapacityReachedTrigger {
   type: "CAPACITY_REACHED";

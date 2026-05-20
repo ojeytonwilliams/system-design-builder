@@ -1,4 +1,4 @@
-import type { ComponentType } from "./component-library.js";
+import type { ComponentType } from "../../domain/component-library.js";
 import type { DragEvent } from "react";
 
 interface ResourceItemProps {

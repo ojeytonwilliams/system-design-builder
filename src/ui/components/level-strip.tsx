@@ -1,4 +1,4 @@
-import { levelRegistry } from "../levels/index.js";
+import { levelRegistry } from "../../levels/index.js";
 
 type LevelStatus = "active" | "completed" | "locked";
 

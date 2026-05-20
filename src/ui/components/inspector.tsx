@@ -1,4 +1,4 @@
-import type { ComponentType } from "./component-library.js";
+import type { ComponentType } from "../../domain/component-library.js";
 
 const TYPE_LABELS: Record<ComponentType, string> = {
   cache: "Cache",

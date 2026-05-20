@@ -1,6 +1,6 @@
-import { COMPONENT_LIBRARY } from "../components/component-library.js";
-import type { ArchitectureNode } from "../components/game-canvas.js";
-import type { InspectorProps } from "../components/inspector.js";
+import { COMPONENT_LIBRARY } from "../domain/component-library.js";
+import type { ArchitectureNode } from "../ui/components/game-canvas.js";
+import type { InspectorProps } from "../ui/components/inspector.js";
 import type { TrafficSnapshot } from "../simulation/types.js";
 
 const getInspectorData = (

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import type { GraphAction } from "../game/graph-reducer.js";
+import type { GraphAction } from "../../game/graph-reducer.js";
 import { GameCanvas } from "./game-canvas.js";
 
 // oxlint-disable-next-line vitest/require-top-level-describe

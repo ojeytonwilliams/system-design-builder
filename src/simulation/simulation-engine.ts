@@ -1,4 +1,4 @@
-import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "./engine.js";
 import { computeNextSimState, getInitialSnapshot } from "./simulation-store.js";
 import type { SimTick, SimulationSnapshot } from "./simulation-store.js";
