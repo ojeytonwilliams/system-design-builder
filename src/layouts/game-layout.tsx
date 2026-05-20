@@ -30,7 +30,6 @@ import type { LevelConfig } from "../simulation/types.js";
 const MOBILE_LAYOUT_BREAKPOINT = 768;
 
 interface GameSceneProps {
-  canvasKey: number;
   completedLevels: string[];
   currentLevel: LevelDefinition;
   initialEdges: ArchitectureEdge[];
@@ -44,7 +43,6 @@ interface GameSceneProps {
 }
 
 const GameScene = ({
-  canvasKey,
   completedLevels,
   currentLevel,
   initialEdges,
@@ -168,7 +166,6 @@ const GameScene = ({
     isSimulating,
     nodes: graphState.nodes,
     onWin: handleWin,
-    resetKey: canvasKey,
     setCoachMessage,
   });
 
@@ -230,7 +227,6 @@ const GameScene = ({
             edges={graphState.edges}
             isLocked={isSimulating}
             isSimulating={isSimulating}
-            key={canvasKey}
             lockedNodeIds={currentLevel.lockedNodeIds}
             nodes={graphState.nodes}
             onComponentPlaced={handleComponentPlaced}
@@ -292,7 +288,7 @@ const GameScene = ({
 };
 
 const GameLayout = () => {
-  const { canvasKey, completedLevels, currentLevel, loadLevel, markLevelComplete } = useLevel();
+  const { completedLevels, currentLevel, loadLevel, markLevelComplete } = useLevel();
 
   const levelConfig: LevelConfig = {
     cacheHitRate: currentLevel.cacheHitRate,
@@ -306,7 +302,6 @@ const GameLayout = () => {
 
   return (
     <GameScene
-      canvasKey={canvasKey}
       completedLevels={completedLevels}
       currentLevel={currentLevel}
       initialEdges={currentLevel.startingEdges}

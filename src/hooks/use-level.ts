@@ -11,7 +11,6 @@ interface LoadLevelResult {
 }
 
 interface UseLevelResult {
-  canvasKey: number;
   completedLevels: string[];
   currentLevel: LevelDefinition;
   loadLevel: (level: LevelDefinition) => LoadLevelResult;
@@ -26,13 +25,11 @@ const useLevel = (): UseLevelResult => {
   const [completedLevels, setCompletedLevels] = useState<string[]>(
     () => loadProgress().completedLevels,
   );
-  const [canvasKey, setCanvasKey] = useState(0);
 
   const currentLevel = levelRegistry.getLevelById(currentLevelId) ?? level1;
 
   const loadLevel = useCallback((level: LevelDefinition): LoadLevelResult => {
     setCurrentLevelId(level.id);
-    setCanvasKey((k) => k + 1);
     return { newEdges: level.startingEdges, newNodes: level.startingNodes };
   }, []);
 
@@ -47,7 +44,6 @@ const useLevel = (): UseLevelResult => {
   }, []);
 
   return {
-    canvasKey,
     completedLevels,
     currentLevel,
     loadLevel,

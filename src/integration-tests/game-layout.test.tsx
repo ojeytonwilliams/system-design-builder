@@ -114,7 +114,6 @@ const renderScene = (overrides: Partial<typeof defaultSceneProps> = {}) => {
   const p = { ...defaultSceneProps, ...overrides };
   return render(
     <GameScene
-      canvasKey={p.canvasKey}
       completedLevels={p.completedLevels}
       currentLevel={p.currentLevel}
       initialEdges={p.initialEdges}
@@ -136,11 +135,10 @@ const GameSceneHarness = ({
   initialNodes: ArchitectureNode[];
   levelConfig: LevelConfig;
 }) => {
-  const { canvasKey, completedLevels, currentLevel, loadLevel, markLevelComplete } = useLevel();
+  const { completedLevels, currentLevel, loadLevel, markLevelComplete } = useLevel();
 
   return (
     <GameScene
-      canvasKey={canvasKey}
       completedLevels={completedLevels}
       currentLevel={currentLevel}
       initialEdges={initialEdges}

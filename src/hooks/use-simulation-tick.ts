@@ -19,7 +19,6 @@ interface UseSimulationTickParams {
   isSimulating: boolean;
   nodes: ArchitectureNode[];
   onWin: () => void;
-  resetKey: number;
   setCoachMessage: (message: string) => void;
 }
 
@@ -33,7 +32,6 @@ const useSimulationTick = ({
   isSimulating,
   nodes,
   onWin,
-  resetKey,
   setCoachMessage,
 }: UseSimulationTickParams): void => {
   const shownCoachMessageRef = useRef<Set<number>>(new Set());
@@ -60,7 +58,7 @@ const useSimulationTick = ({
     simulationEngine.reset();
     shownCoachMessageRef.current = new Set();
     hasSeenOverloadThisLevelRef.current = false;
-  }, [resetKey]);
+  }, [currentLevel.id]);
 
   // Direct subscription for overload event logging.
   // Runs synchronously per engine notification, independent of React rendering.
@@ -112,7 +110,7 @@ const useSimulationTick = ({
     return () => {
       loop.stop();
     };
-  }, [isSimulating, resetKey, effectiveLevelConfig]);
+  }, [isSimulating, effectiveLevelConfig]);
 
   // Show timed coach messages as elapsed time advances
   useEffect(() => {
