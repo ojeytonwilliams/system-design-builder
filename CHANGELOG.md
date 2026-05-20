@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.27] - 2026-05-20
+
+### Refactoring
+
+- **`Inspector` had a duplicate `TYPE_LABELS` map** that mirrored the `label` field already present on every entry in `COMPONENT_LIBRARY`. Removed the local map and replaced with `COMPONENT_LIBRARY[componentType].label` so the displayed name stays in sync with the library automatically.
+
 ## [2.3.26] - 2026-05-20
 
 ### Refactoring

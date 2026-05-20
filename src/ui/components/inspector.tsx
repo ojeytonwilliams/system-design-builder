@@ -1,14 +1,5 @@
+import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
 import type { ComponentType } from "../../domain/component-library.js";
-
-const TYPE_LABELS: Record<ComponentType, string> = {
-  cache: "Cache",
-  db: "Database",
-  "db-large": "Large Database",
-  "load-balancer": "Load Balancer",
-  server: "Server",
-  "server-large": "Large Server",
-  users: "Traffic Source",
-};
 
 interface InspectorProps {
   componentType?: ComponentType | undefined;
@@ -55,7 +46,8 @@ const Inspector = ({
 
   const costText = cost === undefined ? undefined : `Cost: $${cost}/hr`;
 
-  const typeLabel = componentType === undefined ? undefined : TYPE_LABELS[componentType];
+  const typeLabel =
+    componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].label;
 
   return (
     <div

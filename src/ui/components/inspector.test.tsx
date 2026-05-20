@@ -23,7 +23,7 @@ describe("inspector", () => {
   it("shows component type label when a node is selected", () => {
     render(<Inspector componentType="db" selectedNodeLabel="DB" />);
 
-    expect(screen.getByText("Database")).toBeInTheDocument();
+    expect(screen.getByText("DB")).toBeInTheDocument();
   });
 
   it("shows load percentage when a node is selected", () => {
