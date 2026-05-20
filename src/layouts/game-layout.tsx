@@ -29,7 +29,6 @@ import { useSimulationTick } from "../hooks/use-simulation-tick.js";
 import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { graphReducer } from "../game/graph-reducer.js";
-import { toGraphEdge, toGraphNode } from "./graph-adapters.js";
 import { hasRunnablePath } from "../simulation/engine.js";
 import { computeAvailableComponents } from "../simulation/unlocks.js";
 import type { LevelConfig } from "../simulation/types.js";
@@ -89,10 +88,7 @@ const GameScene = ({
 
   const inspectorData = getInspectorData(selectedNodeId, graphState.nodes, nodeStates);
 
-  const isRunnable = hasRunnablePath(
-    graphState.nodes.map(toGraphNode),
-    graphState.edges.map(toGraphEdge),
-  );
+  const isRunnable = hasRunnablePath(graphState.nodes, graphState.edges);
   const totalMonthlyCost = graphState.nodes.reduce(
     (sum, node) => sum + COMPONENT_LIBRARY[node.componentType].monthlyCost,
     0,
@@ -103,7 +99,7 @@ const GameScene = ({
     currentLevel.availableComponents,
     currentLevel.componentUnlocks,
     {
-      graphNodes: graphState.nodes.map(toGraphNode),
+      graphNodes: graphState.nodes,
       overloadDurations: simSnapshot.overloadDurations,
       snapshot: simSnapshot.nodeStates,
     },
@@ -189,7 +185,7 @@ const GameScene = ({
   const handleToggleTraffic = () => toggleTraffic(phase, isRunnable, dispatchPhase);
 
   useEffect(() => {
-    engine.setGraph(graphState.nodes.map(toGraphNode), graphState.edges.map(toGraphEdge));
+    engine.setGraph(graphState.nodes, graphState.edges);
   }, [graphState.nodes, graphState.edges, engine]);
 
   useEffect(() => {

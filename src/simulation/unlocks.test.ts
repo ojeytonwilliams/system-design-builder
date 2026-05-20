@@ -1,12 +1,15 @@
+import type { ArchitectureNode } from "../components/canvas-logic.js";
 import {
   computeAvailableComponents,
   evaluateUnlockTrigger,
   updateOverloadDurations,
 } from "./unlocks.js";
-import type { GraphNode, TrafficSnapshot } from "./types.js";
+import type { TrafficSnapshot } from "./types.js";
+
+const pos = { x: 0, y: 0 };
 
 const emptyInput = {
-  graphNodes: [] as GraphNode[],
+  graphNodes: [] as ArchitectureNode[],
   overloadDurations: new Map<string, number>(),
   snapshot: {} as TrafficSnapshot,
 };
@@ -19,9 +22,9 @@ const normalSnapshot: TrafficSnapshot = {
   "server-1": { droppedOps: 0, handledOps: 40, incomingOps: 40 },
 };
 
-const twoServerNodes: GraphNode[] = [
-  { capacity: 50, id: "server-1", type: "server" },
-  { capacity: 50, id: "server-2", type: "server" },
+const twoServerNodes: ArchitectureNode[] = [
+  { componentType: "server", id: "server-1", position: pos },
+  { componentType: "server", id: "server-2", position: pos },
 ];
 
 describe(evaluateUnlockTrigger, () => {
@@ -86,9 +89,9 @@ describe(evaluateUnlockTrigger, () => {
     });
 
     it("returns true when more than the required number of servers are present", () => {
-      const threeServers: GraphNode[] = [
+      const threeServers: ArchitectureNode[] = [
         ...twoServerNodes,
-        { capacity: 50, id: "server-3", type: "server" },
+        { componentType: "server", id: "server-3", position: pos },
       ];
       const input = { ...emptyInput, graphNodes: threeServers };
 
@@ -96,9 +99,9 @@ describe(evaluateUnlockTrigger, () => {
     });
 
     it("counts server-large nodes toward the server count", () => {
-      const mixedServers: GraphNode[] = [
-        { capacity: 50, id: "server-1", type: "server" },
-        { capacity: 150, id: "server-lg-1", type: "server-large" },
+      const mixedServers: ArchitectureNode[] = [
+        { componentType: "server", id: "server-1", position: pos },
+        { componentType: "server-large", id: "server-lg-1", position: pos },
       ];
       const input = { ...emptyInput, graphNodes: mixedServers };
 
@@ -106,16 +109,18 @@ describe(evaluateUnlockTrigger, () => {
     });
 
     it("returns false when fewer than the required number of servers are present", () => {
-      const oneServer: GraphNode[] = [{ capacity: 50, id: "server-1", type: "server" }];
+      const oneServer: ArchitectureNode[] = [
+        { componentType: "server", id: "server-1", position: pos },
+      ];
       const input = { ...emptyInput, graphNodes: oneServer };
 
       expect(evaluateUnlockTrigger({ count: 2, type: "SERVERS_PLACED" }, input)).toBe(false);
     });
 
     it("does not count non-server nodes toward the server count", () => {
-      const mixedNodes: GraphNode[] = [
-        { capacity: 50, id: "server-1", type: "server" },
-        { capacity: 30, id: "db-1", type: "db" },
+      const mixedNodes: ArchitectureNode[] = [
+        { componentType: "server", id: "server-1", position: pos },
+        { componentType: "db", id: "db-1", position: pos },
       ];
       const input = { ...emptyInput, graphNodes: mixedNodes };
 

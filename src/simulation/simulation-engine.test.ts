@@ -1,6 +1,7 @@
+import type { ArchitectureNode } from "../components/canvas-logic.js";
 import { SimulationEngine } from "./simulation-engine.js";
 import type { SimTick } from "./simulation-store.js";
-import type { GraphNode, LevelConfig, TrafficSnapshot } from "./types.js";
+import type { LevelConfig, TrafficSnapshot } from "./types.js";
 
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
@@ -139,10 +140,10 @@ describe("tick", () => {
   });
 
   it("uses the graph nodes provided via setGraph", () => {
-    const node: GraphNode = {
-      capacity: 10,
+    const node: ArchitectureNode = {
+      componentType: "server",
       id: "server-1",
-      type: "server",
+      position: { x: 0, y: 0 },
     };
     engine.setConfig(baseConfig);
     engine.setGraph([node], []);

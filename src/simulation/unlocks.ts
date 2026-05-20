@@ -1,13 +1,14 @@
 import type { ComponentType } from "../components/component-library.js";
+import type { ArchitectureNode } from "../components/canvas-logic.js";
 import type { ComponentUnlock, UnlockTrigger } from "../levels/types.js";
-import type { GraphNode, TrafficSnapshot } from "./types.js";
+import type { TrafficSnapshot } from "./types.js";
 
 type OverloadDurations = Map<string, number>;
 
 const SERVER_TYPES = new Set<ComponentType>(["server", "server-large"]);
 
 interface EvaluateUnlockInput {
-  graphNodes: GraphNode[];
+  graphNodes: ArchitectureNode[];
   overloadDurations: OverloadDurations;
   snapshot: TrafficSnapshot;
 }
@@ -38,7 +39,7 @@ const evaluateUnlockTrigger = (trigger: UnlockTrigger, input: EvaluateUnlockInpu
       );
 
     case "SERVERS_PLACED": {
-      const count = input.graphNodes.filter((n) => SERVER_TYPES.has(n.type)).length;
+      const count = input.graphNodes.filter((n) => SERVER_TYPES.has(n.componentType)).length;
 
       return count >= trigger.count;
     }

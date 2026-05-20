@@ -1,5 +1,7 @@
+import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
-import type { FlowConfig, GraphEdge, GraphNode, TrafficSnapshot } from "./types.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
+import type { FlowConfig, TrafficSnapshot } from "./types.js";
 
 interface ForwardingOptions {
   cacheHitRate: number;
@@ -45,12 +47,12 @@ const getLinearTrafficRate = ({
 };
 
 const computeTrafficFlow = (
-  nodes: GraphNode[],
-  edges: GraphEdge[],
+  nodes: ArchitectureNode[],
+  edges: ArchitectureEdge[],
   config: FlowConfig,
 ): TrafficSnapshot => {
   const { cacheHitRate, trafficRate } = config;
-  const nodeMap = new Map<string, GraphNode>(nodes.map((n) => [n.id, n]));
+  const nodeMap = new Map<string, ArchitectureNode>(nodes.map((n) => [n.id, n]));
   const outgoing = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
   const incoming = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
 
@@ -62,7 +64,7 @@ const computeTrafficFlow = (
   // BFS from Users nodes to establish processing order
   const visited = new Set<string>();
   const order: string[] = [];
-  const queue: string[] = nodes.filter((n) => n.type === "users").map((n) => n.id);
+  const queue: string[] = nodes.filter((n) => n.componentType === "users").map((n) => n.id);
 
   while (queue.length > 0) {
     const nodeId = queue.shift();
@@ -97,7 +99,7 @@ const computeTrafficFlow = (
     if (node !== undefined) {
       let incomingOps = 0;
 
-      if (node.type === "users") {
+      if (node.componentType === "users") {
         incomingOps = trafficRate;
       } else {
         incomingOps = (incoming.get(nodeId) ?? []).reduce(
@@ -108,13 +110,14 @@ const computeTrafficFlow = (
 
       let handledOps = 0;
       let droppedOps = 0;
+      const { capacity } = COMPONENT_LIBRARY[node.componentType];
 
-      if (node.type === "load-balancer") {
+      if (node.componentType === "load-balancer") {
         handledOps = incomingOps;
         droppedOps = 0;
       } else {
-        handledOps = Math.min(incomingOps, node.capacity);
-        droppedOps = Math.max(0, incomingOps - node.capacity);
+        handledOps = Math.min(incomingOps, capacity);
+        droppedOps = Math.max(0, incomingOps - capacity);
       }
 
       snapshot[nodeId] = { droppedOps, handledOps, incomingOps };
@@ -123,7 +126,7 @@ const computeTrafficFlow = (
       const numChildren = children.length;
 
       if (numChildren > 0) {
-        const forwarded = computeForwardedOps(node.type, handledOps, {
+        const forwarded = computeForwardedOps(node.componentType, handledOps, {
           cacheHitRate,
           numChildren,
         });
@@ -138,8 +141,8 @@ const computeTrafficFlow = (
   return snapshot;
 };
 
-const hasRunnablePath = (nodes: GraphNode[], edges: GraphEdge[]): boolean => {
-  const usersNodeIds = new Set(nodes.filter((n) => n.type === "users").map((n) => n.id));
+const hasRunnablePath = (nodes: ArchitectureNode[], edges: ArchitectureEdge[]): boolean => {
+  const usersNodeIds = new Set(nodes.filter((n) => n.componentType === "users").map((n) => n.id));
 
   return edges.some((e) => usersNodeIds.has(e.source));
 };

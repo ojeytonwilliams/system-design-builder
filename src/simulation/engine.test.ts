@@ -1,49 +1,48 @@
+import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
 import { computeTrafficFlow, getLinearTrafficRate, hasRunnablePath } from "./engine.js";
-import type { GraphEdge, GraphNode } from "./types.js";
 
 const CACHE_HIT_RATE_NONE = 0;
-const SERVER_CAPACITY = 50;
-const DB_CAPACITY = 30;
-const CACHE_CAPACITY = 200;
-const LARGE_SERVER_CAPACITY = 150;
 
-const usersNode = (id = "users-1"): GraphNode => ({
-  capacity: Infinity,
+const pos = { x: 0, y: 0 };
+
+const usersNode = (id = "users-1"): ArchitectureNode => ({
+  componentType: "users",
   id,
-  type: "users",
+  position: pos,
 });
 
-const serverNode = (id = "server-1", capacity = SERVER_CAPACITY): GraphNode => ({
-  capacity,
+const serverNode = (id = "server-1"): ArchitectureNode => ({
+  componentType: "server",
   id,
-  type: "server",
+  position: pos,
 });
 
-const largeServerNode = (id = "server-lg-1", capacity = LARGE_SERVER_CAPACITY): GraphNode => ({
-  capacity,
+const largeServerNode = (id = "server-lg-1"): ArchitectureNode => ({
+  componentType: "server-large",
   id,
-  type: "server-large",
+  position: pos,
 });
 
-const dbNode = (id = "db-1", capacity = DB_CAPACITY): GraphNode => ({
-  capacity,
+const dbNode = (id = "db-1"): ArchitectureNode => ({
+  componentType: "db",
   id,
-  type: "db",
+  position: pos,
 });
 
-const cacheNode = (id = "cache-1", capacity = CACHE_CAPACITY): GraphNode => ({
-  capacity,
+const cacheNode = (id = "cache-1"): ArchitectureNode => ({
+  componentType: "cache",
   id,
-  type: "cache",
+  position: pos,
 });
 
-const lbNode = (id = "lb-1"): GraphNode => ({
-  capacity: Infinity,
+const lbNode = (id = "lb-1"): ArchitectureNode => ({
+  componentType: "load-balancer",
   id,
-  type: "load-balancer",
+  position: pos,
 });
 
-const edge = (source: string, target: string): GraphEdge => ({
+const edge = (source: string, target: string): ArchitectureEdge => ({
+  id: `${source}-${target}`,
   source,
   target,
 });
@@ -83,21 +82,23 @@ describe("traffic flow", () => {
     });
 
     it("server handles traffic up to its capacity", () => {
-      const nodes = [usersNode(), serverNode("server-1", 40)];
+      // server capacity = 50
+      const nodes = [usersNode(), serverNode()];
       const edges = [edge("users-1", "server-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(80));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(100));
 
-      expect(result["server-1"]?.handledOps).toBe(40);
+      expect(result["server-1"]?.handledOps).toBe(50);
     });
 
     it("server drops traffic that exceeds its capacity", () => {
-      const nodes = [usersNode(), serverNode("server-1", 40)];
+      // server capacity = 50
+      const nodes = [usersNode(), serverNode()];
       const edges = [edge("users-1", "server-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(80));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(100));
 
-      expect(result["server-1"]?.droppedOps).toBe(40);
+      expect(result["server-1"]?.droppedOps).toBe(50);
     });
 
     it("server has zero dropped ops when traffic is within capacity", () => {
@@ -110,6 +111,7 @@ describe("traffic flow", () => {
     });
 
     it("large server handles traffic up to its higher capacity", () => {
+      // server-large capacity = 150
       const nodes = [usersNode(), largeServerNode()];
       const edges = [edge("users-1", "server-lg-1")];
 
@@ -120,6 +122,7 @@ describe("traffic flow", () => {
     });
 
     it("large server drops traffic exceeding its capacity", () => {
+      // server-large capacity = 150
       const nodes = [usersNode(), largeServerNode()];
       const edges = [edge("users-1", "server-lg-1")];
 
@@ -140,12 +143,13 @@ describe("traffic flow", () => {
     });
 
     it("the db only receives handled (not dropped) ops from server", () => {
-      const nodes = [usersNode(), serverNode("server-1", 40), dbNode()];
+      // server capacity = 50
+      const nodes = [usersNode(), serverNode(), dbNode()];
       const edges = [edge("users-1", "server-1"), edge("server-1", "db-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(80));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(100));
 
-      expect(result["db-1"]?.incomingOps).toBe(40);
+      expect(result["db-1"]?.incomingOps).toBe(50);
     });
 
     it("disconnected node has zero incoming ops", () => {
@@ -244,10 +248,11 @@ describe("traffic flow", () => {
     });
 
     it("cache can become overloaded when incoming ops exceed its capacity", () => {
-      const nodes = [usersNode(), serverNode("server-1", 500), cacheNode("cache-1", 200)];
-      const edges = [edge("users-1", "server-1"), edge("server-1", "cache-1")];
+      // users has infinite capacity, so all 300 ops reach the cache (capacity = 200)
+      const nodes = [usersNode(), cacheNode()];
+      const edges = [edge("users-1", "cache-1")];
 
-      const result = computeTrafficFlow(nodes, edges, flowConfig(300, 0.5));
+      const result = computeTrafficFlow(nodes, edges, flowConfig(300));
 
       expect(result["cache-1"]?.incomingOps).toBe(300);
       expect(result["cache-1"]?.handledOps).toBe(200);

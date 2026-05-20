@@ -6,6 +6,8 @@
 
 - **`useDesignModeOverloads` computed a static overload preview in design mode** by running `computeTrafficFlow` with `trafficStart` whenever the graph changed. After review, this feature added complexity without clear benefit — the same overload information becomes available immediately when the simulation starts. Removed the hook, its tests, and the design-mode branch; `overloadedNodeIds` is now an empty array outside of simulation.
 
+- **`GraphNode` and `GraphEdge` were a redundant translation layer**: the simulation functions (`computeTrafficFlow`, `hasRunnablePath`, `unlocks`) converted from `ArchitectureNode`/`ArchitectureEdge` at every call site via adapter functions, but none of the simulation logic required the translated shape — it only needed `componentType` and `id`, both present on `ArchitectureNode`. Removed `GraphNode`, `GraphEdge`, and `graph-adapters.ts`; the simulation layer now works directly with `ArchitectureNode`/`ArchitectureEdge`, and capacity is looked up from `COMPONENT_LIBRARY` inside `engine.ts`.
+
 ## [2.3.23] - 2026-05-20
 
 ### Refactoring

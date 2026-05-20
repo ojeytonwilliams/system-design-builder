@@ -1,13 +1,14 @@
+import type { ArchitectureEdge, ArchitectureNode } from "../components/canvas-logic.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "./engine.js";
 import { computeNextSimState, getInitialSnapshot } from "./simulation-store.js";
 import type { SimTick, SimulationSnapshot } from "./simulation-store.js";
-import type { GraphEdge, GraphNode, LevelConfig } from "./types.js";
+import type { LevelConfig } from "./types.js";
 
 class SimulationEngine {
   private state: SimulationSnapshot = getInitialSnapshot();
   private readonly listeners = new Set<() => void>();
-  private graphNodes: GraphNode[] = [];
-  private graphEdges: GraphEdge[] = [];
+  private graphNodes: ArchitectureNode[] = [];
+  private graphEdges: ArchitectureEdge[] = [];
   private config: LevelConfig | null = null;
 
   getSnapshot = (): SimulationSnapshot => this.state;
@@ -19,7 +20,7 @@ class SimulationEngine {
     };
   };
 
-  setGraph(nodes: GraphNode[], edges: GraphEdge[]): void {
+  setGraph(nodes: ArchitectureNode[], edges: ArchitectureEdge[]): void {
     this.graphNodes = nodes;
     this.graphEdges = edges;
   }

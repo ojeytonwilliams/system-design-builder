@@ -1,16 +1,3 @@
-import type { ComponentType } from "../components/component-library.js";
-
-interface GraphEdge {
-  source: string;
-  target: string;
-}
-
-interface GraphNode {
-  capacity: number;
-  id: string;
-  type: ComponentType;
-}
-
 interface NodeTrafficState {
   droppedOps: number;
   handledOps: number;
@@ -34,4 +21,4 @@ interface FlowConfig {
   trafficRate: number;
 }
 
-export type { FlowConfig, GraphEdge, GraphNode, LevelConfig, TrafficSnapshot };
+export type { FlowConfig, LevelConfig, TrafficSnapshot };
