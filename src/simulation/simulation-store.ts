@@ -72,37 +72,5 @@ const computeNextSimState = (
   };
 };
 
-class SimulationStore {
-  private state: SimulationSnapshot = getInitialSnapshot();
-  private readonly listeners = new Set<() => void>();
-
-  subscribe = (listener: () => void): (() => void) => {
-    this.listeners.add(listener);
-    return () => {
-      this.listeners.delete(listener);
-    };
-  };
-
-  getSnapshot = (): SimulationSnapshot => this.state;
-
-  applyTick(tick: SimTick): void {
-    this.state = computeNextSimState(this.state, tick);
-    this.notify();
-  }
-
-  reset(): void {
-    this.state = getInitialSnapshot();
-    this.notify();
-  }
-
-  private notify(): void {
-    for (const listener of this.listeners) {
-      listener();
-    }
-  }
-}
-
-const simulationStore = new SimulationStore();
-
-export type { SimulationSnapshot };
-export { computeNextSimState, SimulationStore, simulationStore };
+export type { SimTick, SimulationSnapshot };
+export { computeNextSimState, getInitialSnapshot };

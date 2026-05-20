@@ -1,4 +1,4 @@
-import { computeNextSimState, SimulationStore } from "./simulation-store.js";
+import { computeNextSimState } from "./simulation-store.js";
 import type { SimulationSnapshot } from "./simulation-store.js";
 import type { LevelConfig, TrafficSnapshot } from "./types.js";
 
@@ -198,70 +198,5 @@ describe(computeNextSimState, () => {
     });
 
     expect(result.overloadDurations.has("server-1")).toBe(false);
-  });
-});
-
-describe(SimulationStore, () => {
-  it("getSnapshot returns the initial state before any tick", () => {
-    const store = new SimulationStore();
-    const snap = store.getSnapshot();
-
-    expect(snap.isWon).toBe(false);
-    expect(snap.isTimedOut).toBe(false);
-    expect(snap.sustainedNoDropSeconds).toBe(0);
-    expect(snap.nodeStates).toStrictEqual({});
-  });
-
-  it("notifies subscriber after applyTick", () => {
-    const store = new SimulationStore();
-    const listener = vi.fn<() => void>();
-    store.subscribe(listener);
-    store.applyTick({ elapsed: 1, levelConfig: baseConfig, rate: 0, trafficSnapshot: {} });
-
-    expect(listener).toHaveBeenCalledOnce();
-  });
-
-  it("subscribe returns an unsubscribe function that stops notifications", () => {
-    const store = new SimulationStore();
-    const listener = vi.fn<() => void>();
-    const unsubscribe = store.subscribe(listener);
-    unsubscribe();
-    store.applyTick({ elapsed: 1, levelConfig: baseConfig, rate: 0, trafficSnapshot: {} });
-
-    expect(listener).not.toHaveBeenCalled();
-  });
-
-  it("reset restores the initial state and notifies subscribers", () => {
-    const store = new SimulationStore();
-    const listener = vi.fn<() => void>();
-    store.subscribe(listener);
-    store.applyTick({
-      elapsed: 1,
-      levelConfig: baseConfig,
-      rate: 100,
-      trafficSnapshot: overloadSnapshot,
-    });
-    store.reset();
-
-    expect(store.getSnapshot().sustainedNoDropSeconds).toBe(0);
-    expect(store.getSnapshot().nodeStates).toStrictEqual({});
-    expect(listener).toHaveBeenCalledTimes(2);
-  });
-
-  it("getSnapshot returns the same reference between ticks", () => {
-    const store = new SimulationStore();
-    const first = store.getSnapshot();
-    const second = store.getSnapshot();
-
-    expect(first).toBe(second);
-  });
-
-  it("getSnapshot returns a new reference after applyTick", () => {
-    const store = new SimulationStore();
-    const before = store.getSnapshot();
-    store.applyTick({ elapsed: 1, levelConfig: baseConfig, rate: 0, trafficSnapshot: {} });
-    const after = store.getSnapshot();
-
-    expect(before).not.toBe(after);
   });
 });

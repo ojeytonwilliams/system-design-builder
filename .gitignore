@@ -7,3 +7,6 @@
 
 # Local claude settings
 .claude/settings.local.json
+
+# VS Code settings
+/.vscode

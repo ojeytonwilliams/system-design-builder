@@ -1,10 +1,10 @@
 import { renderHook } from "@testing-library/react";
-import { simulationStore } from "../simulation/simulation-store.js";
+import { simulationEngine } from "../simulation/simulation-engine.js";
 import { useSimulationSnapshot } from "./use-simulation-snapshot.js";
 
 describe(useSimulationSnapshot, () => {
   beforeEach(() => {
-    simulationStore.reset();
+    simulationEngine.reset();
   });
 
   it("returns the initial simulation snapshot", () => {

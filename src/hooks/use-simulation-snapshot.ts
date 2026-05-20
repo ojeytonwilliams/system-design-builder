@@ -1,8 +1,18 @@
-import { useSyncExternalStore } from "react";
-import { simulationStore } from "../simulation/simulation-store.js";
+import { useEffect, useState } from "react";
+import { simulationEngine } from "../simulation/simulation-engine.js";
 import type { SimulationSnapshot } from "../simulation/simulation-store.js";
 
-const useSimulationSnapshot = (): SimulationSnapshot =>
-  useSyncExternalStore(simulationStore.subscribe, simulationStore.getSnapshot);
+const useSimulationSnapshot = (): SimulationSnapshot => {
+  const [snapshot, setSnapshot] = useState(() => simulationEngine.getSnapshot());
+
+  useEffect(() => {
+    setSnapshot(simulationEngine.getSnapshot());
+    return simulationEngine.subscribe(() => {
+      setSnapshot(simulationEngine.getSnapshot());
+    });
+  }, []);
+
+  return snapshot;
+};
 
 export { useSimulationSnapshot };

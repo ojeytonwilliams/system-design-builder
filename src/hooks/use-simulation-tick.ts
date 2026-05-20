@@ -1,10 +1,11 @@
-import { useEffect, useEffectEvent, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
 import type { PhaseAction } from "../game/phase-machine.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { toGraphEdge, toGraphNode } from "../layouts/graph-adapters.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "../simulation/engine.js";
-import { simulationStore } from "../simulation/simulation-store.js";
+import { simulationEngine } from "../simulation/simulation-engine.js";
+import { SimulationLoop } from "../simulation/simulation-loop.js";
 import type { LevelConfig, TrafficSnapshot } from "../simulation/types.js";
 import { useSimulationSnapshot } from "./use-simulation-snapshot.js";
 
@@ -37,88 +38,99 @@ const useSimulationTick = ({
 }: UseSimulationTickParams): void => {
   const shownCoachMessageRef = useRef<Set<number>>(new Set());
   const hasSeenOverloadThisLevelRef = useRef(false);
-  const hasSnapshotOverloadRef = useRef(false);
+
+  // Always-latest refs for callbacks used in the engine subscription
+  const appendEventRef = useRef(appendEvent);
+  appendEventRef.current = appendEvent;
+  const setCoachMessageRef = useRef(setCoachMessage);
+  setCoachMessageRef.current = setCoachMessage;
+
+  // Always-latest refs for graph state and config read inside the loop callback
+  const nodesRef = useRef(nodes);
+  nodesRef.current = nodes;
+  const edgesRef = useRef(edges);
+  edgesRef.current = edges;
+  const levelConfigRef = useRef(effectiveLevelConfig);
+  levelConfigRef.current = effectiveLevelConfig;
 
   const simSnapshot = useSimulationSnapshot();
 
-  // Reset per-level state (and the store) whenever the level changes
+  // Reset per-level state (and the engine) whenever the level changes
   useEffect(() => {
-    simulationStore.reset();
+    simulationEngine.reset();
     shownCoachMessageRef.current = new Set();
     hasSeenOverloadThisLevelRef.current = false;
-    hasSnapshotOverloadRef.current = false;
   }, [resetKey]);
 
-  const onTick = useEffectEvent((elapsedSeconds: number) => {
-    currentLevel.coachMessages.forEach((message, index) => {
-      if (elapsedSeconds < message.atSecond || shownCoachMessageRef.current.has(index)) {
-        return;
-      }
-      shownCoachMessageRef.current.add(index);
-      setCoachMessage(message.text);
-    });
+  // Direct subscription for overload event logging.
+  // Runs synchronously per engine notification, independent of React rendering.
+  // STARTED and RESOLVED events on consecutive ticks are both captured.
+  useEffect(
+    () =>
+      simulationEngine.subscribe(() => {
+        const snap = simulationEngine.getSnapshot();
+        if (snap.overloadEvent === "STARTED") {
+          appendEventRef.current("Overload started");
+          if (!hasSeenOverloadThisLevelRef.current) {
+            setCoachMessageRef.current(
+              "Overload detected. Add capacity or spread traffic to reduce dropped requests.",
+            );
+            hasSeenOverloadThisLevelRef.current = true;
+          }
+        } else if (snap.overloadEvent === "RESOLVED") {
+          appendEventRef.current("Overload resolved");
+        }
+      }),
+    [],
+  );
 
-    const rate = getLinearTrafficRate({
-      elapsed: elapsedSeconds,
-      timeout: effectiveLevelConfig.timeout,
-      trafficPeak: effectiveLevelConfig.trafficPeak,
-      trafficStart: effectiveLevelConfig.trafficStart,
-    });
-
-    const graphNodes = nodes.map(toGraphNode);
-    const graphEdges = edges.map(toGraphEdge);
-    const trafficSnapshot = computeTrafficFlow(graphNodes, graphEdges, {
-      cacheHitRate: effectiveLevelConfig.cacheHitRate,
-      trafficRate: rate,
-    });
-
-    simulationStore.applyTick({
-      elapsed: elapsedSeconds,
-      levelConfig: effectiveLevelConfig,
-      rate,
-      trafficSnapshot,
-    });
-    applySnapshot(trafficSnapshot, nodes);
-
-    // Overload transition detection runs synchronously per tick to avoid
-    // React batching multiple transitions into a single render cycle.
-    const hasOverload = Object.values(trafficSnapshot).some((s) => s.droppedOps > 0);
-    const hadOverload = hasSnapshotOverloadRef.current;
-
-    if (!hadOverload && hasOverload) {
-      appendEvent("Overload started");
-      if (!hasSeenOverloadThisLevelRef.current) {
-        setCoachMessage(
-          "Overload detected. Add capacity or spread traffic to reduce dropped requests.",
-        );
-        hasSeenOverloadThisLevelRef.current = true;
-      }
-    }
-
-    if (hadOverload && !hasOverload) {
-      appendEvent("Overload resolved");
-    }
-
-    hasSnapshotOverloadRef.current = hasOverload;
-  });
-
+  // Start/stop the simulation loop based on simulation state
   useEffect(() => {
     if (!isSimulating) {
       return;
     }
 
-    simulationStore.reset();
-    let elapsedSeconds = 0;
-
-    const interval = setInterval(() => {
-      elapsedSeconds++;
-      onTick(elapsedSeconds);
-    }, 1000);
+    simulationEngine.reset();
+    const loop = new SimulationLoop((elapsed) => {
+      const config = levelConfigRef.current;
+      const graphNodes = nodesRef.current.map(toGraphNode);
+      const graphEdges = edgesRef.current.map(toGraphEdge);
+      const rate = getLinearTrafficRate({
+        elapsed,
+        timeout: config.timeout,
+        trafficPeak: config.trafficPeak,
+        trafficStart: config.trafficStart,
+      });
+      const trafficSnapshot = computeTrafficFlow(graphNodes, graphEdges, {
+        cacheHitRate: config.cacheHitRate,
+        trafficRate: rate,
+      });
+      simulationEngine.step({ elapsed, levelConfig: config, rate, trafficSnapshot });
+    });
+    loop.start();
 
     return () => {
-      clearInterval(interval);
+      loop.stop();
     };
-  }, [isSimulating, resetKey]);
+  }, [isSimulating, resetKey, effectiveLevelConfig]);
+
+  // Show timed coach messages as elapsed time advances
+  useEffect(() => {
+    currentLevel.coachMessages.forEach((message, index) => {
+      if (
+        simSnapshot.elapsedSeconds >= message.atSecond &&
+        !shownCoachMessageRef.current.has(index)
+      ) {
+        shownCoachMessageRef.current.add(index);
+        setCoachMessage(message.text);
+      }
+    });
+  }, [simSnapshot.elapsedSeconds, currentLevel, setCoachMessage]);
+
+  // Apply traffic snapshot for component unlock tracking
+  useEffect(() => {
+    applySnapshot(simSnapshot.nodeStates, nodes);
+  }, [simSnapshot.nodeStates, applySnapshot, nodes]);
 
   useEffect(() => {
     if (simSnapshot.isWon && isSimulating) {

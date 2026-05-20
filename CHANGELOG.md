@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.21] - 2026-05-20
+
+### Refactoring
+
+- **`SimulationStore` conflated three unrelated concerns**: state management, the simulation timer, and domain-specific traffic computation. The timer was the only genuinely external thing, but it dragged the state into a `useSyncExternalStore` pattern and forced overload event logging to work around React render batching — a symptom of the conflation rather than a real constraint. Split into two focused classes: `SimulationEngine` (`src/simulation/simulation-engine.ts`) holds snapshot state and a pure pub-sub notification mechanism (`step` / `subscribe` / `reset` / `getSnapshot`) with no knowledge of time or traffic; `SimulationLoop` (`src/simulation/simulation-loop.ts`) is a pure timer that accepts an `onTick: (elapsed: number) => void` callback and knows nothing about the engine or level config. The loop accumulates wall-clock delta on each `setInterval` firing and drains it in a `while` loop, so a late-firing interval (e.g. backgrounded tab) runs multiple engine steps per callback — something the old fixed-step design could not do. Engine notifications now fire synchronously per step and are completely independent of React rendering, removing the need for a dedicated direct subscription to capture consecutive `STARTED`/`RESOLVED` overload events. `useSyncExternalStore` is replaced with `useState` + `useEffect` in `useSimulationSnapshot`. The `SimulationStore` class and its singleton are deleted.
+
 ## [2.3.20] - 2026-05-19
 
 ### Refactoring
