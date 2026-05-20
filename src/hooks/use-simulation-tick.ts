@@ -4,7 +4,7 @@ import type { PhaseAction } from "../game/phase-machine.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { toGraphEdge, toGraphNode } from "../layouts/graph-adapters.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "../simulation/engine.js";
-import { simulationEngine } from "../simulation/simulation-engine.js";
+import type { SimulationEngine } from "../simulation/simulation-engine.js";
 import { SimulationLoop } from "../simulation/simulation-loop.js";
 import type { LevelConfig, TrafficSnapshot } from "../simulation/types.js";
 import { useSimulationSnapshot } from "./use-simulation-snapshot.js";
@@ -16,6 +16,7 @@ interface UseSimulationTickParams {
   dispatchPhase: (action: PhaseAction) => void;
   edges: ArchitectureEdge[];
   effectiveLevelConfig: LevelConfig;
+  engine: SimulationEngine;
   isSimulating: boolean;
   nodes: ArchitectureNode[];
   onWin: () => void;
@@ -29,6 +30,7 @@ const useSimulationTick = ({
   dispatchPhase,
   edges,
   effectiveLevelConfig,
+  engine,
   isSimulating,
   nodes,
   onWin,
@@ -51,22 +53,22 @@ const useSimulationTick = ({
   const levelConfigRef = useRef(effectiveLevelConfig);
   levelConfigRef.current = effectiveLevelConfig;
 
-  const simSnapshot = useSimulationSnapshot();
+  const simSnapshot = useSimulationSnapshot(engine);
 
   // Reset per-level state (and the engine) whenever the level changes
   useEffect(() => {
-    simulationEngine.reset();
+    engine.reset();
     shownCoachMessageRef.current = new Set();
     hasSeenOverloadThisLevelRef.current = false;
-  }, [currentLevel.id]);
+  }, [currentLevel.id, engine]);
 
   // Direct subscription for overload event logging.
   // Runs synchronously per engine notification, independent of React rendering.
   // STARTED and RESOLVED events on consecutive ticks are both captured.
   useEffect(
     () =>
-      simulationEngine.subscribe(() => {
-        const snap = simulationEngine.getSnapshot();
+      engine.subscribe(() => {
+        const snap = engine.getSnapshot();
         if (snap.overloadEvent === "STARTED") {
           appendEventRef.current("Overload started");
           if (!hasSeenOverloadThisLevelRef.current) {
@@ -79,7 +81,7 @@ const useSimulationTick = ({
           appendEventRef.current("Overload resolved");
         }
       }),
-    [],
+    [engine],
   );
 
   // Start/stop the simulation loop based on simulation state
@@ -88,7 +90,7 @@ const useSimulationTick = ({
       return;
     }
 
-    simulationEngine.reset();
+    engine.reset();
     const loop = new SimulationLoop((elapsed) => {
       const config = levelConfigRef.current;
       const graphNodes = nodesRef.current.map(toGraphNode);
@@ -103,14 +105,14 @@ const useSimulationTick = ({
         cacheHitRate: config.cacheHitRate,
         trafficRate: rate,
       });
-      simulationEngine.step({ elapsed, levelConfig: config, rate, trafficSnapshot });
+      engine.step({ elapsed, levelConfig: config, rate, trafficSnapshot });
     });
     loop.start();
 
     return () => {
       loop.stop();
     };
-  }, [isSimulating, effectiveLevelConfig]);
+  }, [engine, isSimulating, effectiveLevelConfig]);
 
   // Show timed coach messages as elapsed time advances
   useEffect(() => {

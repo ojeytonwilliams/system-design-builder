@@ -31,6 +31,4 @@ class SimulationEngine {
   }
 }
 
-const simulationEngine = new SimulationEngine();
-
-export { simulationEngine, SimulationEngine };
+export { SimulationEngine };

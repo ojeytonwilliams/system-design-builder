@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
+import { SimulationEngine } from "../simulation/simulation-engine.js";
 import { COMPONENT_LIBRARY } from "../components/component-library.js";
 import type { ComponentType } from "../components/component-library.js";
 import { Coach } from "../components/coach.js";
@@ -51,7 +52,14 @@ const GameScene = ({
   loadLevel,
   markLevelComplete,
 }: GameSceneProps) => {
-  const { currentTrafficRate, nodeStates } = useSimulationSnapshot();
+  /* The engine is created once and kept for the lifetime of the scene, which
+    allows it to maintain its internal state and listeners across re-renders.*/
+
+  const engineRef = useRef<SimulationEngine | null>(null);
+  engineRef.current ??= new SimulationEngine();
+
+  const engine = engineRef.current;
+  const { currentTrafficRate, nodeStates } = useSimulationSnapshot(engine);
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
@@ -163,6 +171,7 @@ const GameScene = ({
     dispatchPhase,
     edges: graphState.edges,
     effectiveLevelConfig: levelConfig,
+    engine,
     isSimulating,
     nodes: graphState.nodes,
     onWin: handleWin,

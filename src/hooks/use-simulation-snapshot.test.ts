@@ -1,14 +1,11 @@
 import { renderHook } from "@testing-library/react";
-import { simulationEngine } from "../simulation/simulation-engine.js";
+import { SimulationEngine } from "../simulation/simulation-engine.js";
 import { useSimulationSnapshot } from "./use-simulation-snapshot.js";
 
 describe(useSimulationSnapshot, () => {
-  beforeEach(() => {
-    simulationEngine.reset();
-  });
-
   it("returns the initial simulation snapshot", () => {
-    const { result } = renderHook(() => useSimulationSnapshot());
+    const engine = new SimulationEngine();
+    const { result } = renderHook(() => useSimulationSnapshot(engine));
 
     expect(result.current.isWon).toBe(false);
     expect(result.current.isTimedOut).toBe(false);

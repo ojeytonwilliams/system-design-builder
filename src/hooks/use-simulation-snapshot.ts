@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
-import { simulationEngine } from "../simulation/simulation-engine.js";
+import type { SimulationEngine } from "../simulation/simulation-engine.js";
 import type { SimulationSnapshot } from "../simulation/simulation-store.js";
 
-const useSimulationSnapshot = (): SimulationSnapshot => {
-  const [snapshot, setSnapshot] = useState(() => simulationEngine.getSnapshot());
+const useSimulationSnapshot = (engine: SimulationEngine): SimulationSnapshot => {
+  const [snapshot, setSnapshot] = useState(() => engine.getSnapshot());
 
   useEffect(() => {
-    setSnapshot(simulationEngine.getSnapshot());
-    return simulationEngine.subscribe(() => {
-      setSnapshot(simulationEngine.getSnapshot());
+    setSnapshot(engine.getSnapshot());
+    return engine.subscribe(() => {
+      setSnapshot(engine.getSnapshot());
     });
-  }, []);
+  }, [engine]);
 
   return snapshot;
 };
