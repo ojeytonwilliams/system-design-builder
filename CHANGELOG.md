@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.23] - 2026-05-20
+
+### Refactoring
+
+- **`useInspectorData` was a hook only because of `useMemo`**: the computation — looking up the selected node and deriving display values from its traffic state — is a pure function of its inputs with no side effects and no React dependencies. Replaced with a plain function `getInspectorData` in `src/game/node-analyser.ts` called directly during render.
+
 ## [2.3.22] - 2026-05-20
 
 ### Refactoring

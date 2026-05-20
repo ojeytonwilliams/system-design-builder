@@ -15,8 +15,8 @@ import { useCompactLayout } from "../hooks/use-compact-layout.js";
 import { useDesignModeOverloads } from "../hooks/use-design-mode-overloads.js";
 import { useEventLog } from "../hooks/use-event-log.js";
 import { useGameActions } from "../hooks/use-game-actions.js";
-import { useInspectorData } from "../hooks/use-inspector-data.js";
 import { useLevel } from "../hooks/use-level.js";
+import { getInspectorData } from "../game/node-analyser.js";
 import { usePhase } from "../hooks/use-phase.js";
 import { useSimulationSnapshot } from "../hooks/use-simulation-snapshot.js";
 import { useSimulationTick } from "../hooks/use-simulation-tick.js";
@@ -79,7 +79,7 @@ const GameScene = ({
   const shownCoachMessageRef = useRef<Set<number>>(new Set());
   const hasSeenOverloadThisLevelRef = useRef(false);
 
-  const inspectorData = useInspectorData(selectedNodeId, graphState.nodes, nodeStates);
+  const inspectorData = getInspectorData(selectedNodeId, graphState.nodes, nodeStates);
 
   const isRunnable = hasRunnablePath(
     graphState.nodes.map(toGraphNode),
