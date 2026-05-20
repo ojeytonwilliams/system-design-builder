@@ -23,7 +23,6 @@ interface UseGameActionsParams {
   phase: Phase;
   previousAvailableComponentsRef: RefObject<ComponentType[]>;
   resetEvents: (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void;
-  resetForLevel: (level: LevelDefinition, nodes: ArchitectureNode[]) => void;
   setCoachMessage: (msg: string) => void;
   setQueuedComponentType: (type: ComponentType | null) => void;
   setSelectedNodeId: (id: string | null) => void;
@@ -53,7 +52,6 @@ const useGameActions = ({
   phase,
   previousAvailableComponentsRef,
   resetEvents,
-  resetForLevel,
   setCoachMessage,
   setQueuedComponentType,
   setSelectedNodeId,
@@ -68,7 +66,6 @@ const useGameActions = ({
       setSelectedNodeId(null);
       setQueuedComponentType(null);
       resetEvents(newNodes, newEdges);
-      resetForLevel(level, newNodes);
       dispatchGraph({ edges: newEdges, nodes: newNodes, type: "LOAD_LEVEL" });
       dispatchPhase({ type: "LOAD_LEVEL" });
     },
@@ -78,7 +75,6 @@ const useGameActions = ({
       loadLevel,
       previousAvailableComponentsRef,
       resetEvents,
-      resetForLevel,
       setCoachMessage,
       setQueuedComponentType,
       setSelectedNodeId,

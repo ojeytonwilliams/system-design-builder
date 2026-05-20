@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.22] - 2026-05-20
+
+### Refactoring
+
+- **`SimulationEngine` was a hidden global whose consumers had to work around stale closures**: The singleton pattern let hooks import the engine directly, but the simulation loop needed the latest graph state on every tick — forcing `useSimulationTick` to copy `nodes`, `edges`, and `levelConfig` into three separate refs and read from them inside a stale closure. Moved graph ownership into `SimulationEngine` via `setGraph` / `setConfig` / `tick`, so the loop calls `engine.tick(elapsed)` with no captured state at all. `GameScene` syncs graph and config into the engine via two small `useEffect`s whenever they change. The singleton is replaced by an instance created with a ref in `GameScene` and passed explicitly to hooks that need it, making the dependency visible. `useSimulationSnapshot` is simplified to a one-liner using `useSyncExternalStore`, which is the correct API for subscribing to external mutable stores.
+
+- **`useComponentUnlocks` accumulated `overloadDurations` in a ref and exposed three imperative callbacks** (`applySnapshot`, `updateFromGraph`, `resetForLevel`) that callers had to invoke at the right moment to keep it in sync. Since `overloadDurations` was already present in `SimulationSnapshot`, the hook's only job was deriving `availableComponents` — a pure computation that does not need state, refs, or callbacks. Deleted the hook; `availableComponents` is now a plain derived value computed during render from `currentLevel`, `graphState.nodes`, and the simulation snapshot. Level reset is implicit: `engine.reset()` clears `overloadDurations` in the snapshot, and the computation re-runs automatically.
+
 ## [2.3.21] - 2026-05-20
 
 ### Refactoring

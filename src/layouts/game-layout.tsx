@@ -12,7 +12,6 @@ import { LevelStrip } from "../components/level-strip.js";
 import { Resources } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
 import { useCompactLayout } from "../hooks/use-compact-layout.js";
-import { useComponentUnlocks } from "../hooks/use-component-unlocks.js";
 import { useDesignModeOverloads } from "../hooks/use-design-mode-overloads.js";
 import { useEventLog } from "../hooks/use-event-log.js";
 import { useGameActions } from "../hooks/use-game-actions.js";
@@ -26,6 +25,7 @@ import type { LevelDefinition } from "../levels/types.js";
 import { graphReducer } from "../game/graph-reducer.js";
 import { toGraphEdge, toGraphNode } from "./graph-adapters.js";
 import { hasRunnablePath } from "../simulation/engine.js";
+import { computeAvailableComponents } from "../simulation/unlocks.js";
 import type { LevelConfig } from "../simulation/types.js";
 
 const MOBILE_LAYOUT_BREAKPOINT = 768;
@@ -59,14 +59,12 @@ const GameScene = ({
   engineRef.current ??= new SimulationEngine();
 
   const engine = engineRef.current;
-  const { currentTrafficRate, elapsedSeconds, isTimedOut, isWon, nodeStates } =
-    useSimulationSnapshot(engine);
+  const simSnapshot = useSimulationSnapshot(engine);
+  const { currentTrafficRate, elapsedSeconds, isTimedOut, isWon, nodeStates } = simSnapshot;
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
   const isCompactLayout = useCompactLayout(MOBILE_LAYOUT_BREAKPOINT);
-  const { applySnapshot, availableComponents, resetForLevel, updateFromGraph } =
-    useComponentUnlocks(currentLevel, initialNodes);
 
   const [coachMessage, setCoachMessage] = useState(`Mission: ${currentLevel.objectiveText}`);
   const [queuedComponentType, setQueuedComponentType] = useState<ComponentType | null>(null);
@@ -92,6 +90,16 @@ const GameScene = ({
     0,
   );
   const remainingBudget = levelConfig.monthlyBudget - totalMonthlyCost;
+
+  const availableComponents = computeAvailableComponents(
+    currentLevel.availableComponents,
+    currentLevel.componentUnlocks,
+    {
+      graphNodes: graphState.nodes.map(toGraphNode),
+      overloadDurations: simSnapshot.overloadDurations,
+      snapshot: simSnapshot.nodeStates,
+    },
+  );
 
   const isSimulating = phase === "SIMULATING";
 
@@ -121,10 +129,6 @@ const GameScene = ({
 
     previousAvailableComponentsRef.current = availableComponents;
   }, [appendEvent, availableComponents]);
-
-  useEffect(() => {
-    updateFromGraph(graphState.nodes);
-  }, [graphState.nodes, updateFromGraph]);
 
   const handleNodePlaced = useCallback(
     (componentType: ComponentType) => {
@@ -160,7 +164,6 @@ const GameScene = ({
     phase,
     previousAvailableComponentsRef,
     resetEvents,
-    resetForLevel,
     setCoachMessage,
     setQueuedComponentType,
     setSelectedNodeId,
@@ -186,24 +189,25 @@ const GameScene = ({
 
   // Direct subscription for overload event logging — runs synchronously per
   // Engine notification so STARTED and RESOLVED on consecutive ticks are both captured
-  useEffect(
-    () =>
-      engine.subscribe(() => {
-        const snap = engine.getSnapshot();
-        if (snap.overloadEvent === "STARTED") {
-          appendEvent("Overload started");
-          if (!hasSeenOverloadThisLevelRef.current) {
-            setCoachMessage(
-              "Overload detected. Add capacity or spread traffic to reduce dropped requests.",
-            );
-            hasSeenOverloadThisLevelRef.current = true;
-          }
-        } else if (snap.overloadEvent === "RESOLVED") {
-          appendEvent("Overload resolved");
+  useEffect(() => {
+    const unsub = engine.subscribe(() => {
+      const snap = engine.getSnapshot();
+      if (snap.overloadEvent === "STARTED") {
+        appendEvent("Overload started");
+        if (!hasSeenOverloadThisLevelRef.current) {
+          setCoachMessage(
+            "Overload detected. Add capacity or spread traffic to reduce dropped requests.",
+          );
+          hasSeenOverloadThisLevelRef.current = true;
         }
-      }),
-    [engine, appendEvent, setCoachMessage],
-  );
+      } else if (snap.overloadEvent === "RESOLVED") {
+        appendEvent("Overload resolved");
+      }
+    });
+    return () => {
+      unsub();
+    };
+  }, [engine, appendEvent, setCoachMessage]);
 
   // Show timed coach messages as elapsed time advances
   useEffect(() => {
@@ -214,11 +218,6 @@ const GameScene = ({
       }
     });
   }, [elapsedSeconds, currentLevel, setCoachMessage]);
-
-  // Apply traffic snapshot for component unlock tracking
-  useEffect(() => {
-    applySnapshot(nodeStates, graphState.nodes);
-  }, [nodeStates, applySnapshot, graphState.nodes]);
 
   useEffect(() => {
     if (isWon && isSimulating) {
