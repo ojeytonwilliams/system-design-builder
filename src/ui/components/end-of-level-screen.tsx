@@ -1,7 +1,7 @@
+import { computeStars } from "../../domain/budget.js";
+
 const STAR_FILLED = "★";
 const STAR_EMPTY = "☆";
-const THREE_STAR_THRESHOLD = 0.5;
-const TWO_STAR_THRESHOLD = 0.2;
 
 interface EndOfLevelScreenProps {
   feedbackLines: string[];
@@ -11,20 +11,6 @@ interface EndOfLevelScreenProps {
   remainingBudget: number;
   title: string;
 }
-
-const computeStars = (remainingBudget: number, monthlyBudget: number): 1 | 2 | 3 => {
-  const headroom = monthlyBudget > 0 ? remainingBudget / monthlyBudget : 0;
-
-  if (headroom >= THREE_STAR_THRESHOLD) {
-    return 3;
-  }
-
-  if (headroom >= TWO_STAR_THRESHOLD) {
-    return 2;
-  }
-
-  return 1;
-};
 
 const buildStarRow = (stars: 1 | 2 | 3): string => {
   if (stars === 3) {

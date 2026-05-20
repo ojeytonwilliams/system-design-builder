@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
-import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../../domain/canvas-logic.js";
 import type { EventLogEntry } from "../components/event-log.js";
 
 interface UseEventLogResult {

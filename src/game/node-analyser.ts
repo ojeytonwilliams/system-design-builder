@@ -1,5 +1,5 @@
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
-import type { ArchitectureNode } from "../ui/components/game-canvas.js";
+import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import type { InspectorProps } from "../ui/components/inspector.js";
 import type { TrafficSnapshot } from "../simulation/types.js";
 

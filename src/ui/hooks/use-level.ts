@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { ArchitectureEdge, ArchitectureNode } from "../components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../../domain/canvas-logic.js";
 import { levelRegistry } from "../../levels/index.js";
 import { level1 } from "../../levels/level1.js";
 import type { LevelDefinition } from "../../levels/types.js";

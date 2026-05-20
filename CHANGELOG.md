@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.26] - 2026-05-20
+
+### Refactoring
+
+- **Extracted budget logic into `src/domain/budget.ts`**: `computeTotalCost`, `canAfford`, `overBudgetMessage`, and `computeStars` were scattered across `game-layout.tsx`, `placement-actions.ts`, and `end-of-level-screen.tsx` as inline expressions or local functions. Centralised them as tested pure functions in the domain layer. `bezier-utils.ts` moved from `src/domain/` to `src/ui/components/` — it is a canvas-drawing utility, not a domain concept. Import sites for `ArchitectureNode`/`ArchitectureEdge` updated to source directly from `canvas-logic.ts` rather than the re-export on `game-canvas.tsx`.
+
 ## [2.3.25] - 2026-05-20
 
 ### Refactoring

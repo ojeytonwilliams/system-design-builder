@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { SimulationEngine } from "../simulation/simulation-engine.js";
+import { computeTotalCost } from "../domain/budget.js";
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
 import type { ComponentType } from "../domain/component-library.js";
 import { Coach } from "./components/coach.js";
 import { EndOfLevelScreen } from "./components/end-of-level-screen.js";
 import { EventLog } from "./components/event-log.js";
-import type { ArchitectureEdge, ArchitectureNode } from "./components/game-canvas.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { GameCanvas } from "./components/game-canvas.js";
 import { Inspector } from "./components/inspector.js";
 import { LevelStrip } from "./components/level-strip.js";
@@ -89,10 +90,7 @@ const GameScene = ({
   const inspectorData = getInspectorData(selectedNodeId, graphState.nodes, nodeStates);
 
   const isRunnable = hasRunnablePath(graphState.nodes, graphState.edges);
-  const totalMonthlyCost = graphState.nodes.reduce(
-    (sum, node) => sum + COMPONENT_LIBRARY[node.componentType].monthlyCost,
-    0,
-  );
+  const totalMonthlyCost = computeTotalCost(graphState.nodes);
   const remainingBudget = levelConfig.monthlyBudget - totalMonthlyCost;
 
   const availableComponents = computeAvailableComponents(

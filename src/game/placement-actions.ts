@@ -1,3 +1,4 @@
+import { canAfford, overBudgetMessage } from "../domain/budget.js";
 import type { ComponentType } from "../domain/component-library.js";
 
 type PlaceResult =
@@ -10,9 +11,9 @@ const placeComponent = (
   totalMonthlyCost: number,
   monthlyBudget: number,
 ): PlaceResult => {
-  if (totalMonthlyCost + addedCost > monthlyBudget) {
+  if (!canAfford(totalMonthlyCost, addedCost, monthlyBudget)) {
     return {
-      message: `Over budget — this component costs $${addedCost}/mo but you only have $${monthlyBudget - totalMonthlyCost} remaining.`,
+      message: overBudgetMessage(addedCost, monthlyBudget - totalMonthlyCost),
       type: "OVER_BUDGET",
     };
   }
