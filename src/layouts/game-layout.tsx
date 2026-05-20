@@ -188,11 +188,6 @@ const GameScene = ({
 
   const handleToggleTraffic = () => toggleTraffic(phase, isRunnable, dispatchPhase);
 
-  const handleWin = useCallback(
-    () => winLevel(currentLevel.id, dispatchPhase, markLevelComplete),
-    [currentLevel.id, dispatchPhase, markLevelComplete],
-  );
-
   useEffect(() => {
     engine.setGraph(graphState.nodes.map(toGraphNode), graphState.edges.map(toGraphEdge));
   }, [graphState.nodes, graphState.edges, engine]);
@@ -244,9 +239,9 @@ const GameScene = ({
 
   useEffect(() => {
     if (isWon && isSimulating) {
-      handleWin();
+      winLevel(currentLevel.id, dispatchPhase, markLevelComplete);
     }
-  }, [isWon, isSimulating, handleWin]);
+  }, [isWon, isSimulating, currentLevel.id, dispatchPhase, markLevelComplete]);
 
   useEffect(() => {
     if (isTimedOut && isSimulating) {
