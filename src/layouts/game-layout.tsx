@@ -12,7 +12,6 @@ import { LevelStrip } from "../components/level-strip.js";
 import { Resources } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
 import { useCompactLayout } from "../hooks/use-compact-layout.js";
-import { useDesignModeOverloads } from "../hooks/use-design-mode-overloads.js";
 import { useEventLog } from "../hooks/use-event-log.js";
 import { useGameActions } from "../hooks/use-game-actions.js";
 import { useLevel } from "../hooks/use-level.js";
@@ -103,13 +102,10 @@ const GameScene = ({
 
   const isSimulating = phase === "SIMULATING";
 
-  const designModeOverloadedNodeIds = useDesignModeOverloads(isSimulating, graphState, levelConfig);
   const simulationOverloadedNodeIds = Object.entries(nodeStates)
     .filter(([, s]) => s.droppedOps > 0)
     .map(([id]) => id);
-  const overloadedNodeIds = isSimulating
-    ? simulationOverloadedNodeIds
-    : designModeOverloadedNodeIds;
+  const overloadedNodeIds = isSimulating ? simulationOverloadedNodeIds : [];
 
   useEffect(() => {
     resetEvents(graphState.nodes, graphState.edges);

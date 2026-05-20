@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.24] - 2026-05-20
+
+### Refactoring
+
+- **`useDesignModeOverloads` computed a static overload preview in design mode** by running `computeTrafficFlow` with `trafficStart` whenever the graph changed. After review, this feature added complexity without clear benefit — the same overload information becomes available immediately when the simulation starts. Removed the hook, its tests, and the design-mode branch; `overloadedNodeIds` is now an empty array outside of simulation.
+
 ## [2.3.23] - 2026-05-20
 
 ### Refactoring
