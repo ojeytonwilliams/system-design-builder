@@ -92,6 +92,10 @@ const defaultSceneProps = {
   canvasKey: 0,
   completedLevels: [] as string[],
   currentLevel: level1,
+  initLevel: (): { newEdges: ArchitectureEdge[]; newNodes: ArchitectureNode[] } => ({
+    newEdges: [],
+    newNodes: [],
+  }),
   initialEdges: [] as ArchitectureEdge[],
   initialNodes: [] as ArchitectureNode[],
   levelConfig: {
@@ -103,10 +107,6 @@ const defaultSceneProps = {
     trafficTarget: 0,
     winSustainSeconds: 10,
   } as LevelConfig,
-  loadLevel: (): { newEdges: ArchitectureEdge[]; newNodes: ArchitectureNode[] } => ({
-    newEdges: [],
-    newNodes: [],
-  }),
   markLevelComplete: (): void => {},
 };
 
@@ -119,13 +119,13 @@ const renderScene = (overrides: Partial<typeof defaultSceneProps> = {}) => {
       initialEdges={p.initialEdges}
       initialNodes={p.initialNodes}
       levelConfig={p.levelConfig}
-      loadLevel={p.loadLevel}
+      initLevel={p.initLevel}
       markLevelComplete={p.markLevelComplete}
     />,
   );
 };
 
-// Wrapper for tests that need real level-progression state (loadLevel / markLevelComplete)
+// Wrapper for tests that need real level-progression state (initLevel / markLevelComplete)
 const GameSceneHarness = ({
   initialEdges,
   initialNodes,
@@ -144,7 +144,7 @@ const GameSceneHarness = ({
       initialEdges={initialEdges}
       initialNodes={initialNodes}
       levelConfig={levelConfig}
-      loadLevel={loadLevel}
+      initLevel={loadLevel}
       markLevelComplete={markLevelComplete}
     />
   );

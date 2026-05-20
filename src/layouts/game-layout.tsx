@@ -13,9 +13,16 @@ import { Resources } from "../components/palette.js";
 import { TopBar } from "../components/top-bar.js";
 import { useCompactLayout } from "../hooks/use-compact-layout.js";
 import { useEventLog } from "../hooks/use-event-log.js";
-import { useGameActions } from "../hooks/use-game-actions.js";
 import { useLevel } from "../hooks/use-level.js";
+import {
+  continueLevel,
+  loadLevel as executeLoadLevel,
+  replayLevel,
+  selectLevel,
+} from "../game/level-actions.js";
 import { getInspectorData } from "../game/node-analyser.js";
+import { placeComponent } from "../game/placement-actions.js";
+import { toggleTraffic, winLevel } from "../game/traffic-actions.js";
 import { usePhase } from "../hooks/use-phase.js";
 import { useSimulationSnapshot } from "../hooks/use-simulation-snapshot.js";
 import { useSimulationTick } from "../hooks/use-simulation-tick.js";
@@ -35,7 +42,7 @@ interface GameSceneProps {
   initialEdges: ArchitectureEdge[];
   initialNodes: ArchitectureNode[];
   levelConfig: LevelConfig;
-  loadLevel: (level: LevelDefinition) => {
+  initLevel: (level: LevelDefinition) => {
     newEdges: ArchitectureEdge[];
     newNodes: ArchitectureNode[];
   };
@@ -48,7 +55,7 @@ const GameScene = ({
   initialEdges,
   initialNodes,
   levelConfig,
-  loadLevel,
+  initLevel,
   markLevelComplete,
 }: GameSceneProps) => {
   /* The engine is created once and kept for the lifetime of the scene, which
@@ -140,31 +147,47 @@ const GameScene = ({
     [appendEvent],
   );
 
-  const {
-    handleComponentPlaced,
-    handleContinue,
-    handlePlaceComponent,
-    handleReplay,
-    handleSelectLevel,
-    handleSelectedNodeChange,
-    handleToggleTraffic,
-    handleWin,
-  } = useGameActions({
-    currentLevel,
-    dispatchGraph,
-    dispatchPhase,
-    effectiveLevelConfig: levelConfig,
-    isRunnable,
-    loadLevel,
-    markLevelComplete,
-    phase,
-    previousAvailableComponentsRef,
-    resetEvents,
-    setCoachMessage,
-    setQueuedComponentType,
-    setSelectedNodeId,
-    totalMonthlyCost,
-  });
+  const handleLoadLevel = (level: LevelDefinition) =>
+    executeLoadLevel(level, {
+      dispatchGraph,
+      dispatchPhase,
+      initialiseLevel: initLevel,
+      previousAvailableComponentsRef,
+      resetEvents,
+      setCoachMessage,
+      setQueuedComponentType,
+      setSelectedNodeId,
+    });
+
+  const handleContinue = () =>
+    continueLevel(currentLevel.id, levelRegistry.levels, dispatchPhase, handleLoadLevel);
+
+  const handleReplay = () => replayLevel(currentLevel, handleLoadLevel);
+
+  const handleSelectLevel = (levelId: string) =>
+    selectLevel(levelId, (id) => levelRegistry.getLevelById(id), handleLoadLevel);
+
+  const handlePlaceComponent = (componentType: ComponentType) => {
+    const addedCost = COMPONENT_LIBRARY[componentType].monthlyCost;
+    const result = placeComponent(
+      componentType,
+      addedCost,
+      totalMonthlyCost,
+      levelConfig.monthlyBudget,
+    );
+    if (result.type === "OVER_BUDGET") {
+      setCoachMessage(result.message);
+    } else {
+      setQueuedComponentType(result.componentType);
+    }
+  };
+
+  const handleToggleTraffic = () => toggleTraffic(phase, isRunnable, dispatchPhase);
+
+  const handleWin = useCallback(
+    () => winLevel(currentLevel.id, dispatchPhase, markLevelComplete),
+    [currentLevel.id, dispatchPhase, markLevelComplete],
+  );
 
   useEffect(() => {
     engine.setGraph(graphState.nodes.map(toGraphNode), graphState.edges.map(toGraphEdge));
@@ -287,10 +310,10 @@ const GameScene = ({
             isSimulating={isSimulating}
             lockedNodeIds={currentLevel.lockedNodeIds}
             nodes={graphState.nodes}
-            onComponentPlaced={handleComponentPlaced}
+            onComponentPlaced={() => setQueuedComponentType(null)}
             onEdgeCreated={handleEdgeCreated}
             onNodePlaced={handleNodePlaced}
-            onSelectedNodeChange={handleSelectedNodeChange}
+            onSelectedNodeChange={setSelectedNodeId}
             overloadedNodeIds={overloadedNodeIds}
             selectedNodeId={selectedNodeId}
           />
@@ -365,7 +388,7 @@ const GameLayout = () => {
       initialEdges={currentLevel.startingEdges}
       initialNodes={currentLevel.startingNodes}
       levelConfig={levelConfig}
-      loadLevel={loadLevel}
+      initLevel={loadLevel}
       markLevelComplete={markLevelComplete}
     />
   );
