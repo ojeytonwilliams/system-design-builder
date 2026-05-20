@@ -12,7 +12,7 @@ interface LoadLevelParams {
     newEdges: ArchitectureEdge[];
     newNodes: ArchitectureNode[];
   };
-  previousAvailableComponentsRef: { current: ComponentType[] };
+  setPrevAvailableComponents: (components: ComponentType[]) => void;
   resetEvents: (nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void;
   setCoachMessage: (msg: string) => void;
   setQueuedComponentType: (type: ComponentType | null) => void;
@@ -21,7 +21,7 @@ interface LoadLevelParams {
 
 const loadLevel = (level: LevelDefinition, params: LoadLevelParams): void => {
   const { newEdges, newNodes } = params.initialiseLevel(level);
-  params.previousAvailableComponentsRef.current = level.availableComponents;
+  params.setPrevAvailableComponents(level.availableComponents);
   params.setCoachMessage(`Mission: ${level.objectiveText}`);
   params.setSelectedNodeId(null);
   params.setQueuedComponentType(null);

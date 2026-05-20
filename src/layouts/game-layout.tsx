@@ -81,7 +81,9 @@ const GameScene = ({
     nodes: initialNodes,
   });
 
-  const previousAvailableComponentsRef = useRef<ComponentType[]>(currentLevel.availableComponents);
+  const [prevAvailableComponents, setPrevAvailableComponents] = useState<ComponentType[]>(
+    currentLevel.availableComponents,
+  );
   const shownCoachMessageRef = useRef<Set<number>>(new Set());
   const hasSeenOverloadThisLevelRef = useRef(false);
 
@@ -119,9 +121,11 @@ const GameScene = ({
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const newlyUnlocked = availableComponents.filter(
-      (c) => !previousAvailableComponentsRef.current.includes(c),
-    );
+    const newlyUnlocked = availableComponents.filter((c) => !prevAvailableComponents.includes(c));
+
+    if (newlyUnlocked.length === 0) {
+      return;
+    }
 
     newlyUnlocked.forEach((c) => {
       appendEvent(`Concept unlocked: ${COMPONENT_LIBRARY[c].label}`);
@@ -130,8 +134,8 @@ const GameScene = ({
       );
     });
 
-    previousAvailableComponentsRef.current = availableComponents;
-  }, [appendEvent, availableComponents]);
+    setPrevAvailableComponents(availableComponents);
+  }, [appendEvent, availableComponents]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleNodePlaced = useCallback(
     (componentType: ComponentType) => {
@@ -152,9 +156,9 @@ const GameScene = ({
       dispatchGraph,
       dispatchPhase,
       initialiseLevel: initLevel,
-      previousAvailableComponentsRef,
       resetEvents,
       setCoachMessage,
+      setPrevAvailableComponents,
       setQueuedComponentType,
       setSelectedNodeId,
     });

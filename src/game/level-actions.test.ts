@@ -38,9 +38,9 @@ const makeParams = () => ({
       (level: LevelDefinition) => { newEdges: ArchitectureEdge[]; newNodes: ArchitectureNode[] }
     >()
     .mockReturnValue({ newEdges: [edgeAB], newNodes: [nodeA] }),
-  previousAvailableComponentsRef: { current: [] as ComponentType[] },
   resetEvents: vi.fn<(nodes: ArchitectureNode[], edges: ArchitectureEdge[]) => void>(),
   setCoachMessage: vi.fn<(msg: string) => void>(),
+  setPrevAvailableComponents: vi.fn<(components: ComponentType[]) => void>(),
   setQueuedComponentType: vi.fn<(type: string | null) => void>(),
   setSelectedNodeId: vi.fn<(id: string | null) => void>(),
 });
@@ -92,10 +92,10 @@ describe(loadLevel, () => {
     expect(params.resetEvents).toHaveBeenCalledWith([nodeA], [edgeAB]);
   });
 
-  it("updates previousAvailableComponentsRef to the level's available components", () => {
+  it("calls setPrevAvailableComponents with the level's available components", () => {
     const params = makeParams();
     loadLevel(stubLevel, params);
-    expect(params.previousAvailableComponentsRef.current).toStrictEqual(["server"]);
+    expect(params.setPrevAvailableComponents).toHaveBeenCalledWith(["server"]);
   });
 });
 
