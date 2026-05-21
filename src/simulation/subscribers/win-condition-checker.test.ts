@@ -21,15 +21,6 @@ const overloadSnapshot: TrafficSnapshot = {
   "server-1": { droppedOps: 50, handledOps: 50, incomingOps: 100 },
 };
 
-const step = (
-  engine: SimulationEngine,
-  snapshot: TrafficSnapshot,
-  rate: number,
-  elapsed = 1,
-): void => {
-  engine.step({ elapsed, rate, trafficSnapshot: snapshot });
-};
-
 describe(WinConditionChecker, () => {
   let engine: SimulationEngine;
   let onWin: Mock<() => void>;
@@ -45,59 +36,63 @@ describe(WinConditionChecker, () => {
     checker.destroy();
   });
 
+  const run = (snapshot: TrafficSnapshot, rate: number): void => {
+    checker.run({ currentTrafficRate: rate, nodeStates: snapshot }, { onWin });
+  };
+
   it("fires onWin when sustained no-drop ticks reach the threshold", () => {
-    step(engine, cleanSnapshot, 100, 1);
-    step(engine, cleanSnapshot, 100, 2);
-    step(engine, cleanSnapshot, 100, 3);
+    run(cleanSnapshot, 100);
+    run(cleanSnapshot, 100);
+    run(cleanSnapshot, 100);
 
     expect(onWin).toHaveBeenCalledOnce();
   });
 
   it("does not fire onWin before the threshold is reached", () => {
-    step(engine, cleanSnapshot, 100, 1);
-    step(engine, cleanSnapshot, 100, 2);
+    run(cleanSnapshot, 100);
+    run(cleanSnapshot, 100);
 
     expect(onWin).not.toHaveBeenCalled();
   });
 
   it("fires onWin exactly once even after continued clean ticks", () => {
-    for (let i = 1; i <= 5; i++) {
-      step(engine, cleanSnapshot, 100, i);
+    for (let i = 0; i < 5; i++) {
+      run(cleanSnapshot, 100);
     }
 
     expect(onWin).toHaveBeenCalledOnce();
   });
 
   it("resets the counter when overload occurs", () => {
-    step(engine, cleanSnapshot, 100, 1);
-    step(engine, cleanSnapshot, 100, 2);
-    step(engine, overloadSnapshot, 100, 3);
-    step(engine, cleanSnapshot, 100, 4);
-    step(engine, cleanSnapshot, 100, 5);
+    run(cleanSnapshot, 100);
+    run(cleanSnapshot, 100);
+    run(overloadSnapshot, 100);
+    run(cleanSnapshot, 100);
+    run(cleanSnapshot, 100);
 
     expect(onWin).not.toHaveBeenCalled();
   });
 
   it("resets the counter when rate falls below target", () => {
-    step(engine, cleanSnapshot, 100, 1);
-    step(engine, cleanSnapshot, 100, 2);
-    step(engine, cleanSnapshot, 50, 3);
-    step(engine, cleanSnapshot, 100, 4);
-    step(engine, cleanSnapshot, 100, 5);
+    run(cleanSnapshot, 100);
+    run(cleanSnapshot, 100);
+    run(cleanSnapshot, 50);
+    run(cleanSnapshot, 100);
+    run(cleanSnapshot, 100);
 
     expect(onWin).not.toHaveBeenCalled();
   });
 
   describe("reset", () => {
     it("allows onWin to fire again after reset", () => {
-      for (let i = 1; i <= 3; i++) {
-        step(engine, cleanSnapshot, 100, i);
+      for (let i = 0; i < 3; i++) {
+        run(cleanSnapshot, 100);
       }
       checker.reset();
       onWin.mockClear();
 
-      for (let i = 4; i <= 6; i++) {
-        step(engine, cleanSnapshot, 100, i);
+      for (let i = 0; i < 3; i++) {
+        run(cleanSnapshot, 100);
       }
 
       expect(onWin).toHaveBeenCalledOnce();
@@ -107,10 +102,7 @@ describe(WinConditionChecker, () => {
   describe("destroy", () => {
     it("stops receiving engine updates", () => {
       checker.destroy();
-
-      for (let i = 1; i <= 3; i++) {
-        step(engine, cleanSnapshot, 100, i);
-      }
+      engine.reset();
 
       expect(onWin).not.toHaveBeenCalled();
     });

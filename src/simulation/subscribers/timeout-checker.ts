@@ -7,21 +7,25 @@ interface TimeoutCallbacks {
 
 class TimeoutChecker {
   private readonly unsubscribe: () => void;
+  private readonly levelConfig: LevelConfig;
   private timedOut = false;
 
   constructor(engine: SimulationEngine, levelConfig: LevelConfig, callbacks: TimeoutCallbacks) {
+    this.levelConfig = levelConfig;
     this.unsubscribe = engine.subscribe(() => {
-      if (this.timedOut) {
-        return;
-      }
-
-      const { elapsedSeconds } = engine.getSnapshot();
-
-      if (elapsedSeconds >= levelConfig.timeout) {
-        this.timedOut = true;
-        callbacks.onTimeout();
-      }
+      this.run(engine.getSnapshot().elapsedSeconds, callbacks);
     });
+  }
+
+  run(elapsedSeconds: number, callbacks: TimeoutCallbacks): void {
+    if (this.timedOut) {
+      return;
+    }
+
+    if (elapsedSeconds >= this.levelConfig.timeout) {
+      this.timedOut = true;
+      callbacks.onTimeout();
+    }
   }
 
   reset(): void {

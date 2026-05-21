@@ -1,28 +1,26 @@
 const TICK_INTERVAL_MS = 1000;
 
 class SimulationLoop {
-  private readonly onTick: (elapsed: number) => void;
+  private readonly onTick: (delta: number) => void;
   private readonly clock: () => number;
   private intervalId: ReturnType<typeof setInterval> | null = null;
-  private elapsed = 0;
 
-  constructor(onTick: (elapsed: number) => void, clock: () => number = () => Date.now()) {
+  constructor(onTick: (deltaMs: number) => void, clock: () => number = () => Date.now()) {
     this.onTick = onTick;
     this.clock = clock;
   }
 
   start(): void {
-    this.elapsed = 0;
     let lastTime = this.clock();
 
     this.intervalId = setInterval(() => {
       const now = this.clock();
-      let delta = now - lastTime;
+      let deltaMs = now - lastTime;
       lastTime = now;
 
-      while (delta >= TICK_INTERVAL_MS) {
-        delta -= TICK_INTERVAL_MS;
-        this.onTick(++this.elapsed);
+      while (deltaMs >= TICK_INTERVAL_MS) {
+        deltaMs -= TICK_INTERVAL_MS;
+        this.onTick(1);
       }
     }, TICK_INTERVAL_MS);
   }

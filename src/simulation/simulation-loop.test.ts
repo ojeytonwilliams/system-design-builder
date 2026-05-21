@@ -48,13 +48,13 @@ describe(SimulationLoop, () => {
     expect(onTick).toHaveBeenCalledTimes(3);
   });
 
-  it("passes incrementing elapsed values to each call", () => {
+  it("passes a delta of 1 to each call", () => {
     loop.start();
     vi.advanceTimersByTime(3000);
 
     expect(onTick).toHaveBeenNthCalledWith(1, 1);
-    expect(onTick).toHaveBeenNthCalledWith(2, 2);
-    expect(onTick).toHaveBeenNthCalledWith(3, 3);
+    expect(onTick).toHaveBeenNthCalledWith(2, 1);
+    expect(onTick).toHaveBeenNthCalledWith(3, 1);
   });
 
   it("stop() halts ticking", () => {
@@ -66,7 +66,7 @@ describe(SimulationLoop, () => {
     expect(onTick).toHaveBeenCalledOnce();
   });
 
-  it("elapsed resets on each start()", () => {
+  it("passes delta of 1 after restarting", () => {
     loop.start();
     vi.advanceTimersByTime(2000);
     loop.stop();

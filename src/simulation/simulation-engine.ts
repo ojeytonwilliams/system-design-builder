@@ -1,8 +1,18 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "./engine.js";
-import { computeNextSimState, getInitialSnapshot } from "./simulation-store.js";
-import type { SimTick, SimulationSnapshot } from "./simulation-store.js";
-import type { LevelConfig } from "./types.js";
+import type { LevelConfig, TrafficSnapshot } from "./types.js";
+
+interface SimulationSnapshot {
+  currentTrafficRate: number;
+  elapsedSeconds: number;
+  nodeStates: TrafficSnapshot;
+}
+
+const getInitialSnapshot = (): SimulationSnapshot => ({
+  currentTrafficRate: 0,
+  elapsedSeconds: 0,
+  nodeStates: {},
+});
 
 class SimulationEngine {
   private state: SimulationSnapshot = getInitialSnapshot();
@@ -29,10 +39,11 @@ class SimulationEngine {
     this.config = config;
   }
 
-  tick(elapsed: number): void {
+  tick(delta: number): void {
     if (this.config === null) {
       return;
     }
+    const elapsed = this.state.elapsedSeconds + delta;
     const rate = getLinearTrafficRate({
       elapsed,
       timeout: this.config.timeout,
@@ -43,11 +54,11 @@ class SimulationEngine {
       cacheHitRate: this.config.cacheHitRate,
       trafficRate: rate,
     });
-    this.step({ elapsed, rate, trafficSnapshot });
-  }
-
-  step(tick: SimTick): void {
-    this.state = computeNextSimState(tick);
+    this.state = {
+      currentTrafficRate: rate,
+      elapsedSeconds: elapsed,
+      nodeStates: trafficSnapshot,
+    };
     this.notify();
   }
 
@@ -64,3 +75,4 @@ class SimulationEngine {
 }
 
 export { SimulationEngine };
+export type { SimulationSnapshot };

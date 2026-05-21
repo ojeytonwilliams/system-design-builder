@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.3.29] - 2026-05-21
+
+### Refactoring
+
+- **Removed `simulation-store.ts`**: the `computeNextSimState` helper was the only thing left in this module after the subscriber extraction; its logic (state object construction) has been inlined directly into `SimulationEngine.tick()`. The `SimTick`/`SimulationSnapshot` types it exported now live in `simulation-engine.ts`, which is the canonical owner of engine state.
+- **Extracted `run()` methods on subscriber classes**: `OverloadEventDetector`, `TimeoutChecker`, and `WinConditionChecker` each now expose a `run()` method that carries the detection logic and can be called directly in tests. Previously, subscriber tests had to drive a real `SimulationEngine` (via `engine.step()`) in order to trigger subscriber callbacks — coupling the tests to engine internals. Tests now construct the subscriber and call `run()` directly with the values they care about.
+- **Fixed `SimulationLoop` passing cumulative elapsed instead of a delta**: `SimulationLoop` was calling `onTick(++this.elapsed)`, passing 1, 2, 3… to each call. After `SimulationEngine.tick()` was changed to *accumulate* elapsed (`elapsedSeconds + delta`), this caused double-counting — after 3 ticks elapsed was 6 rather than 3, blowing past level timeouts. The loop now passes `1` (one second per tick) to match the delta-based engine contract.
+
 ## [2.3.28] - 2026-05-21
 
 ### Refactoring

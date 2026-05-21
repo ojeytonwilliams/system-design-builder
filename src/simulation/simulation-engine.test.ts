@@ -1,33 +1,24 @@
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import { SimulationEngine } from "./simulation-engine.js";
-import type { SimTick } from "./simulation-store.js";
-import type { LevelConfig, TrafficSnapshot } from "./types.js";
+import type { LevelConfig } from "./types.js";
 
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 100,
   timeout: 60,
-  trafficPeak: 100,
+  trafficPeak: 150,
   trafficStart: 100,
   trafficTarget: 100,
   winSustainSeconds: 3,
 };
 
-const noDropSnapshot: TrafficSnapshot = {
-  "server-1": { droppedOps: 0, handledOps: 100, incomingOps: 100 },
-};
-
-const baseTick: SimTick = {
-  elapsed: 1,
-  rate: 100,
-  trafficSnapshot: noDropSnapshot,
-};
-
 describe(SimulationEngine, () => {
   let engine: SimulationEngine;
+  const delta = (1 / baseConfig.timeout) * (baseConfig.trafficPeak - baseConfig.trafficStart);
 
   beforeEach(() => {
     engine = new SimulationEngine();
+    engine.setConfig(baseConfig);
   });
 
   it("getSnapshot returns initial state before any steps", () => {
@@ -37,13 +28,28 @@ describe(SimulationEngine, () => {
     expect(snap.nodeStates).toStrictEqual({});
   });
 
-  it("step() updates the snapshot", () => {
-    engine.step(baseTick);
+  it("tick() increments elapsedSeconds", () => {
+    engine.tick(1);
     const snap = engine.getSnapshot();
 
     expect(snap.elapsedSeconds).toBe(1);
-    expect(snap.currentTrafficRate).toBe(100);
-    expect(snap.nodeStates).toBe(noDropSnapshot);
+  });
+
+  it("tick() updates the currentTrafficRate", () => {
+    engine.tick(1);
+    const snap = engine.getSnapshot();
+
+    expect(snap.currentTrafficRate).toBe(100 + delta);
+  });
+
+  it("tick() updates the snapshot", () => {
+    engine.setGraph([{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }], []);
+    engine.tick(1);
+    const snap = engine.getSnapshot();
+
+    expect(snap.nodeStates).toStrictEqual({
+      "users-1": { droppedOps: 0, handledOps: 100 + delta, incomingOps: 100 + delta },
+    });
   });
 
   it("step() notifies subscribers synchronously", () => {
@@ -52,8 +58,8 @@ describe(SimulationEngine, () => {
       calls.push(engine.getSnapshot().elapsedSeconds);
     });
 
-    engine.step(baseTick);
-    engine.step({ ...baseTick, elapsed: 2 });
+    engine.tick(1);
+    engine.tick(1);
 
     expect(calls).toStrictEqual([1, 2]);
   });
@@ -63,13 +69,13 @@ describe(SimulationEngine, () => {
     const unsubscribe = engine.subscribe(listener);
 
     unsubscribe();
-    engine.step(baseTick);
+    engine.tick(1);
 
     expect(listener).not.toHaveBeenCalled();
   });
 
   it("reset() restores the initial state", () => {
-    engine.step(baseTick);
+    engine.tick(1);
     engine.reset();
     const snap = engine.getSnapshot();
 
@@ -86,20 +92,16 @@ describe(SimulationEngine, () => {
     expect(listener).toHaveBeenCalledOnce();
   });
 
-  it("getSnapshot returns a new reference after step()", () => {
-    const before = engine.getSnapshot();
-    engine.step(baseTick);
-    const after = engine.getSnapshot();
-
-    expect(before).not.toBe(after);
-  });
-
-  it("getSnapshot returns the same reference between steps", () => {
-    engine.step(baseTick);
+  it("getSnapshot returns the same snapshot until tick is called", () => {
     const first = engine.getSnapshot();
     const second = engine.getSnapshot();
 
     expect(first).toBe(second);
+
+    engine.tick(1);
+    const third = engine.getSnapshot();
+
+    expect(third).not.toBe(first);
   });
 });
 
