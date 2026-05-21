@@ -31,8 +31,11 @@ import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { graphReducer } from "../game/graph-reducer.js";
 import { hasRunnablePath } from "../simulation/engine.js";
-import { computeAvailableComponents } from "../simulation/unlocks.js";
+import { OverloadEventDetector } from "../simulation/subscribers/overload-event-detector.js";
+import { TimeoutChecker } from "../simulation/subscribers/timeout-checker.js";
+import { WinConditionChecker } from "../simulation/subscribers/win-condition-checker.js";
 import type { LevelConfig } from "../simulation/types.js";
+import { computeAvailableComponents } from "../simulation/unlocks.js";
 
 const MOBILE_LAYOUT_BREAKPOINT = 768;
 
@@ -65,8 +68,13 @@ const GameScene = ({
   engineRef.current ??= new SimulationEngine();
 
   const engine = engineRef.current;
+
+  const overloadDetectorRef = useRef<OverloadEventDetector | null>(null);
+  const winCheckerRef = useRef<WinConditionChecker | null>(null);
+  const timeoutCheckerRef = useRef<TimeoutChecker | null>(null);
+
   const simSnapshot = useSimulationSnapshot(engine);
-  const { currentTrafficRate, elapsedSeconds, isTimedOut, isWon, nodeStates } = simSnapshot;
+  const { currentTrafficRate, elapsedSeconds, nodeStates } = simSnapshot;
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
@@ -98,7 +106,7 @@ const GameScene = ({
     currentLevel.componentUnlocks,
     {
       graphNodes: graphState.nodes,
-      overloadDurations: simSnapshot.overloadDurations,
+      overloadDurations: overloadDetectorRef.current?.getOverloadDurations() ?? new Map(),
       snapshot: simSnapshot.nodeStates,
     },
   );
@@ -192,19 +200,18 @@ const GameScene = ({
 
   useSimulationTick({ engine, isSimulating });
 
-  // Reset engine and per-level state whenever the level changes
+  // Reset engine and per-level state whenever the level changes.
+  // Subscribers are destroyed and recreated so they capture the new levelConfig.
+  // OverloadEventDetector is created before engine.reset() to avoid a spurious
+  // RESOLVED event from transitioning out of a previously-overloaded state.
   useEffect(() => {
-    engine.reset();
-    shownCoachMessageRef.current = new Set();
-    hasSeenOverloadThisLevelRef.current = false;
-  }, [currentLevel.id, engine]);
+    overloadDetectorRef.current?.destroy();
+    winCheckerRef.current?.destroy();
+    timeoutCheckerRef.current?.destroy();
 
-  // Direct subscription for overload event logging — runs synchronously per
-  // Engine notification so STARTED and RESOLVED on consecutive ticks are both captured
-  useEffect(() => {
-    const unsub = engine.subscribe(() => {
-      const snap = engine.getSnapshot();
-      if (snap.overloadEvent === "STARTED") {
+    overloadDetectorRef.current = new OverloadEventDetector(engine, {
+      onOverloadResolved: () => appendEvent("Overload resolved"),
+      onOverloadStarted: () => {
         appendEvent("Overload started");
         if (!hasSeenOverloadThisLevelRef.current) {
           setCoachMessage(
@@ -212,14 +219,21 @@ const GameScene = ({
           );
           hasSeenOverloadThisLevelRef.current = true;
         }
-      } else if (snap.overloadEvent === "RESOLVED") {
-        appendEvent("Overload resolved");
-      }
+      },
     });
-    return () => {
-      unsub();
-    };
-  }, [engine, appendEvent, setCoachMessage]);
+
+    winCheckerRef.current = new WinConditionChecker(engine, levelConfig, {
+      onWin: () => winLevel(currentLevel.id, dispatchPhase, markLevelComplete),
+    });
+
+    timeoutCheckerRef.current = new TimeoutChecker(engine, levelConfig, {
+      onTimeout: () => dispatchPhase({ type: "TIMEOUT" }),
+    });
+
+    engine.reset();
+    shownCoachMessageRef.current = new Set();
+    hasSeenOverloadThisLevelRef.current = false;
+  }, [currentLevel.id, engine]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show timed coach messages as elapsed time advances
   useEffect(() => {
@@ -230,18 +244,6 @@ const GameScene = ({
       }
     });
   }, [elapsedSeconds, currentLevel, setCoachMessage]);
-
-  useEffect(() => {
-    if (isWon && isSimulating) {
-      winLevel(currentLevel.id, dispatchPhase, markLevelComplete);
-    }
-  }, [isWon, isSimulating, currentLevel.id, dispatchPhase, markLevelComplete]);
-
-  useEffect(() => {
-    if (isTimedOut && isSimulating) {
-      dispatchPhase({ type: "TIMEOUT" });
-    }
-  }, [isTimedOut, isSimulating, dispatchPhase]);
 
   return (
     <div

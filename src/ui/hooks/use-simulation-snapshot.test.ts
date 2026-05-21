@@ -7,9 +7,7 @@ describe(useSimulationSnapshot, () => {
     const engine = new SimulationEngine();
     const { result } = renderHook(() => useSimulationSnapshot(engine));
 
-    expect(result.current.isWon).toBe(false);
-    expect(result.current.isTimedOut).toBe(false);
+    expect(result.current.elapsedSeconds).toBe(0);
     expect(result.current.nodeStates).toStrictEqual({});
-    expect(result.current.sustainedNoDropSeconds).toBe(0);
   });
 });

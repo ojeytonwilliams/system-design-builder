@@ -43,11 +43,11 @@ class SimulationEngine {
       cacheHitRate: this.config.cacheHitRate,
       trafficRate: rate,
     });
-    this.step({ elapsed, levelConfig: this.config, rate, trafficSnapshot });
+    this.step({ elapsed, rate, trafficSnapshot });
   }
 
   step(tick: SimTick): void {
-    this.state = computeNextSimState(this.state, tick);
+    this.state = computeNextSimState(tick);
     this.notify();
   }
 

@@ -19,7 +19,6 @@ const noDropSnapshot: TrafficSnapshot = {
 
 const baseTick: SimTick = {
   elapsed: 1,
-  levelConfig: baseConfig,
   rate: 100,
   trafficSnapshot: noDropSnapshot,
 };
@@ -35,10 +34,7 @@ describe(SimulationEngine, () => {
     const snap = engine.getSnapshot();
 
     expect(snap.elapsedSeconds).toBe(0);
-    expect(snap.isWon).toBe(false);
-    expect(snap.isTimedOut).toBe(false);
     expect(snap.nodeStates).toStrictEqual({});
-    expect(snap.sustainedNoDropSeconds).toBe(0);
   });
 
   it("step() updates the snapshot", () => {

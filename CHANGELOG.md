@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.28] - 2026-05-21
+
+### Refactoring
+
+- **Extracted win, timeout, and overload detection out of the simulation engine** into three independent subscriber classes (`WinConditionChecker`, `TimeoutChecker`, `OverloadEventDetector`) in `src/simulation/subscribers/`. Previously, `computeNextSimState` was responsible for state evolution *and* for deciding whether the player had won, timed out, or crossed an overload threshold — mixing engine concerns with game rules. Each subscriber now owns its own derived state (e.g. `sustainedNoDropTicks`, `overloadDurations`) and fires a callback when its condition is met, leaving the engine to produce only raw simulation data: node states, traffic rate, and elapsed time. `OverloadEventDetector` also becomes the single authoritative source for `overloadDurations`, replacing four scattered sites that each re-derived overload state from node traffic independently. `game-layout.tsx` wires the three subscribers in the level-change effect, replacing the three `useEffect` hooks that previously watched snapshot flags reactively.
+
 ## [2.3.27] - 2026-05-20
 
 ### Refactoring
