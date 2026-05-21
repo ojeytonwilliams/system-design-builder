@@ -25,7 +25,7 @@ const stubLevel: LevelDefinition = {
   trafficPeak: 100,
   trafficStart: 50,
   trafficTarget: 100,
-  winSustainSeconds: 10,
+  winSustainMs: 10_000,
 };
 
 const stubLevel2: LevelDefinition = { ...stubLevel, id: "level-2", title: "Level 2" };

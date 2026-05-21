@@ -20,7 +20,7 @@ class SimulationLoop {
 
       while (deltaMs >= TICK_INTERVAL_MS) {
         deltaMs -= TICK_INTERVAL_MS;
-        this.onTick(1);
+        this.onTick(TICK_INTERVAL_MS);
       }
     }, TICK_INTERVAL_MS);
   }
@@ -33,4 +33,4 @@ class SimulationLoop {
   }
 }
 
-export { SimulationLoop };
+export { SimulationLoop, TICK_INTERVAL_MS };

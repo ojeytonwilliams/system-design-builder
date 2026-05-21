@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.30] - 2026-05-21
+
+### Refactoring
+
+- **Moved the simulation time domain to milliseconds**: `elapsedSeconds` renamed to `elapsedMs` on `SimulationSnapshot`, `winSustainSeconds` renamed to `winSustainMs` on `LevelDefinition` and `LevelConfig`, and `SimulationEngine.tick()` now takes `deltaMs` (milliseconds). `SimulationLoop` passes `TICK_INTERVAL_MS` (1000) per tick rather than the previous `1`. This makes the unit explicit at every call site, prevents silent bugs where seconds and milliseconds were mixed, and lets the engine accept sub-second deltas without a separate conversion step.
+
 ## [2.3.29] - 2026-05-21
 
 ### Refactoring

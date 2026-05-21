@@ -13,16 +13,16 @@ class TimeoutChecker {
   constructor(engine: SimulationEngine, levelConfig: LevelConfig, callbacks: TimeoutCallbacks) {
     this.levelConfig = levelConfig;
     this.unsubscribe = engine.subscribe(() => {
-      this.run(engine.getSnapshot().elapsedSeconds, callbacks);
+      this.run(engine.getSnapshot().elapsedMs, callbacks);
     });
   }
 
-  run(elapsedSeconds: number, callbacks: TimeoutCallbacks): void {
+  run(elapsedMs: number, callbacks: TimeoutCallbacks): void {
     if (this.timedOut) {
       return;
     }
 
-    if (elapsedSeconds >= this.levelConfig.timeout) {
+    if (elapsedMs >= this.levelConfig.timeout) {
       this.timedOut = true;
       callbacks.onTimeout();
     }

@@ -44,7 +44,7 @@ interface LevelDefinition {
   trafficPeak: number;
   trafficStart: number;
   trafficTarget: number;
-  winSustainSeconds: number;
+  winSustainMs: number;
 }
 
 export type { ComponentUnlock, LevelDefinition, UnlockTrigger };

@@ -74,7 +74,7 @@ const GameScene = ({
   const timeoutCheckerRef = useRef<TimeoutChecker | null>(null);
 
   const simSnapshot = useSimulationSnapshot(engine);
-  const { currentTrafficRate, elapsedSeconds, nodeStates } = simSnapshot;
+  const { currentTrafficRate, elapsedMs, nodeStates } = simSnapshot;
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
@@ -238,12 +238,12 @@ const GameScene = ({
   // Show timed coach messages as elapsed time advances
   useEffect(() => {
     currentLevel.coachMessages.forEach((message, index) => {
-      if (elapsedSeconds >= message.atSecond && !shownCoachMessageRef.current.has(index)) {
+      if (elapsedMs >= message.atSecond && !shownCoachMessageRef.current.has(index)) {
         shownCoachMessageRef.current.add(index);
         setCoachMessage(message.text);
       }
     });
-  }, [elapsedSeconds, currentLevel, setCoachMessage]);
+  }, [elapsedMs, currentLevel, setCoachMessage]);
 
   return (
     <div
@@ -373,7 +373,7 @@ const GameLayout = () => {
     trafficPeak: currentLevel.trafficPeak,
     trafficStart: currentLevel.trafficStart,
     trafficTarget: currentLevel.trafficTarget,
-    winSustainSeconds: currentLevel.winSustainSeconds,
+    winSustainMs: currentLevel.winSustainMs,
   };
 
   return (

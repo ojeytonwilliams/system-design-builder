@@ -7,7 +7,7 @@ describe(useSimulationSnapshot, () => {
     const engine = new SimulationEngine();
     const { result } = renderHook(() => useSimulationSnapshot(engine));
 
-    expect(result.current.elapsedSeconds).toBe(0);
+    expect(result.current.elapsedMs).toBe(0);
     expect(result.current.nodeStates).toStrictEqual({});
   });
 });

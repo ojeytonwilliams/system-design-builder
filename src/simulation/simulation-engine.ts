@@ -4,13 +4,13 @@ import type { LevelConfig, TrafficSnapshot } from "./types.js";
 
 interface SimulationSnapshot {
   currentTrafficRate: number;
-  elapsedSeconds: number;
+  elapsedMs: number;
   nodeStates: TrafficSnapshot;
 }
 
 const getInitialSnapshot = (): SimulationSnapshot => ({
   currentTrafficRate: 0,
-  elapsedSeconds: 0,
+  elapsedMs: 0,
   nodeStates: {},
 });
 
@@ -39,11 +39,11 @@ class SimulationEngine {
     this.config = config;
   }
 
-  tick(delta: number): void {
+  tick(deltaMs: number): void {
     if (this.config === null) {
       return;
     }
-    const elapsed = this.state.elapsedSeconds + delta;
+    const elapsed = this.state.elapsedMs + deltaMs / 1000;
     const rate = getLinearTrafficRate({
       elapsed,
       timeout: this.config.timeout,
@@ -56,7 +56,7 @@ class SimulationEngine {
     });
     this.state = {
       currentTrafficRate: rate,
-      elapsedSeconds: elapsed,
+      elapsedMs: elapsed,
       nodeStates: trafficSnapshot,
     };
     this.notify();

@@ -10,7 +10,7 @@ const baseConfig: LevelConfig = {
   trafficPeak: 100,
   trafficStart: 100,
   trafficTarget: 100,
-  winSustainSeconds: 3,
+  winSustainMs: 3_000,
 };
 
 describe(TimeoutChecker, () => {
@@ -28,8 +28,8 @@ describe(TimeoutChecker, () => {
     checker.destroy();
   });
 
-  const run = (elapsedSeconds: number): void => {
-    checker.run(elapsedSeconds, { onTimeout });
+  const run = (elapsedMs: number): void => {
+    checker.run(elapsedMs, { onTimeout });
   };
 
   it("does not fire onTimeout before elapsed reaches the timeout", () => {

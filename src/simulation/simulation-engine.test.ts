@@ -5,11 +5,11 @@ import type { LevelConfig } from "./types.js";
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 100,
-  timeout: 60,
+  timeout: 60000,
   trafficPeak: 150,
   trafficStart: 100,
   trafficTarget: 100,
-  winSustainSeconds: 3,
+  winSustainMs: 3_000,
 };
 
 describe(SimulationEngine, () => {
@@ -24,19 +24,19 @@ describe(SimulationEngine, () => {
   it("getSnapshot returns initial state before any steps", () => {
     const snap = engine.getSnapshot();
 
-    expect(snap.elapsedSeconds).toBe(0);
+    expect(snap.elapsedMs).toBe(0);
     expect(snap.nodeStates).toStrictEqual({});
   });
 
-  it("tick() increments elapsedSeconds", () => {
+  it("tick() increments elapsedMs", () => {
     engine.tick(1);
     const snap = engine.getSnapshot();
 
-    expect(snap.elapsedSeconds).toBe(1);
+    expect(snap.elapsedMs).toBe(0.001);
   });
 
   it("tick() updates the currentTrafficRate", () => {
-    engine.tick(1);
+    engine.tick(1000);
     const snap = engine.getSnapshot();
 
     expect(snap.currentTrafficRate).toBe(100 + delta);
@@ -44,7 +44,7 @@ describe(SimulationEngine, () => {
 
   it("tick() updates the snapshot", () => {
     engine.setGraph([{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }], []);
-    engine.tick(1);
+    engine.tick(1000);
     const snap = engine.getSnapshot();
 
     expect(snap.nodeStates).toStrictEqual({
@@ -55,13 +55,13 @@ describe(SimulationEngine, () => {
   it("step() notifies subscribers synchronously", () => {
     const calls: number[] = [];
     engine.subscribe(() => {
-      calls.push(engine.getSnapshot().elapsedSeconds);
+      calls.push(engine.getSnapshot().elapsedMs);
     });
 
     engine.tick(1);
     engine.tick(1);
 
-    expect(calls).toStrictEqual([1, 2]);
+    expect(calls).toStrictEqual([0.001, 0.002]);
   });
 
   it("subscribe() returns an unsubscribe function that stops notifications", () => {
@@ -79,7 +79,7 @@ describe(SimulationEngine, () => {
     engine.reset();
     const snap = engine.getSnapshot();
 
-    expect(snap.elapsedSeconds).toBe(0);
+    expect(snap.elapsedMs).toBe(0);
     expect(snap.nodeStates).toStrictEqual({});
   });
 
@@ -116,7 +116,7 @@ describe("tick", () => {
     engine.setGraph([], []);
     engine.tick(1);
 
-    expect(engine.getSnapshot().elapsedSeconds).toBe(0);
+    expect(engine.getSnapshot().elapsedMs).toBe(0);
   });
 
   it("updates elapsed when config and graph are set", () => {
@@ -124,7 +124,7 @@ describe("tick", () => {
     engine.setGraph([], []);
     engine.tick(1);
 
-    expect(engine.getSnapshot().elapsedSeconds).toBe(1);
+    expect(engine.getSnapshot().elapsedMs).toBe(1 / 1000);
   });
 
   it("notifies subscribers", () => {

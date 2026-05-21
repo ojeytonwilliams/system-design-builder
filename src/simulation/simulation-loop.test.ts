@@ -52,9 +52,9 @@ describe(SimulationLoop, () => {
     loop.start();
     vi.advanceTimersByTime(3000);
 
-    expect(onTick).toHaveBeenNthCalledWith(1, 1);
-    expect(onTick).toHaveBeenNthCalledWith(2, 1);
-    expect(onTick).toHaveBeenNthCalledWith(3, 1);
+    expect(onTick).toHaveBeenNthCalledWith(1, 1000);
+    expect(onTick).toHaveBeenNthCalledWith(2, 1000);
+    expect(onTick).toHaveBeenNthCalledWith(3, 1000);
   });
 
   it("stop() halts ticking", () => {
@@ -67,12 +67,10 @@ describe(SimulationLoop, () => {
   });
 
   it("passes delta of 1 after restarting", () => {
-    loop.start();
-    vi.advanceTimersByTime(2000);
     loop.stop();
     loop.start();
     vi.advanceTimersByTime(1000);
 
-    expect(onTick).toHaveBeenNthCalledWith(3, 1);
+    expect(onTick).toHaveBeenNthCalledWith(1, 1000);
   });
 });

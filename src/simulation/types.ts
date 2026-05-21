@@ -13,7 +13,7 @@ interface LevelConfig {
   trafficPeak: number;
   trafficStart: number;
   trafficTarget: number;
-  winSustainSeconds: number;
+  winSustainMs: number;
 }
 
 interface FlowConfig {

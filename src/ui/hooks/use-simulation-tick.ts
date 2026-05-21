@@ -14,7 +14,7 @@ const useSimulationTick = ({ engine, isSimulating }: UseSimulationTickParams): v
     }
 
     engine.reset();
-    const loop = new SimulationLoop((elapsed) => engine.tick(elapsed));
+    const loop = new SimulationLoop((delta) => engine.tick(delta));
     loop.start();
 
     return () => {

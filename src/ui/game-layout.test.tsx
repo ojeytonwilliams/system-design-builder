@@ -16,7 +16,7 @@ const winLevelConfig: LevelConfig = {
   trafficPeak: 40,
   trafficStart: 40,
   trafficTarget: 40,
-  winSustainSeconds: 3,
+  winSustainMs: 3_000,
 };
 
 const testLevelConfig: LevelConfig = {
@@ -26,7 +26,7 @@ const testLevelConfig: LevelConfig = {
   trafficPeak: 100,
   trafficStart: 100,
   trafficTarget: 100,
-  winSustainSeconds: 10,
+  winSustainMs: 10_000,
 };
 
 // 150 req/s on a 50 req/s server = 300% load
@@ -37,7 +37,7 @@ const overloadLevelConfig: LevelConfig = {
   trafficPeak: 150,
   trafficStart: 150,
   trafficTarget: 150,
-  winSustainSeconds: 10,
+  winSustainMs: 10_000,
 };
 
 // Traffic ramps down from 100 → 0 over 4 seconds:
@@ -51,7 +51,7 @@ const resolvingOverloadLevelConfig: LevelConfig = {
   trafficPeak: 0,
   trafficStart: 100,
   trafficTarget: 40,
-  winSustainSeconds: 10,
+  winSustainMs: 10_000,
 };
 
 const overloadNodes: ArchitectureNode[] = [
@@ -105,7 +105,7 @@ const defaultSceneProps = {
     trafficPeak: 0,
     trafficStart: 0,
     trafficTarget: 0,
-    winSustainSeconds: 10,
+    winSustainMs: 10_000,
   } as LevelConfig,
   markLevelComplete: (): void => {},
 };
@@ -598,7 +598,7 @@ describe("budget enforcement", () => {
       trafficPeak: 40,
       trafficStart: 40,
       trafficTarget: 40,
-      winSustainSeconds: 10,
+      winSustainMs: 10_000,
     };
 
     renderScene({

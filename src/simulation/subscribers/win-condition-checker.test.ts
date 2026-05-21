@@ -10,7 +10,7 @@ const baseConfig: LevelConfig = {
   trafficPeak: 100,
   trafficStart: 100,
   trafficTarget: 100,
-  winSustainSeconds: 3,
+  winSustainMs: 3_000,
 };
 
 const cleanSnapshot: TrafficSnapshot = {
