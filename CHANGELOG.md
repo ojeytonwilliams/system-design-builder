@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.5.0] - 2026-05-22
+
+### Features
+
+- **Individual request simulation — Phase 2**: Requests now travel through the graph and reach terminal states.
+  - Added `requestRouter` — a pure function that decides the next step for a completed-processing request: `db`/`db-large` always fulfil; `server`/`server-large` fulfil when leaf nodes or route to an outgoing edge; `cache` fulfils on a hit (probability = `cacheHitRate`) or routes to the child edge on a miss; `load-balancer` picks a child edge at random; `users` follows its single outgoing edge.
+  - `SimulationEngine` now advances all in-flight `Transit` entries each tick (`elapsedMs += deltaMs`, `progress = elapsedMs / durationMs`); when a transit completes the request transitions to `PROCESSING` at the target node with `durationMs = latencyMs × TIME_SCALE`.
+  - `SimulationEngine` also advances all `Processing` entries each tick; on completion it calls `requestRouter` and either marks the request `FULFILLED` or puts it back `IN_TRANSIT` along the next edge.
+
 ## [2.4.0] - 2026-05-22
 
 ### Features

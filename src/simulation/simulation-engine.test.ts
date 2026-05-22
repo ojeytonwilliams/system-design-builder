@@ -1,5 +1,6 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { SimulationEngine } from "./simulation-engine.js";
+import { TIME_SCALE } from "./request-types.js";
 import type { LevelConfig } from "./types.js";
 
 const baseConfig: LevelConfig = {
@@ -216,5 +217,115 @@ describe("tick", () => {
     engine.tick(1);
 
     expect(engine.getSnapshot().nodeStates).toHaveProperty("server-1");
+  });
+});
+
+describe("transit and processing advancement", () => {
+  const TICK_MS = 500;
+  const SPAWN_RATE = (TIME_SCALE * 1000) / TICK_MS;
+
+  const levelConfig: LevelConfig = {
+    cacheHitRate: 0,
+    monthlyBudget: 100,
+    timeout: 60000,
+    trafficPeak: SPAWN_RATE,
+    trafficStart: SPAWN_RATE,
+    trafficTarget: SPAWN_RATE,
+    winSustainMs: 3_000,
+  };
+
+  const usersNode: ArchitectureNode = {
+    componentType: "users",
+    id: "users-1",
+    position: { x: 0, y: 0 },
+  };
+
+  const serverNode: ArchitectureNode = {
+    componentType: "server",
+    id: "server-1",
+    position: { x: 0, y: 0 },
+  };
+
+  const edge: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
+
+  let engine: SimulationEngine;
+
+  beforeEach(() => {
+    engine = new SimulationEngine();
+    engine.setConfig(levelConfig);
+    engine.setGraph([usersNode, serverNode], [edge]);
+  });
+
+  it("advances transit elapsedMs by deltaMs each tick", () => {
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const [transit] = [...snap.transits.values()];
+
+    expect(transit?.elapsedMs).toBe(TICK_MS);
+  });
+
+  it("sets transit progress to elapsedMs / durationMs", () => {
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const [transit] = [...snap.transits.values()];
+
+    expect(transit?.progress).toBe(TICK_MS / 1000);
+  });
+
+  it("transitions request to PROCESSING when transit completes", () => {
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const processingRequests = [...snap.requests.values()].filter((r) => r.status === "PROCESSING");
+
+    expect(processingRequests).toHaveLength(1);
+  });
+
+  it("creates a processing entry at the target node on transit completion", () => {
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const [processing] = [...snap.processing.values()];
+
+    expect(processing?.nodeId).toBe("server-1");
+  });
+
+  it("sets processing durationMs to latencyMs × TIME_SCALE for the target component", () => {
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const [processing] = [...snap.processing.values()];
+
+    expect(processing?.durationMs).toBe(1000);
+  });
+
+  it("advances processing elapsedMs each tick (processing created and immediately advanced in same tick as transit completion)", () => {
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const [processing] = [...snap.processing.values()];
+
+    expect(processing?.elapsedMs).toBe(TICK_MS);
+  });
+
+  it("transitions to FULFILLED when processing completes", () => {
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const fulfilledRequests = [...snap.requests.values()].filter((r) => r.status === "FULFILLED");
+
+    expect(fulfilledRequests).toHaveLength(1);
+  });
+
+  it("removes the fulfilled request from the processing map", () => {
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const fulfilledRequest = [...snap.requests.values()].find((r) => r.status === "FULFILLED");
+
+    expect(fulfilledRequest).toBeDefined();
+    expect(snap.processing.has(fulfilledRequest!.id)).toBe(false);
   });
 });

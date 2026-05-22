@@ -1,8 +1,15 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
+import { COMPONENT_LIBRARY } from "../domain/component-library.js";
 import { computeTrafficFlow, getLinearTrafficRate } from "./engine.js";
-import type { Processing, SimRequest, Transit } from "./request-types.js";
+import { requestRouter } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
+import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
+import type { Processing, SimRequest, Transit } from "./request-types.js";
+import { transitionRequest } from "./transition-request.js";
+import type { RequestMaps } from "./transition-request.js";
 import type { LevelConfig, TrafficSnapshot } from "./types.js";
+
+const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
 
 interface SimulationSnapshot {
   currentTrafficRate: number;
@@ -96,6 +103,15 @@ class SimulationEngine {
       }
     }
 
+    const maps: RequestMaps = {
+      processing: this.processing,
+      requests: this.requests,
+      transits: this.transits,
+    };
+
+    this.advanceTransits(deltaMs, maps);
+    this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate);
+
     this.state = {
       currentTrafficRate: rate,
       elapsedMs: elapsed,
@@ -116,6 +132,70 @@ class SimulationEngine {
     this.wallClockElapsedMs = 0;
     this.state = getInitialSnapshot();
     this.notify();
+  }
+
+  private advanceTransits(deltaMs: number, maps: RequestMaps): void {
+    for (const [requestId, transit] of [...this.transits]) {
+      const newElapsed = transit.elapsedMs + deltaMs;
+
+      if (newElapsed >= transit.durationMs) {
+        const edge = this.graphEdges.find((e) => e.id === transit.edgeId);
+        const targetNode =
+          edge === undefined ? undefined : this.graphNodes.find((n) => n.id === edge.target);
+
+        if (targetNode === undefined) {
+          transitionRequest(requestId, { status: "FULFILLED" }, maps);
+        } else {
+          const durationMs = COMPONENT_LIBRARY[targetNode.componentType].latencyMs * TIME_SCALE;
+          transitionRequest(
+            requestId,
+            {
+              processing: { durationMs, elapsedMs: 0, nodeId: targetNode.id, progress: 0 },
+              status: "PROCESSING",
+            },
+            maps,
+          );
+        }
+      } else {
+        transit.elapsedMs = newElapsed;
+        transit.progress = newElapsed / transit.durationMs;
+      }
+    }
+  }
+
+  private advanceProcessing(deltaMs: number, maps: RequestMaps, cacheHitRate: number): void {
+    for (const [requestId, proc] of [...this.processing]) {
+      const newElapsed = proc.elapsedMs + deltaMs;
+
+      if (newElapsed >= proc.durationMs) {
+        const result = requestRouter(proc.nodeId, {
+          cacheHitRate,
+          edges: this.graphEdges,
+          nodes: this.graphNodes,
+        });
+
+        if (result.status === "FULFILLED") {
+          transitionRequest(requestId, { status: "FULFILLED" }, maps);
+        } else {
+          transitionRequest(
+            requestId,
+            {
+              status: "IN_TRANSIT",
+              transit: {
+                durationMs: VISUAL_TRANSIT_MS,
+                edgeId: result.edgeId,
+                elapsedMs: 0,
+                progress: 0,
+              },
+            },
+            maps,
+          );
+        }
+      } else {
+        proc.elapsedMs = newElapsed;
+        proc.progress = newElapsed / proc.durationMs;
+      }
+    }
   }
 
   private notify(): void {
