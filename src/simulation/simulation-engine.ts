@@ -11,6 +11,14 @@ import type { LevelConfig, TrafficSnapshot } from "./types.js";
 
 const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
 
+const isAtCapacity = (
+  node: { componentType: keyof typeof COMPONENT_LIBRARY; id: string },
+  processingEntries: { nodeId: string }[],
+): boolean => {
+  const { capacity } = COMPONENT_LIBRARY[node.componentType];
+  return processingEntries.filter((p) => p.nodeId === node.id).length >= capacity;
+};
+
 interface SimulationSnapshot {
   currentTrafficRate: number;
   elapsedMs: number;
@@ -146,15 +154,25 @@ class SimulationEngine {
         if (targetNode === undefined) {
           transitionRequest(requestId, { status: "FULFILLED" }, maps);
         } else {
-          const durationMs = COMPONENT_LIBRARY[targetNode.componentType].latencyMs * TIME_SCALE;
-          transitionRequest(
-            requestId,
-            {
-              processing: { durationMs, elapsedMs: 0, nodeId: targetNode.id, progress: 0 },
-              status: "PROCESSING",
-            },
-            maps,
-          );
+          const { latencyMs } = COMPONENT_LIBRARY[targetNode.componentType];
+
+          if (isAtCapacity(targetNode, [...maps.processing.values()])) {
+            transitionRequest(requestId, { status: "DROPPED" }, maps);
+          } else {
+            transitionRequest(
+              requestId,
+              {
+                processing: {
+                  durationMs: latencyMs * TIME_SCALE,
+                  elapsedMs: 0,
+                  nodeId: targetNode.id,
+                  progress: 0,
+                },
+                status: "PROCESSING",
+              },
+              maps,
+            );
+          }
         }
       } else {
         transit.elapsedMs = newElapsed;
@@ -205,5 +223,5 @@ class SimulationEngine {
   }
 }
 
-export { SimulationEngine };
+export { isAtCapacity, SimulationEngine };
 export type { SimulationSnapshot };

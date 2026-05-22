@@ -1,5 +1,5 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
-import { SimulationEngine } from "./simulation-engine.js";
+import { isAtCapacity, SimulationEngine } from "./simulation-engine.js";
 import { TIME_SCALE } from "./request-types.js";
 import type { LevelConfig } from "./types.js";
 
@@ -327,5 +327,33 @@ describe("transit and processing advancement", () => {
 
     expect(fulfilledRequest).toBeDefined();
     expect(snap.processing.has(fulfilledRequest!.id)).toBe(false);
+  });
+});
+
+describe(isAtCapacity, () => {
+  it("returns false when no requests are processing at the node", () => {
+    expect(isAtCapacity({ componentType: "db", id: "db-1" }, [])).toBe(false);
+  });
+
+  it("returns false when below capacity", () => {
+    expect(isAtCapacity({ componentType: "db", id: "db-1" }, [{ nodeId: "db-1" }])).toBe(false);
+  });
+
+  it("returns true when at capacity", () => {
+    const entries = Array.from({ length: 30 }, () => ({ nodeId: "db-1" }));
+
+    expect(isAtCapacity({ componentType: "db", id: "db-1" }, entries)).toBe(true);
+  });
+
+  it("returns false for infinite-capacity nodes", () => {
+    const entries = Array.from({ length: 1000 }, () => ({ nodeId: "lb-1" }));
+
+    expect(isAtCapacity({ componentType: "load-balancer", id: "lb-1" }, entries)).toBe(false);
+  });
+
+  it("ignores processing entries for other nodes", () => {
+    const entries = Array.from({ length: 30 }, () => ({ nodeId: "db-2" }));
+
+    expect(isAtCapacity({ componentType: "db", id: "db-1" }, entries)).toBe(false);
   });
 });

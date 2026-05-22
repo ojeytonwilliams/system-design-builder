@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.5.1] - 2026-05-22
+
+### Refactoring
+
+- **Extracted `isAtCapacity` from `SimulationEngine`**: The drop decision logic (count active `Processing` entries at a node vs. its `capacity`) is now a named, exported pure function. Tests cover it directly with simple inputs rather than driving the full engine through a carefully tuned traffic scenario to overflow a node.
+
 ## [2.5.0] - 2026-05-22
 
 ### Features
