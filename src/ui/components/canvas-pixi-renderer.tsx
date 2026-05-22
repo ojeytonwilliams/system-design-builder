@@ -2,7 +2,13 @@ import { Application, extend, useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { drawArrowHead, drawDashedBezier, getBezierControlPoints } from "./bezier-utils.js";
+import {
+  drawArrowHead,
+  drawDashedBezier,
+  getBezierControlPoints,
+  sampleCubicBezier,
+} from "./bezier-utils.js";
+import type { Processing, Transit } from "../../simulation/request-types.js";
 import {
   chooseBestHandles,
   getHandlePosition,
@@ -21,6 +27,17 @@ const CANVAS_BACKGROUND = 0xf8f5ec;
 const PORT_HIT_SIZE = 44;
 const HANDLE_RADIUS = PORT_HIT_SIZE / 2;
 const HANDLE_DOT_RADIUS = 4;
+const computeNodeFillRatio = (
+  nodeId: string,
+  capacity: number,
+  processing: Map<string, Processing>,
+): number => {
+  if (!isFinite(capacity)) {
+    return 0;
+  }
+  const count = [...processing.values()].filter((p) => p.nodeId === nodeId).length;
+  return Math.min(count / capacity, 1);
+};
 
 interface PendingEdge {
   sourceHandle: HandleSide;
@@ -51,10 +68,12 @@ interface CanvasPixiRendererProps {
   onNodeSelect: (nodeId: string) => void;
   onPaneClick: () => void;
   overloadedNodeIds: string[];
+  processing: Map<string, Processing>;
   resizeTo: { current: HTMLDivElement | null };
   selectedNodeId: string | null;
   stageHeight: number;
   stageWidth: number;
+  transits: Map<string, Transit>;
 }
 
 interface HandleGraphicProps {
@@ -111,6 +130,7 @@ const HandleGraphic = ({
 };
 
 interface PixiNodeGraphicProps {
+  fillRatio: number;
   isLocked: boolean;
   isOverloaded: boolean;
   isPendingConnection: boolean;
@@ -128,6 +148,7 @@ interface PixiNodeGraphicProps {
 
 const PixiNodeGraphic = ({
   node,
+  fillRatio,
   isSelected,
   isOverloaded,
   isLocked,
@@ -163,9 +184,15 @@ const PixiNodeGraphic = ({
       }
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.fill({ color: fillColor });
+      if (fillRatio > 0) {
+        const fillHeight = NODE_MIN_HEIGHT * fillRatio;
+        g.roundRect(0, NODE_MIN_HEIGHT - fillHeight, NODE_WIDTH, fillHeight, 16);
+        g.fill({ alpha: 0.25, color: 0x7b8cb2 });
+      }
+      g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.stroke({ color: borderColor, width: borderWidth });
     },
-    [fillColor, borderColor, borderWidth, isOverloaded],
+    [fillColor, borderColor, borderWidth, isOverloaded, fillRatio],
   );
 
   const drawPill = useCallback(
@@ -472,6 +499,52 @@ const LiveEdgeGraphic = ({ pendingEdge, nodes }: LiveEdgeGraphicProps) => {
   return <pixiGraphics draw={draw} />;
 };
 
+const getTransitDotPosition = (
+  transit: { edgeId: string; progress: number },
+  edges: ArchitectureEdge[],
+  nodes: ArchitectureNode[],
+): { x: number; y: number } | null => {
+  const edge = edges.find((e) => e.id === transit.edgeId);
+  if (edge === undefined) {
+    return null;
+  }
+  const sourceNode = nodes.find((n) => n.id === edge.source);
+  const targetNode = nodes.find((n) => n.id === edge.target);
+  if (sourceNode === undefined || targetNode === undefined) {
+    return null;
+  }
+  const { sourceHandle, targetHandle } = chooseBestHandles(sourceNode, targetNode);
+  const src = getHandlePosition(sourceNode, sourceHandle);
+  const tgt = getHandlePosition(targetNode, targetHandle);
+  const { cp1, cp2 } = getBezierControlPoints(src, tgt);
+  return sampleCubicBezier(transit.progress, { cp1, cp2, p0: src, p3: tgt });
+};
+
+interface TransitDotsLayerProps {
+  edges: ArchitectureEdge[];
+  isSimulating: boolean;
+  nodes: ArchitectureNode[];
+  transits: Map<string, Transit>;
+}
+
+const TransitDotsLayer = ({ transits, edges, nodes, isSimulating }: TransitDotsLayerProps) => {
+  const draw = (g: Graphics) => {
+    g.clear();
+    if (!isSimulating) {
+      return;
+    }
+    for (const transit of transits.values()) {
+      const pos = getTransitDotPosition(transit, edges, nodes);
+      if (pos !== null) {
+        g.circle(pos.x, pos.y, 4);
+        g.fill({ alpha: 0.9, color: 0x4a7fd4 });
+      }
+    }
+  };
+
+  return <pixiGraphics draw={draw} />;
+};
+
 interface EdgesLayerProps {
   edges: ArchitectureEdge[];
   isSimulating: boolean;
@@ -536,9 +609,11 @@ interface PixiContentProps {
   onStagePointerUp: () => void;
   overloadedNodeIds: string[];
   pendingEdge: PendingEdge | null;
+  processing: Map<string, Processing>;
   selectedNodeId: string | null;
   stageHeight: number;
   stageWidth: number;
+  transits: Map<string, Transit>;
 }
 
 const PixiContent = ({
@@ -552,6 +627,8 @@ const PixiContent = ({
   lockedNodeIds,
   isLocked,
   pendingEdge,
+  processing,
+  transits,
   onNodePointerDown,
   onNodeSelect,
   onNodeContextMenu,
@@ -615,10 +692,21 @@ const PixiContent = ({
         onEdgeContextMenu={onEdgeContextMenu}
         pendingEdge={pendingEdge}
       />
+      <TransitDotsLayer
+        edges={edges}
+        isSimulating={isSimulating}
+        nodes={nodes}
+        transits={transits}
+      />
       <pixiContainer>
         {nodes.map((node) => (
           <PixiNodeGraphic
             key={node.id}
+            fillRatio={computeNodeFillRatio(
+              node.id,
+              COMPONENT_LIBRARY[node.componentType].capacity,
+              processing,
+            )}
             isLocked={isLocked || lockedNodeIds.includes(node.id)}
             isOverloaded={overloadedNodeIds.includes(node.id)}
             isPendingConnection={pendingEdge !== null}
@@ -645,6 +733,8 @@ const CanvasPixiRenderer = ({
   isLocked,
   lockedNodeIds,
   overloadedNodeIds,
+  processing,
+  transits,
   resizeTo,
   onNodeSelect,
   onEdgeSelect,
@@ -773,12 +863,14 @@ const CanvasPixiRenderer = ({
         onStagePointerUp={onStagePointerUp}
         overloadedNodeIds={overloadedNodeIds}
         pendingEdge={pendingEdge}
+        processing={processing}
         selectedNodeId={selectedNodeId}
         stageHeight={stageHeight}
         stageWidth={stageWidth}
+        transits={transits}
       />
     </Application>
   );
 };
 
-export { CanvasPixiRenderer };
+export { CanvasPixiRenderer, computeNodeFillRatio, getTransitDotPosition };

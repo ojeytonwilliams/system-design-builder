@@ -1,5 +1,6 @@
 import type { Dispatch, DragEvent } from "react";
 import { useEffect, useReducer, useRef, useState } from "react";
+import type { Processing, Transit } from "../../simulation/request-types.js";
 import {
   DEFAULT_DROP_POSITION,
   DEFAULT_LOCKED_NODE_IDS,
@@ -31,7 +32,9 @@ interface GameCanvasProps {
   onNodePlaced: (componentType: ComponentType) => void;
   onSelectedNodeChange: (nodeId: string | null) => void;
   overloadedNodeIds?: string[];
+  processing: Map<string, Processing>;
   selectedNodeId: string | null;
+  transits: Map<string, Transit>;
 }
 
 const relativeTo = (
@@ -57,7 +60,9 @@ const GameCanvas = ({
   onNodePlaced,
   onSelectedNodeChange,
   overloadedNodeIds = DEFAULT_OVERLOADED_NODE_IDS,
+  processing,
   selectedNodeId,
+  transits,
 }: GameCanvasProps) => {
   const [canvasUI, dispatchCanvas] = useReducer(canvasUIReducer, {
     contextMenu: initialContextMenu ?? null,
@@ -234,10 +239,12 @@ const GameCanvas = ({
             onNodeSelect={onNodeSelect}
             onPaneClick={onPaneClick}
             overloadedNodeIds={overloadedNodeIds}
+            processing={processing}
             resizeTo={dropzoneRef}
             selectedNodeId={selectedNodeId}
             stageHeight={stageSize.height}
             stageWidth={stageSize.width}
+            transits={transits}
           />
         )}
       </div>

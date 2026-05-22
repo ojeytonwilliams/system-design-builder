@@ -139,4 +139,4 @@ const drawArrowHead = (g: Graphics, from: Point, { color, to }: { color: number;
   g.fill({ color });
 };
 
-export { drawArrowHead, drawDashedBezier, getBezierControlPoints };
+export { drawArrowHead, drawDashedBezier, getBezierControlPoints, sampleCubicBezier };

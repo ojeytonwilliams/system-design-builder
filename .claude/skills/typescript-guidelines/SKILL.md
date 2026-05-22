@@ -88,4 +88,5 @@ Follow these rules when writing TypeScript.
 
 - All lint rules are enforced at `error` level (correctness, suspicious, pedantic, perf, style).
 - Type-aware checking is enabled. Avoid patterns that require disabling lint rules.
-- Do NOT modify the lint configuration. If necessary, add single line lint disables e.g `// oxlint-disable-next-line no-unused-vars`
+- Do NOT modify the lint configuration. 
+- If you want to disable lint rules STOP. Instead of continuing, tell the user why you think a rule should be disabled.

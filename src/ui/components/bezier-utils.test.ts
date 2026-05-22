@@ -1,5 +1,10 @@
 import type { Graphics } from "pixi.js";
-import { drawArrowHead, drawDashedBezier, getBezierControlPoints } from "./bezier-utils.js";
+import {
+  drawArrowHead,
+  drawDashedBezier,
+  getBezierControlPoints,
+  sampleCubicBezier,
+} from "./bezier-utils.js";
 
 const makeGraphicsMock = () => ({
   bezierCurveTo: vi.fn<() => void>(),
@@ -53,6 +58,29 @@ describe(drawArrowHead, () => {
       { color: 0x7b8cb2, to: { x: 50, y: 50 } },
     );
     expect(g.moveTo).not.toHaveBeenCalled();
+  });
+});
+
+describe(sampleCubicBezier, () => {
+  const straightLine = {
+    cp1: { x: 33, y: 0 },
+    cp2: { x: 67, y: 0 },
+    p0: { x: 0, y: 0 },
+    p3: { x: 100, y: 0 },
+  };
+
+  it("at t=0 returns p0", () => {
+    expect(sampleCubicBezier(0, straightLine)).toStrictEqual({ x: 0, y: 0 });
+  });
+
+  it("at t=1 returns p3", () => {
+    expect(sampleCubicBezier(1, straightLine)).toStrictEqual({ x: 100, y: 0 });
+  });
+
+  it("at t=0.5 on a symmetric straight line returns the midpoint", () => {
+    const result = sampleCubicBezier(0.5, straightLine);
+    expect(result.x).toBeCloseTo(50);
+    expect(result.y).toBeCloseTo(0);
   });
 });
 

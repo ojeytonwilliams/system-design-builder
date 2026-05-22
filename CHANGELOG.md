@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.7.0] - 2026-05-22
+
+### Features
+
+- **Simulation state rendered on canvas**: Nodes now display a blue fill overlay proportional to their current load (active processing entries vs. capacity), giving players immediate visual feedback on how busy each component is. Animated dots travel along edges to show in-flight requests.
+- `processing` and `transits` are now required props throughout the canvas component tree, making simulation state an explicit dependency rather than an optional afterthought.
+
+### Refactoring
+
+- `getTransitDotPosition` moved from `bezier-utils` to `canvas-pixi-renderer`, where it belongs — it maps domain types (edges, nodes, transits) to a screen position and was the only caller mixing concerns into the pure geometry module.
+- `sampleCubicBezier` exported and covered by direct unit tests.
+
 ## [2.6.0] - 2026-05-22
 
 ### Features
