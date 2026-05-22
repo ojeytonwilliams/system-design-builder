@@ -49,7 +49,10 @@ const removeNodeAndConnections = (
   nodes: nodes.filter((n) => n.id !== nodeId),
 });
 
-const getHandlePosition = (node: ArchitectureNode, side: HandleSide): { x: number; y: number } => {
+const getHandlePosition = (
+  node: { position: { x: number; y: number } },
+  side: HandleSide,
+): { x: number; y: number } => {
   const { x, y } = node.position;
   switch (side) {
     case "right":
@@ -64,8 +67,8 @@ const getHandlePosition = (node: ArchitectureNode, side: HandleSide): { x: numbe
 };
 
 const chooseBestHandles = (
-  source: ArchitectureNode,
-  target: ArchitectureNode,
+  source: { position: { x: number; y: number } },
+  target: { position: { x: number; y: number } },
 ): { sourceHandle: HandleSide; targetHandle: HandleSide } => {
   const dx = target.position.x - source.position.x;
   const dy = target.position.y - source.position.y;

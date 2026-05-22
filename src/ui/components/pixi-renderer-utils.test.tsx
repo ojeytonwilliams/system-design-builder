@@ -1,6 +1,6 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../../domain/canvas-logic.js";
 import type { Processing } from "../../simulation/request-types.js";
-import { computeNodeFillRatio, getTransitDotPosition } from "./canvas-pixi-renderer.js";
+import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
 
 const makeProcessing = (nodeId: string): Processing => ({
   durationMs: 100,

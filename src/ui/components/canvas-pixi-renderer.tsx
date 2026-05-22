@@ -2,12 +2,7 @@ import { Application, extend, useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  drawArrowHead,
-  drawDashedBezier,
-  getBezierControlPoints,
-  sampleCubicBezier,
-} from "./bezier-utils.js";
+import { drawArrowHead, drawDashedBezier, getBezierControlPoints } from "./bezier-utils.js";
 import type { Processing, Transit } from "../../simulation/request-types.js";
 import {
   chooseBestHandles,
@@ -18,6 +13,7 @@ import {
 } from "../../domain/canvas-logic.js";
 import type { ArchitectureEdge, ArchitectureNode, HandleSide } from "../../domain/canvas-logic.js";
 import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
+import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
 
 // oxlint-disable-next-line jest/require-hook
 extend({ Container, Graphics, Text });
@@ -27,17 +23,6 @@ const CANVAS_BACKGROUND = 0xf8f5ec;
 const PORT_HIT_SIZE = 44;
 const HANDLE_RADIUS = PORT_HIT_SIZE / 2;
 const HANDLE_DOT_RADIUS = 4;
-const computeNodeFillRatio = (
-  nodeId: string,
-  capacity: number,
-  processing: Map<string, Processing>,
-): number => {
-  if (!isFinite(capacity)) {
-    return 0;
-  }
-  const count = [...processing.values()].filter((p) => p.nodeId === nodeId).length;
-  return Math.min(count / capacity, 1);
-};
 
 interface PendingEdge {
   sourceHandle: HandleSide;
@@ -499,27 +484,6 @@ const LiveEdgeGraphic = ({ pendingEdge, nodes }: LiveEdgeGraphicProps) => {
   return <pixiGraphics draw={draw} />;
 };
 
-const getTransitDotPosition = (
-  transit: { edgeId: string; progress: number },
-  edges: ArchitectureEdge[],
-  nodes: ArchitectureNode[],
-): { x: number; y: number } | null => {
-  const edge = edges.find((e) => e.id === transit.edgeId);
-  if (edge === undefined) {
-    return null;
-  }
-  const sourceNode = nodes.find((n) => n.id === edge.source);
-  const targetNode = nodes.find((n) => n.id === edge.target);
-  if (sourceNode === undefined || targetNode === undefined) {
-    return null;
-  }
-  const { sourceHandle, targetHandle } = chooseBestHandles(sourceNode, targetNode);
-  const src = getHandlePosition(sourceNode, sourceHandle);
-  const tgt = getHandlePosition(targetNode, targetHandle);
-  const { cp1, cp2 } = getBezierControlPoints(src, tgt);
-  return sampleCubicBezier(transit.progress, { cp1, cp2, p0: src, p3: tgt });
-};
-
 interface TransitDotsLayerProps {
   edges: ArchitectureEdge[];
   isSimulating: boolean;
@@ -873,4 +837,4 @@ const CanvasPixiRenderer = ({
   );
 };
 
-export { CanvasPixiRenderer, computeNodeFillRatio, getTransitDotPosition };
+export { CanvasPixiRenderer };

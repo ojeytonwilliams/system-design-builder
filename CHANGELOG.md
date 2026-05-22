@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.7.1] - 2026-05-22
+
+### Refactoring
+
+- **Extracted `pixi-renderer-utils`**: `computeNodeFillRatio` and `getTransitDotPosition` live in their own module so they can be tested without importing the full renderer. `canvas-pixi-renderer` is now purely concerned with rendering.
+- `getHandlePosition` and `chooseBestHandles` in `canvas-logic` now accept structural types instead of `ArchitectureNode`, reducing unnecessary coupling.
+- React lint rules (`react/react-in-jsx-scope`, `react/jsx-max-depth`, `react/only-export-components`) scoped to `*.tsx` files only, where they are meaningful.
+
 ## [2.7.0] - 2026-05-22
 
 ### Features

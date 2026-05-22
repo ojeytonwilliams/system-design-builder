@@ -17,10 +17,7 @@
   "rules": {
     /* This is a fine rule, but only if it's auto-fixable (which it isn't right now) */
     "sort-imports": "off",
-    /* React 17+ automatic JSX runtime — React does not need to be in scope */
-    "react/react-in-jsx-scope": "off",
-    /* Default max of 2 is too restrictive for typical component trees */
-    "react/jsx-max-depth": ["error", { "max": 5 }],
+
     /* Small ids are fine. Correct usage is too context-dependent for a lint
     rule*/
     "id-length": "off",
@@ -59,7 +56,6 @@
     "max-lines-per-function": "off",
     /* 20 is quite high, so this is overriden in the strict rules */
     "complexity": ["error", { "max": 20 }]
-    /* Project uses vitest globals: true — vi is always a global, no need to import */
   },
 
   "overrides": [
@@ -121,6 +117,18 @@
             "ignore": ["describe"]
           }
         ]
+      }
+    },
+
+    {
+      // react:
+      "files": ["**/*.tsx"],
+      "rules": {
+        /* React 17+ automatic JSX runtime — React does not need to be in scope */
+        "react/react-in-jsx-scope": "off",
+        /* Default max of 2 is too restrictive for typical component trees */
+        "react/jsx-max-depth": ["error", { "max": 5 }],
+        "react/only-export-components": "error"
       }
     }
   ]
