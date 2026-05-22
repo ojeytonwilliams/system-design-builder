@@ -13,15 +13,18 @@ interface EvaluateUnlockInput {
   snapshot: TrafficSnapshot;
 }
 
+const MS_PER_SECOND = 1000;
+
 const updateOverloadDurations = (
   prev: OverloadDurations,
   snapshot: TrafficSnapshot,
+  deltaMs: number,
 ): OverloadDurations => {
   const next = new Map<string, number>();
 
   for (const [nodeId, state] of Object.entries(snapshot)) {
     if (state.droppedOps > 0) {
-      next.set(nodeId, (prev.get(nodeId) ?? 0) + 1);
+      next.set(nodeId, (prev.get(nodeId) ?? 0) + deltaMs);
     }
   }
 
@@ -35,7 +38,7 @@ const evaluateUnlockTrigger = (trigger: UnlockTrigger, input: EvaluateUnlockInpu
 
     case "OVERLOAD_SUSTAINED":
       return [...input.overloadDurations.values()].some(
-        (ticks) => ticks >= trigger.durationSeconds,
+        (ms) => ms >= trigger.durationSeconds * MS_PER_SECOND,
       );
 
     case "SERVERS_PLACED": {

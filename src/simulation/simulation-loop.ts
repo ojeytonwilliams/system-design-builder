@@ -1,4 +1,4 @@
-const TICK_INTERVAL_MS = 1000;
+const TICK_INTERVAL_MS = 16;
 
 class SimulationLoop {
   private readonly onTick: (delta: number) => void;

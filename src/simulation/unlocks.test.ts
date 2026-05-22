@@ -48,7 +48,7 @@ describe(evaluateUnlockTrigger, () => {
 
   describe("overload sustained", () => {
     it("returns true when any node has reached the required overload duration", () => {
-      const overloadDurations = new Map([["server-1", 10]]);
+      const overloadDurations = new Map([["server-1", 10_000]]);
       const input = { ...emptyInput, overloadDurations };
 
       expect(
@@ -57,7 +57,7 @@ describe(evaluateUnlockTrigger, () => {
     });
 
     it("returns true when a node exceeds the required duration", () => {
-      const overloadDurations = new Map([["server-1", 15]]);
+      const overloadDurations = new Map([["server-1", 15_000]]);
       const input = { ...emptyInput, overloadDurations };
 
       expect(
@@ -66,7 +66,7 @@ describe(evaluateUnlockTrigger, () => {
     });
 
     it("returns false when no node has reached the required duration", () => {
-      const overloadDurations = new Map([["server-1", 5]]);
+      const overloadDurations = new Map([["server-1", 5_000]]);
       const input = { ...emptyInput, overloadDurations };
 
       expect(
@@ -131,31 +131,31 @@ describe(evaluateUnlockTrigger, () => {
 
 describe(updateOverloadDurations, () => {
   it("starts tracking a node that becomes overloaded", () => {
-    const result = updateOverloadDurations(new Map(), overloadedSnapshot);
+    const result = updateOverloadDurations(new Map(), overloadedSnapshot, 1000);
 
-    expect(result.get("server-1")).toBe(1);
+    expect(result.get("server-1")).toBe(1000);
   });
 
-  it("increments duration for a node that remains overloaded", () => {
-    const prev = new Map([["server-1", 3]]);
+  it("accumulates ms for a node that remains overloaded", () => {
+    const prev = new Map([["server-1", 3000]]);
 
-    const result = updateOverloadDurations(prev, overloadedSnapshot);
+    const result = updateOverloadDurations(prev, overloadedSnapshot, 1000);
 
-    expect(result.get("server-1")).toBe(4);
+    expect(result.get("server-1")).toBe(4000);
   });
 
   it("resets duration for a node that is no longer overloaded", () => {
-    const prev = new Map([["server-1", 5]]);
+    const prev = new Map([["server-1", 5000]]);
 
-    const result = updateOverloadDurations(prev, normalSnapshot);
+    const result = updateOverloadDurations(prev, normalSnapshot, 1000);
 
     expect(result.has("server-1")).toBe(false);
   });
 
   it("returns a new Map rather than mutating the previous one", () => {
-    const prev = new Map([["server-1", 3]]);
+    const prev = new Map([["server-1", 3000]]);
 
-    const result = updateOverloadDurations(prev, overloadedSnapshot);
+    const result = updateOverloadDurations(prev, overloadedSnapshot, 1000);
 
     expect(result).not.toBe(prev);
   });

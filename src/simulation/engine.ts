@@ -46,12 +46,15 @@ const getLinearTrafficRate = ({
   return trafficStart + (trafficPeak - trafficStart) * progress;
 };
 
+const MS_PER_SECOND = 1000;
+
 const computeTrafficFlow = (
   nodes: ArchitectureNode[],
   edges: ArchitectureEdge[],
   config: FlowConfig,
 ): TrafficSnapshot => {
-  const { cacheHitRate, trafficRate } = config;
+  const { cacheHitRate, deltaMs, trafficRate } = config;
+  const tickFraction = deltaMs / MS_PER_SECOND;
   const nodeMap = new Map<string, ArchitectureNode>(nodes.map((n) => [n.id, n]));
   const outgoing = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
   const incoming = new Map<string, string[]>(nodes.map((n) => [n.id, []]));
@@ -100,7 +103,7 @@ const computeTrafficFlow = (
       let incomingOps = 0;
 
       if (node.componentType === "users") {
-        incomingOps = trafficRate;
+        incomingOps = trafficRate * tickFraction;
       } else {
         incomingOps = (incoming.get(nodeId) ?? []).reduce(
           (sum, parentId) => sum + (edgeFlow.get(`${parentId}->${nodeId}`) ?? 0),
@@ -111,13 +114,14 @@ const computeTrafficFlow = (
       let handledOps = 0;
       let droppedOps = 0;
       const { capacity } = COMPONENT_LIBRARY[node.componentType];
+      const capacityPerTick = capacity * tickFraction;
 
       if (node.componentType === "load-balancer") {
         handledOps = incomingOps;
         droppedOps = 0;
       } else {
-        handledOps = Math.min(incomingOps, capacity);
-        droppedOps = Math.max(0, incomingOps - capacity);
+        handledOps = Math.min(incomingOps, capacityPerTick);
+        droppedOps = Math.max(0, incomingOps - capacityPerTick);
       }
 
       snapshot[nodeId] = { droppedOps, handledOps, incomingOps };

@@ -18,6 +18,7 @@ interface LevelConfig {
 
 interface FlowConfig {
   cacheHitRate: number;
+  deltaMs: number;
   trafficRate: number;
 }
 

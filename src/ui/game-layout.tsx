@@ -74,7 +74,7 @@ const GameScene = ({
   const timeoutCheckerRef = useRef<TimeoutChecker | null>(null);
 
   const simSnapshot = useSimulationSnapshot(engine);
-  const { currentTrafficRate, elapsedMs, nodeStates } = simSnapshot;
+  const { currentTrafficRate, elapsedMs, nodeStates, tickDeltaMs } = simSnapshot;
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
@@ -95,7 +95,7 @@ const GameScene = ({
   const shownCoachMessageRef = useRef<Set<number>>(new Set());
   const hasSeenOverloadThisLevelRef = useRef(false);
 
-  const inspectorData = getInspectorData(selectedNodeId, graphState.nodes, nodeStates);
+  const inspectorData = getInspectorData(selectedNodeId, graphState.nodes, nodeStates, tickDeltaMs);
 
   const isRunnable = hasRunnablePath(graphState.nodes, graphState.edges);
   const totalMonthlyCost = computeTotalCost(graphState.nodes);

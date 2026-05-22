@@ -3,10 +3,13 @@ import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import type { InspectorProps } from "../ui/components/inspector.js";
 import type { TrafficSnapshot } from "../simulation/types.js";
 
+const MS_PER_SECOND = 1000;
+
 const getInspectorData = (
   selectedNodeId: string | null,
   nodes: ArchitectureNode[],
   nodeStates: TrafficSnapshot,
+  tickDeltaMs: number,
 ): InspectorProps => {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
 
@@ -18,17 +21,24 @@ const getInspectorData = (
   const def = COMPONENT_LIBRARY[componentType];
   const selectedNodeLabel = def.label;
   const nodeState = nodeStates[selectedNode.id];
-  const opsPerSec = nodeState?.incomingOps;
   const { capacity: maxCapacity, latencyMs, monthlyCost: cost } = def;
 
   const isFiniteCapacity = Number.isFinite(maxCapacity);
+
+  const incomingRate =
+    nodeState !== undefined && tickDeltaMs > 0
+      ? nodeState.incomingOps / (tickDeltaMs / MS_PER_SECOND)
+      : undefined;
+
+  const opsPerSec = incomingRate;
+
   const loadPercent =
-    nodeState === undefined || !isFiniteCapacity
+    incomingRate === undefined || !isFiniteCapacity
       ? undefined
-      : (nodeState.incomingOps / maxCapacity) * 100;
+      : (incomingRate / maxCapacity) * 100;
 
   const isOverloaded =
-    nodeState === undefined || !isFiniteCapacity ? undefined : nodeState.incomingOps > maxCapacity;
+    incomingRate === undefined || !isFiniteCapacity ? undefined : incomingRate > maxCapacity;
 
   return {
     componentType,

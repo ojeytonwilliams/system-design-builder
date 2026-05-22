@@ -1,4 +1,4 @@
-import { SimulationLoop } from "./simulation-loop.js";
+import { SimulationLoop, TICK_INTERVAL_MS } from "./simulation-loop.js";
 
 describe(SimulationLoop, () => {
   let onTick: ReturnType<typeof vi.fn<(elapsed: number) => void>>;
@@ -16,21 +16,21 @@ describe(SimulationLoop, () => {
   });
 
   it("does not call onTick before start()", () => {
-    vi.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(3 * TICK_INTERVAL_MS);
 
     expect(onTick).not.toHaveBeenCalled();
   });
 
   it("calls onTick once after one tick interval", () => {
     loop.start();
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(TICK_INTERVAL_MS);
 
     expect(onTick).toHaveBeenCalledOnce();
   });
 
   it("calls onTick once per elapsed tick", () => {
     loop.start();
-    vi.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(3 * TICK_INTERVAL_MS);
 
     expect(onTick).toHaveBeenCalledTimes(3);
   });
@@ -41,36 +41,36 @@ describe(SimulationLoop, () => {
     const lateLoop = new SimulationLoop(onTick, clock);
 
     lateLoop.start();
-    clockTime = 3000;
+    clockTime = 3 * TICK_INTERVAL_MS;
     vi.runOnlyPendingTimers();
     lateLoop.stop();
 
     expect(onTick).toHaveBeenCalledTimes(3);
   });
 
-  it("passes a delta of 1 to each call", () => {
+  it("passes TICK_INTERVAL_MS as delta to each call", () => {
     loop.start();
-    vi.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(3 * TICK_INTERVAL_MS);
 
-    expect(onTick).toHaveBeenNthCalledWith(1, 1000);
-    expect(onTick).toHaveBeenNthCalledWith(2, 1000);
-    expect(onTick).toHaveBeenNthCalledWith(3, 1000);
+    expect(onTick).toHaveBeenNthCalledWith(1, TICK_INTERVAL_MS);
+    expect(onTick).toHaveBeenNthCalledWith(2, TICK_INTERVAL_MS);
+    expect(onTick).toHaveBeenNthCalledWith(3, TICK_INTERVAL_MS);
   });
 
   it("stop() halts ticking", () => {
     loop.start();
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(TICK_INTERVAL_MS);
     loop.stop();
-    vi.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(3 * TICK_INTERVAL_MS);
 
     expect(onTick).toHaveBeenCalledOnce();
   });
 
-  it("passes delta of 1 after restarting", () => {
+  it("passes TICK_INTERVAL_MS as delta after restarting", () => {
     loop.stop();
     loop.start();
-    vi.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(TICK_INTERVAL_MS);
 
-    expect(onTick).toHaveBeenNthCalledWith(1, 1000);
+    expect(onTick).toHaveBeenNthCalledWith(1, TICK_INTERVAL_MS);
   });
 });

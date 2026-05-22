@@ -47,19 +47,34 @@ const edge = (source: string, target: string): ArchitectureEdge => ({
   target,
 });
 
+const MS_PER_SECOND = 1000;
+
 const flowConfig = (trafficRate: number, cacheHitRate = CACHE_HIT_RATE_NONE) => ({
   cacheHitRate,
+  deltaMs: MS_PER_SECOND,
   trafficRate,
 });
 
 describe("traffic flow", () => {
   describe("single users node", () => {
-    it("users emits at the given traffic rate", () => {
+    it("users emits at the given traffic rate per second for a 1s delta", () => {
       const nodes = [usersNode()];
 
       const result = computeTrafficFlow(nodes, [], flowConfig(100));
 
       expect(result["users-1"]?.handledOps).toBe(100);
+    });
+
+    it("users scales emitted ops by deltaMs fraction", () => {
+      const nodes = [usersNode()];
+
+      const result = computeTrafficFlow(nodes, [], {
+        cacheHitRate: 0,
+        deltaMs: 16,
+        trafficRate: 100,
+      });
+
+      expect(result["users-1"]?.handledOps).toBeCloseTo(100 * (16 / MS_PER_SECOND));
     });
 
     it("users is not limited by capacity", () => {

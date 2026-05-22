@@ -1,4 +1,4 @@
-import type { ArchitectureNode } from "../domain/canvas-logic.js";
+import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { SimulationEngine } from "./simulation-engine.js";
 import type { LevelConfig } from "./types.js";
 
@@ -26,6 +26,18 @@ describe(SimulationEngine, () => {
 
     expect(snap.elapsedMs).toBe(0);
     expect(snap.nodeStates).toStrictEqual({});
+  });
+
+  it("getSnapshot includes empty request maps initially", () => {
+    const snap = engine.getSnapshot();
+
+    expect(snap.requests.size).toBe(0);
+    expect(snap.transits.size).toBe(0);
+    expect(snap.processing.size).toBe(0);
+  });
+
+  it("getSnapshot includes tickDeltaMs of 0 initially", () => {
+    expect(engine.getSnapshot().tickDeltaMs).toBe(0);
   });
 
   it("tick() increments elapsedMs", () => {
@@ -83,6 +95,27 @@ describe(SimulationEngine, () => {
     expect(snap.nodeStates).toStrictEqual({});
   });
 
+  it("reset() clears request maps", () => {
+    const usersNode: ArchitectureNode = {
+      componentType: "users",
+      id: "users-1",
+      position: { x: 0, y: 0 },
+    };
+    const serverNode: ArchitectureNode = {
+      componentType: "server",
+      id: "server-1",
+      position: { x: 0, y: 0 },
+    };
+    const edge: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
+    engine.setGraph([usersNode, serverNode], [edge]);
+    engine.tick(16000);
+    engine.reset();
+    const snap = engine.getSnapshot();
+
+    expect(snap.requests.size).toBe(0);
+    expect(snap.transits.size).toBe(0);
+  });
+
   it("reset() notifies subscribers", () => {
     const listener = vi.fn<() => void>();
     engine.subscribe(listener);
@@ -102,6 +135,41 @@ describe(SimulationEngine, () => {
     const third = engine.getSnapshot();
 
     expect(third).not.toBe(first);
+  });
+});
+
+describe("request spawning", () => {
+  it("populates the requests map when users node has an outgoing edge", () => {
+    const engine = new SimulationEngine();
+    engine.setConfig(baseConfig);
+    engine.setGraph(
+      [
+        { componentType: "users", id: "users-1", position: { x: 0, y: 0 } },
+        { componentType: "server", id: "server-1", position: { x: 0, y: 0 } },
+      ],
+      [{ id: "e1", source: "users-1", target: "server-1" }],
+    );
+    engine.tick(16000);
+
+    expect(engine.getSnapshot().requests.size).toBeGreaterThan(0);
+  });
+
+  it("does not spawn requests when users node has no outgoing edge", () => {
+    const engine = new SimulationEngine();
+    engine.setConfig(baseConfig);
+    engine.setGraph([{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }], []);
+    engine.tick(16000);
+
+    expect(engine.getSnapshot().requests.size).toBe(0);
+  });
+
+  it("sets tickDeltaMs in the snapshot after tick", () => {
+    const engine = new SimulationEngine();
+    engine.setConfig(baseConfig);
+    engine.setGraph([], []);
+    engine.tick(16);
+
+    expect(engine.getSnapshot().tickDeltaMs).toBe(16);
   });
 });
 

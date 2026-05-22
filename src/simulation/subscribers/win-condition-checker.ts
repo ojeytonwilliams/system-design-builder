@@ -1,5 +1,4 @@
 import type { SimulationEngine } from "../simulation-engine.js";
-import { TICK_INTERVAL_MS } from "../simulation-loop.js";
 import type { LevelConfig, TrafficSnapshot } from "../types.js";
 
 interface WinCallbacks {
@@ -9,6 +8,7 @@ interface WinCallbacks {
 interface WinSnapshot {
   currentTrafficRate: number;
   nodeStates: TrafficSnapshot;
+  tickDeltaMs: number;
 }
 
 class WinConditionChecker {
@@ -33,7 +33,7 @@ class WinConditionChecker {
     const atOrAboveTarget = snapshot.currentTrafficRate >= this.levelConfig.trafficTarget;
 
     if (atOrAboveTarget && !hasOverload) {
-      this.sustainedNoDropTicks += TICK_INTERVAL_MS;
+      this.sustainedNoDropTicks += snapshot.tickDeltaMs;
     } else {
       this.sustainedNoDropTicks = 0;
     }

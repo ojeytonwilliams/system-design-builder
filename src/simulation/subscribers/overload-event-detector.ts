@@ -15,12 +15,12 @@ class OverloadEventDetector {
 
   constructor(engine: SimulationEngine, callbacks: OverloadEventCallbacks) {
     this.unsubscribe = engine.subscribe(() => {
-      const { nodeStates } = engine.getSnapshot();
-      this.run(nodeStates, callbacks);
+      const { nodeStates, tickDeltaMs } = engine.getSnapshot();
+      this.run(nodeStates, callbacks, tickDeltaMs);
     });
   }
 
-  run(nodeStates: TrafficSnapshot, callbacks: OverloadEventCallbacks): void {
+  run(nodeStates: TrafficSnapshot, callbacks: OverloadEventCallbacks, deltaMs: number): void {
     const hasOverload = Object.values(nodeStates).some((s) => s.droppedOps > 0);
 
     if (hasOverload && !this.prevHasOverload) {
@@ -29,7 +29,7 @@ class OverloadEventDetector {
       callbacks.onOverloadResolved();
     }
 
-    this.overloadDurations = updateOverloadDurations(this.overloadDurations, nodeStates);
+    this.overloadDurations = updateOverloadDurations(this.overloadDurations, nodeStates, deltaMs);
     this.prevHasOverload = hasOverload;
   }
 

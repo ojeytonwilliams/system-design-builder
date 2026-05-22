@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.4.0] - 2026-05-22
+
+### Features
+
+- **Individual request simulation — Phase 1**: Laid the foundation for simulating traffic as discrete request objects alongside the existing aggregate flow.
+  - Added `src/simulation/request-types.ts` with `SimRequest`, `Transit`, and `Processing` types, plus `TIME_SCALE = 100` and `EDGE_TRANSIT_INTERNAL_MS = 10` constants.
+  - Added `transitionRequest` — a single atomic function that mutates the `requests`, `transits`, and `processing` maps together, preventing them from falling out of sync.
+  - Added `requestSpawner` — a pure function that accumulates fractional spawns via `pendingSpawns` and stagger-spaces requests evenly across the tick using `elapsedMs`.
+  - `SimulationEngine` now owns the three request maps, calls `requestSpawner` each tick, exposes them on `getSnapshot()`, and clears them on `reset()`.
+  - `SimulationLoop` tick interval changed from 1000ms to 16ms (~60fps); `computeTrafficFlow` made delta-aware so per-second rates remain correct at any tick rate.
+
 ## [2.3.30] - 2026-05-21
 
 ### Refactoring

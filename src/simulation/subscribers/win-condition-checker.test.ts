@@ -36,8 +36,8 @@ describe(WinConditionChecker, () => {
     checker.destroy();
   });
 
-  const run = (snapshot: TrafficSnapshot, rate: number): void => {
-    checker.run({ currentTrafficRate: rate, nodeStates: snapshot }, { onWin });
+  const run = (snapshot: TrafficSnapshot, rate: number, tickDeltaMs = 1000): void => {
+    checker.run({ currentTrafficRate: rate, nodeStates: snapshot, tickDeltaMs }, { onWin });
   };
 
   it("fires onWin when sustained no-drop ticks reach the threshold", () => {

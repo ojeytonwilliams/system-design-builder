@@ -28,8 +28,10 @@ describe(OverloadEventDetector, () => {
     detector.destroy();
   });
 
+  const DELTA_MS = 1000;
+
   const run = (snapshot: TrafficSnapshot): void => {
-    detector.run(snapshot, { onOverloadResolved, onOverloadStarted });
+    detector.run(snapshot, { onOverloadResolved, onOverloadStarted }, DELTA_MS);
   };
 
   describe("event detection", () => {
@@ -74,17 +76,17 @@ describe(OverloadEventDetector, () => {
       expect(detector.getOverloadDurations().size).toBe(0);
     });
 
-    it("accumulates duration for an overloaded node", () => {
+    it("accumulates duration in ms for an overloaded node", () => {
       run(overloadSnapshot);
 
-      expect(detector.getOverloadDurations().get("server-1")).toBe(1);
+      expect(detector.getOverloadDurations().get("server-1")).toBe(DELTA_MS);
     });
 
-    it("increments on sustained overload", () => {
+    it("accumulates ms on sustained overload", () => {
       run(overloadSnapshot);
       run(overloadSnapshot);
 
-      expect(detector.getOverloadDurations().get("server-1")).toBe(2);
+      expect(detector.getOverloadDurations().get("server-1")).toBe(DELTA_MS * 2);
     });
 
     it("removes a node entry when it recovers", () => {
