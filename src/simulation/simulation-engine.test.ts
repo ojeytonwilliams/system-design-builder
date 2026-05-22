@@ -1,5 +1,5 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
-import { isAtCapacity, SimulationEngine } from "./simulation-engine.js";
+import { isAtCapacity, shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
 import { TIME_SCALE } from "./request-types.js";
 import type { LevelConfig } from "./types.js";
 
@@ -356,4 +356,25 @@ describe(isAtCapacity, () => {
 
     expect(isAtCapacity({ componentType: "db", id: "db-1" }, entries)).toBe(false);
   });
+});
+
+describe(shouldTimeOut, () => {
+  it("returns true when wallClockMs - spawnedAtSimMs >= timeoutMs", () => {
+    expect(shouldTimeOut({ spawnedAtSimMs: 5_000, status: "IN_TRANSIT" }, 15_000, 10_000)).toBe(
+      true,
+    );
+  });
+
+  it("returns false when wallClockMs - spawnedAtSimMs < timeoutMs", () => {
+    expect(shouldTimeOut({ spawnedAtSimMs: 5_000, status: "IN_TRANSIT" }, 14_999, 10_000)).toBe(
+      false,
+    );
+  });
+
+  it.each(["FULFILLED", "DROPPED", "TIMED_OUT"] as const)(
+    "returns false for terminal status %s",
+    (status) => {
+      expect(shouldTimeOut({ spawnedAtSimMs: 0, status }, 10_000, 10_000)).toBe(false);
+    },
+  );
 });

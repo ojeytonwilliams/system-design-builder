@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.6.0] - 2026-05-22
+
+### Features
+
+- **Individual request simulation — Phase 4 (timeout)**: Requests that remain active beyond the configured wall-clock threshold are now transitioned to `TIMED_OUT`.
+  - Added `shouldTimeOut` — a named, exported pure function that checks whether a non-terminal request's wall-clock age (`wallClockMs - spawnedAtSimMs`) has met or exceeded a timeout threshold; skips already-terminal requests.
+  - `SimulationEngine` calls `timeoutRequests` each tick after transit and processing advancement; any request that exceeds `REQUEST_TIMEOUT_MS` (10 000 ms) is transitioned to `TIMED_OUT` via `transitionRequest`, atomically removing its associated `Transit` or `Processing` entry.
+  - `TIMED_OUT` requests are retained in the `requests` map until `reset()`.
+
 ## [2.5.1] - 2026-05-22
 
 ### Refactoring

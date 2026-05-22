@@ -4,12 +4,13 @@ import { computeTrafficFlow, getLinearTrafficRate } from "./engine.js";
 import { requestRouter } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
 import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
-import type { Processing, SimRequest, Transit } from "./request-types.js";
+import type { Processing, RequestStatus, SimRequest, Transit } from "./request-types.js";
 import { transitionRequest } from "./transition-request.js";
 import type { RequestMaps } from "./transition-request.js";
 import type { LevelConfig, TrafficSnapshot } from "./types.js";
 
 const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
+const REQUEST_TIMEOUT_MS = 10_000;
 
 const isAtCapacity = (
   node: { componentType: keyof typeof COMPONENT_LIBRARY; id: string },
@@ -17,6 +18,21 @@ const isAtCapacity = (
 ): boolean => {
   const { capacity } = COMPONENT_LIBRARY[node.componentType];
   return processingEntries.filter((p) => p.nodeId === node.id).length >= capacity;
+};
+
+const shouldTimeOut = (
+  request: { spawnedAtSimMs: number; status: RequestStatus },
+  wallClockMs: number,
+  timeoutMs: number,
+): boolean => {
+  if (
+    request.status === "FULFILLED" ||
+    request.status === "DROPPED" ||
+    request.status === "TIMED_OUT"
+  ) {
+    return false;
+  }
+  return wallClockMs - request.spawnedAtSimMs >= timeoutMs;
 };
 
 interface SimulationSnapshot {
@@ -119,6 +135,7 @@ class SimulationEngine {
 
     this.advanceTransits(deltaMs, maps);
     this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate);
+    this.timeoutRequests(maps);
 
     this.state = {
       currentTrafficRate: rate,
@@ -216,6 +233,14 @@ class SimulationEngine {
     }
   }
 
+  private timeoutRequests(maps: RequestMaps): void {
+    for (const [requestId, request] of [...this.requests]) {
+      if (shouldTimeOut(request, this.wallClockElapsedMs, REQUEST_TIMEOUT_MS)) {
+        transitionRequest(requestId, { status: "TIMED_OUT" }, maps);
+      }
+    }
+  }
+
   private notify(): void {
     for (const listener of this.listeners) {
       listener();
@@ -223,5 +248,5 @@ class SimulationEngine {
   }
 }
 
-export { isAtCapacity, SimulationEngine };
+export { isAtCapacity, shouldTimeOut, SimulationEngine };
 export type { SimulationSnapshot };
