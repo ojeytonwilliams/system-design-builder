@@ -330,6 +330,131 @@ describe("transit and processing advancement", () => {
   });
 });
 
+describe("response creation", () => {
+  const TICK_MS = 500;
+  const SPAWN_RATE = (TIME_SCALE * 1000) / TICK_MS;
+
+  const singleEdgeConfig: LevelConfig = {
+    cacheHitRate: 0,
+    monthlyBudget: 100,
+    timeout: 60000,
+    trafficPeak: SPAWN_RATE,
+    trafficStart: SPAWN_RATE,
+    trafficTarget: SPAWN_RATE,
+    winSustainMs: 3_000,
+  };
+
+  const usersNode: ArchitectureNode = {
+    componentType: "users",
+    id: "users-1",
+    position: { x: 0, y: 0 },
+  };
+  const serverNode: ArchitectureNode = {
+    componentType: "server",
+    id: "server-1",
+    position: { x: 0, y: 0 },
+  };
+  const dbNode: ArchitectureNode = { componentType: "db", id: "db-1", position: { x: 0, y: 0 } };
+  const edgeE1: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
+  const edgeE2: ArchitectureEdge = { id: "e2", source: "server-1", target: "db-1" };
+
+  describe("single-edge path (users → server)", () => {
+    let engine: SimulationEngine;
+
+    beforeEach(() => {
+      engine = new SimulationEngine();
+      engine.setConfig(singleEdgeConfig);
+      engine.setGraph([usersNode, serverNode], [edgeE1]);
+      // tick 1: transit starts; tick 2: transit completes, processing starts;
+      // tick 3: processing completes, request fulfilled
+      engine.tick(TICK_MS);
+      engine.tick(TICK_MS);
+      engine.tick(TICK_MS);
+    });
+
+    it("creates a response entry when a request is fulfilled", () => {
+      expect(engine.getSnapshot().responses.size).toBe(1);
+    });
+
+    it("creates a response transit for the traversed edge", () => {
+      const [transit] = [...engine.getSnapshot().responseTransits.values()];
+
+      expect(transit?.edgeId).toBe("e1");
+    });
+
+    it("response has empty remainingEdgeIds for a single-edge path", () => {
+      const [response] = [...engine.getSnapshot().responses.values()];
+
+      expect(response?.remainingEdgeIds).toStrictEqual([]);
+    });
+
+    it("response links to the fulfilled request", () => {
+      const fulfilledRequest = [...engine.getSnapshot().requests.values()].find(
+        (r) => r.status === "FULFILLED",
+      );
+      const [response] = [...engine.getSnapshot().responses.values()];
+
+      expect(response?.requestId).toBe(fulfilledRequest?.id);
+    });
+  });
+
+  describe("two-edge path (users → server → db)", () => {
+    let engine: SimulationEngine;
+
+    beforeEach(() => {
+      engine = new SimulationEngine();
+      engine.setConfig(singleEdgeConfig);
+      engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
+      // transit e1 (2 ticks) + process server (2) + transit e2 (2) + process db (3, latency=1500ms) = 7 ticks
+      for (let i = 0; i < 7; i++) {
+        engine.tick(TICK_MS);
+      }
+    });
+
+    it("response transit uses the last traversed edge", () => {
+      const [response] = [...engine.getSnapshot().responses.values()];
+      const transit = [...engine.getSnapshot().responseTransits.values()].find(
+        (t) => t.responseId === response?.id,
+      );
+
+      expect(transit?.edgeId).toBe("e2");
+    });
+
+    it("response remainingEdgeIds contains the earlier edge in reverse order", () => {
+      const [response] = [...engine.getSnapshot().responses.values()];
+
+      expect(response?.remainingEdgeIds).toStrictEqual(["e1"]);
+    });
+  });
+
+  describe("dropped requests", () => {
+    it("does not create a response for a dropped request", () => {
+      // trafficRate high enough to spawn >50 requests in one tick, overflowing server capacity
+      const overloadConfig: LevelConfig = {
+        cacheHitRate: 0,
+        monthlyBudget: 100,
+        timeout: 60000,
+        trafficPeak: 11000,
+        trafficStart: 11000,
+        trafficTarget: 11000,
+        winSustainMs: 3_000,
+      };
+      const engine = new SimulationEngine();
+      engine.setConfig(overloadConfig);
+      engine.setGraph([usersNode, serverNode], [edgeE1]);
+      // tick 1: 55 requests spawn; tick 2: all transits complete, 50 → processing, 5 → dropped
+      engine.tick(TICK_MS);
+      engine.tick(TICK_MS);
+
+      const snap = engine.getSnapshot();
+      const droppedRequests = [...snap.requests.values()].filter((r) => r.status === "DROPPED");
+
+      expect(droppedRequests.length).toBeGreaterThan(0);
+      expect(snap.responses.size).toBe(0);
+    });
+  });
+});
+
 describe(isAtCapacity, () => {
   it("returns false when no requests are processing at the node", () => {
     expect(isAtCapacity({ componentType: "db", id: "db-1" }, [])).toBe(false);

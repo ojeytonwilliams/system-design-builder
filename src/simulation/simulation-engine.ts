@@ -228,6 +228,7 @@ class SimulationEngine {
 
         if (result.status === "FULFILLED") {
           transitionRequest(requestId, { status: "FULFILLED" }, maps);
+          this.spawnResponse(requestId, maps);
         } else {
           transitionRequest(
             requestId,
@@ -256,6 +257,34 @@ class SimulationEngine {
         transitionRequest(requestId, { status: "TIMED_OUT" }, maps);
       }
     }
+  }
+
+  private spawnResponse(requestId: string, maps: RequestMaps): void {
+    const request = maps.requests.get(requestId);
+    if (request === undefined || request.visitedEdgeIds.length === 0) {
+      return;
+    }
+
+    const reversed = [...request.visitedEdgeIds].reverse();
+    const [firstEdgeId] = reversed;
+    if (firstEdgeId === undefined) {
+      return;
+    }
+
+    const responseId = crypto.randomUUID();
+    this.responses.set(responseId, {
+      id: responseId,
+      remainingEdgeIds: reversed.slice(1),
+      requestId,
+      status: "IN_TRANSIT",
+    });
+    this.responseTransits.set(responseId, {
+      durationMs: VISUAL_TRANSIT_MS,
+      edgeId: firstEdgeId,
+      elapsedMs: 0,
+      progress: 0,
+      responseId,
+    });
   }
 
   private notify(): void {
