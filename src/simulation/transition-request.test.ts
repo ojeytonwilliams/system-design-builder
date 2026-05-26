@@ -107,6 +107,39 @@ describe(transitionRequest, () => {
       expect(maps.processing.get("r1")?.requestId).toBe("r1");
     });
 
+    it("appends the edgeId to visitedEdgeIds", () => {
+      const request = makeRequest("r1", "IN_TRANSIT");
+      const maps = makeMaps(request, makeTransit("r1"));
+
+      transitionRequest(
+        "r1",
+        {
+          processing: { durationMs: 500, elapsedMs: 0, nodeId: "server-1", progress: 0 },
+          status: "PROCESSING",
+        },
+        maps,
+      );
+
+      expect(maps.requests.get("r1")?.visitedEdgeIds).toStrictEqual(["edge-1"]);
+    });
+
+    it("preserves previously visited edges", () => {
+      const request = makeRequest("r1", "IN_TRANSIT");
+      request.visitedEdgeIds = ["edge-0"];
+      const maps = makeMaps(request, makeTransit("r1"));
+
+      transitionRequest(
+        "r1",
+        {
+          processing: { durationMs: 500, elapsedMs: 0, nodeId: "server-1", progress: 0 },
+          status: "PROCESSING",
+        },
+        maps,
+      );
+
+      expect(maps.requests.get("r1")?.visitedEdgeIds).toStrictEqual(["edge-0", "edge-1"]);
+    });
+
     it("appends the nodeId to visitedNodeIds", () => {
       const request = makeRequest("r1", "IN_TRANSIT");
       const maps = makeMaps(request, makeTransit("r1"));

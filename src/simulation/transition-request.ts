@@ -22,6 +22,8 @@ const transitionRequest = (
     return;
   }
 
+  const currentTransit = maps.transits.get(requestId);
+
   maps.transits.delete(requestId);
   maps.processing.delete(requestId);
 
@@ -30,6 +32,9 @@ const transitionRequest = (
   if (target.status === "IN_TRANSIT") {
     maps.transits.set(requestId, { ...target.transit, requestId });
   } else if (target.status === "PROCESSING") {
+    if (currentTransit !== undefined) {
+      request.visitedEdgeIds = [...request.visitedEdgeIds, currentTransit.edgeId];
+    }
     request.visitedNodeIds = [...request.visitedNodeIds, target.processing.nodeId];
     maps.processing.set(requestId, { ...target.processing, requestId });
   }
