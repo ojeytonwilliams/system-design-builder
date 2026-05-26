@@ -4,7 +4,14 @@ import { computeTrafficFlow, getLinearTrafficRate } from "./engine.js";
 import { requestRouter } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
 import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
-import type { Processing, RequestStatus, SimRequest, Transit } from "./request-types.js";
+import type {
+  Processing,
+  RequestStatus,
+  ResponseTransit,
+  SimRequest,
+  SimResponse,
+  Transit,
+} from "./request-types.js";
 import { transitionRequest } from "./transition-request.js";
 import type { RequestMaps } from "./transition-request.js";
 import type { LevelConfig, TrafficSnapshot } from "./types.js";
@@ -41,6 +48,8 @@ interface SimulationSnapshot {
   nodeStates: TrafficSnapshot;
   processing: Map<string, Processing>;
   requests: Map<string, SimRequest>;
+  responses: Map<string, SimResponse>;
+  responseTransits: Map<string, ResponseTransit>;
   tickDeltaMs: number;
   transits: Map<string, Transit>;
 }
@@ -51,6 +60,8 @@ const getInitialSnapshot = (): SimulationSnapshot => ({
   nodeStates: {},
   processing: new Map(),
   requests: new Map(),
+  responseTransits: new Map(),
+  responses: new Map(),
   tickDeltaMs: 0,
   transits: new Map(),
 });
@@ -64,6 +75,8 @@ class SimulationEngine {
   private readonly requests = new Map<string, SimRequest>();
   private readonly transits = new Map<string, Transit>();
   private readonly processing = new Map<string, Processing>();
+  private readonly responses = new Map<string, SimResponse>();
+  private readonly responseTransits = new Map<string, ResponseTransit>();
   private pendingSpawns = 0;
   private wallClockElapsedMs = 0;
 
@@ -143,6 +156,8 @@ class SimulationEngine {
       nodeStates: trafficSnapshot,
       processing: this.processing,
       requests: this.requests,
+      responseTransits: this.responseTransits,
+      responses: this.responses,
       tickDeltaMs: deltaMs,
       transits: this.transits,
     };
@@ -153,6 +168,8 @@ class SimulationEngine {
     this.requests.clear();
     this.transits.clear();
     this.processing.clear();
+    this.responses.clear();
+    this.responseTransits.clear();
     this.pendingSpawns = 0;
     this.wallClockElapsedMs = 0;
     this.state = getInitialSnapshot();

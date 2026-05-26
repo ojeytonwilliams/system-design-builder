@@ -8,7 +8,23 @@ interface SimRequest {
   originNodeId: string;
   spawnedAtSimMs: number;
   status: RequestStatus;
+  visitedEdgeIds: string[];
   visitedNodeIds: string[];
+}
+
+interface SimResponse {
+  id: string;
+  requestId: string;
+  remainingEdgeIds: string[];
+  status: "DELIVERED" | "IN_TRANSIT";
+}
+
+interface ResponseTransit {
+  durationMs: number;
+  edgeId: string;
+  elapsedMs: number;
+  progress: number;
+  responseId: string;
 }
 
 interface Transit {
@@ -28,4 +44,4 @@ interface Processing {
 }
 
 export { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE };
-export type { Processing, RequestStatus, SimRequest, Transit };
+export type { Processing, RequestStatus, ResponseTransit, SimRequest, SimResponse, Transit };

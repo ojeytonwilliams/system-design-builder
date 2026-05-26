@@ -47,6 +47,7 @@ const spawnRequests = ({
       originNodeId: usersNodeId,
       spawnedAtSimMs: wallClockElapsedMs,
       status: "IN_TRANSIT",
+      visitedEdgeIds: [],
       visitedNodeIds: [],
     });
 

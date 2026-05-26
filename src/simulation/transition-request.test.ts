@@ -7,6 +7,7 @@ const makeRequest = (id: string, status: RequestStatus): SimRequest => ({
   originNodeId: "users-1",
   spawnedAtSimMs: 0,
   status,
+  visitedEdgeIds: [],
   visitedNodeIds: [],
 });
 
