@@ -1,6 +1,6 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { isAtCapacity, shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
-import { TIME_SCALE } from "./request-types.js";
+import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
 import type { LevelConfig } from "./types.js";
 
 const baseConfig: LevelConfig = {
@@ -451,6 +451,135 @@ describe("response creation", () => {
 
       expect(droppedRequests.length).toBeGreaterThan(0);
       expect(snap.responses.size).toBe(0);
+    });
+  });
+});
+
+describe("response transit advancement", () => {
+  const TICK_MS = 500;
+  const SPAWN_RATE = (TIME_SCALE * 1000) / TICK_MS;
+  const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
+
+  const config: LevelConfig = {
+    cacheHitRate: 0,
+    monthlyBudget: 100,
+    timeout: 60000,
+    trafficPeak: SPAWN_RATE,
+    trafficStart: SPAWN_RATE,
+    trafficTarget: SPAWN_RATE,
+    winSustainMs: 3_000,
+  };
+
+  const usersNode: ArchitectureNode = {
+    componentType: "users",
+    id: "users-1",
+    position: { x: 0, y: 0 },
+  };
+  const serverNode: ArchitectureNode = {
+    componentType: "server",
+    id: "server-1",
+    position: { x: 0, y: 0 },
+  };
+  const dbNode: ArchitectureNode = { componentType: "db", id: "db-1", position: { x: 0, y: 0 } };
+  const edgeE1: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
+  const edgeE2: ArchitectureEdge = { id: "e2", source: "server-1", target: "db-1" };
+
+  describe("single-edge path", () => {
+    let engine: SimulationEngine;
+    let responseId: string;
+
+    beforeEach(() => {
+      engine = new SimulationEngine();
+      engine.setConfig(config);
+      engine.setGraph([usersNode, serverNode], [edgeE1]);
+      // tick 1: transit starts; tick 2: transit completes, processing starts;
+      // tick 3: processing completes → r1 fulfilled, response created and advanced
+      engine.tick(TICK_MS);
+      engine.tick(TICK_MS);
+      engine.tick(TICK_MS);
+
+      const [response] = [...engine.getSnapshot().responses.values()];
+      responseId = response!.id;
+    });
+
+    it("advances the response transit elapsedMs in the same tick it is created", () => {
+      const transit = [...engine.getSnapshot().responseTransits.values()].find(
+        (t) => t.responseId === responseId,
+      );
+
+      expect(transit?.elapsedMs).toBe(TICK_MS);
+    });
+
+    it("sets responseTransit.progress to elapsedMs / durationMs", () => {
+      const transit = [...engine.getSnapshot().responseTransits.values()].find(
+        (t) => t.responseId === responseId,
+      );
+
+      expect(transit?.progress).toBe(TICK_MS / VISUAL_TRANSIT_MS);
+    });
+
+    it("removes the response when the transit completes", () => {
+      // tick 4: transit 500 → 1000, completes → delivered
+      engine.tick(TICK_MS);
+
+      expect(engine.getSnapshot().responses.has(responseId)).toBe(false);
+    });
+
+    it("removes the response transit when it completes", () => {
+      engine.tick(TICK_MS);
+
+      const transit = [...engine.getSnapshot().responseTransits.values()].find(
+        (t) => t.responseId === responseId,
+      );
+
+      expect(transit).toBeUndefined();
+    });
+  });
+
+  describe("two-edge path", () => {
+    let engine: SimulationEngine;
+    let responseId: string;
+
+    beforeEach(() => {
+      engine = new SimulationEngine();
+      engine.setConfig(config);
+      engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
+      // 7 ticks to fulfil r1; response is created and e2 transit advanced to 500ms in tick 7
+      for (let i = 0; i < 7; i++) {
+        engine.tick(TICK_MS);
+      }
+
+      const [response] = [...engine.getSnapshot().responses.values()];
+      responseId = response!.id;
+    });
+
+    it("creates a new transit for the next edge when the first completes", () => {
+      // tick 8: e2 transit 500 → 1000 completes, e1 transit created
+      engine.tick(TICK_MS);
+
+      const transit = [...engine.getSnapshot().responseTransits.values()].find(
+        (t) => t.responseId === responseId,
+      );
+
+      expect(transit?.edgeId).toBe("e1");
+    });
+
+    it("response persists while transits remain", () => {
+      // tick 8
+      engine.tick(TICK_MS);
+
+      expect(engine.getSnapshot().responses.has(responseId)).toBe(true);
+    });
+
+    it("removes the response after all transits complete", () => {
+      // tick 8: e2 completes → e1 created (elapsedMs=0)
+      engine.tick(TICK_MS);
+      // tick 9: e1 0 → 500
+      engine.tick(TICK_MS);
+      // tick 10: e1 500 → 1000 completes → delivered
+      engine.tick(TICK_MS);
+
+      expect(engine.getSnapshot().responses.has(responseId)).toBe(false);
     });
   });
 });

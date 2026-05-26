@@ -148,6 +148,7 @@ class SimulationEngine {
 
     this.advanceTransits(deltaMs, maps);
     this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate);
+    this.advanceResponseTransits(deltaMs);
     this.timeoutRequests(maps);
 
     this.state = {
@@ -255,6 +256,37 @@ class SimulationEngine {
     for (const [requestId, request] of [...this.requests]) {
       if (shouldTimeOut(request, this.wallClockElapsedMs, REQUEST_TIMEOUT_MS)) {
         transitionRequest(requestId, { status: "TIMED_OUT" }, maps);
+      }
+    }
+  }
+
+  private advanceResponseTransits(deltaMs: number): void {
+    for (const [responseId, transit] of [...this.responseTransits]) {
+      const newElapsed = transit.elapsedMs + deltaMs;
+
+      if (newElapsed >= transit.durationMs) {
+        this.responseTransits.delete(responseId);
+
+        const response = this.responses.get(responseId);
+        if (response !== undefined) {
+          const [nextEdgeId, ...remaining] = response.remainingEdgeIds;
+
+          if (nextEdgeId === undefined) {
+            this.responses.delete(responseId);
+          } else {
+            response.remainingEdgeIds = remaining;
+            this.responseTransits.set(responseId, {
+              durationMs: VISUAL_TRANSIT_MS,
+              edgeId: nextEdgeId,
+              elapsedMs: 0,
+              progress: 0,
+              responseId,
+            });
+          }
+        }
+      } else {
+        transit.elapsedMs = newElapsed;
+        transit.progress = newElapsed / transit.durationMs;
       }
     }
   }
