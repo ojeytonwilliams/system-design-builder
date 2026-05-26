@@ -3,7 +3,7 @@ import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { drawArrowHead, drawDashedBezier, getBezierControlPoints } from "./bezier-utils.js";
-import type { Processing, Transit } from "../../simulation/request-types.js";
+import type { Processing, ResponseTransit, Transit } from "../../simulation/request-types.js";
 import {
   chooseBestHandles,
   getHandlePosition,
@@ -21,6 +21,8 @@ extend({ Container, Graphics, Text });
 const BACKGROUND_GAP = 24;
 const CANVAS_BACKGROUND = 0xf8f5ec;
 const PORT_HIT_SIZE = 44;
+const REQUEST_DOT_COLOR = 0xa8c4e8;
+const RESPONSE_DOT_COLOR = 0x4fd47f;
 const HANDLE_RADIUS = PORT_HIT_SIZE / 2;
 const HANDLE_DOT_RADIUS = 4;
 
@@ -55,6 +57,7 @@ interface CanvasPixiRendererProps {
   overloadedNodeIds: string[];
   processing: Map<string, Processing>;
   resizeTo: { current: HTMLDivElement | null };
+  responseTransits: Map<string, ResponseTransit>;
   selectedNodeId: string | null;
   stageHeight: number;
   stageWidth: number;
@@ -501,7 +504,41 @@ const TransitDotsLayer = ({ transits, edges, nodes, isSimulating }: TransitDotsL
       const pos = getTransitDotPosition(transit, edges, nodes);
       if (pos !== null) {
         g.circle(pos.x, pos.y, 4);
-        g.fill({ alpha: 0.9, color: 0x4a7fd4 });
+        g.fill({ alpha: 0.9, color: REQUEST_DOT_COLOR });
+      }
+    }
+  };
+
+  return <pixiGraphics draw={draw} />;
+};
+
+interface ResponseTransitDotsLayerProps {
+  edges: ArchitectureEdge[];
+  isSimulating: boolean;
+  nodes: ArchitectureNode[];
+  responseTransits: Map<string, ResponseTransit>;
+}
+
+const ResponseTransitDotsLayer = ({
+  responseTransits,
+  edges,
+  nodes,
+  isSimulating,
+}: ResponseTransitDotsLayerProps) => {
+  const draw = (g: Graphics) => {
+    g.clear();
+    if (!isSimulating) {
+      return;
+    }
+    for (const transit of responseTransits.values()) {
+      const pos = getTransitDotPosition(
+        { edgeId: transit.edgeId, progress: 1 - transit.progress },
+        edges,
+        nodes,
+      );
+      if (pos !== null) {
+        g.circle(pos.x, pos.y, 4);
+        g.fill({ alpha: 0.9, color: RESPONSE_DOT_COLOR });
       }
     }
   };
@@ -574,6 +611,7 @@ interface PixiContentProps {
   overloadedNodeIds: string[];
   pendingEdge: PendingEdge | null;
   processing: Map<string, Processing>;
+  responseTransits: Map<string, ResponseTransit>;
   selectedNodeId: string | null;
   stageHeight: number;
   stageWidth: number;
@@ -592,6 +630,7 @@ const PixiContent = ({
   isLocked,
   pendingEdge,
   processing,
+  responseTransits,
   transits,
   onNodePointerDown,
   onNodeSelect,
@@ -662,6 +701,12 @@ const PixiContent = ({
         nodes={nodes}
         transits={transits}
       />
+      <ResponseTransitDotsLayer
+        edges={edges}
+        isSimulating={isSimulating}
+        nodes={nodes}
+        responseTransits={responseTransits}
+      />
       <pixiContainer>
         {nodes.map((node) => (
           <PixiNodeGraphic
@@ -698,6 +743,7 @@ const CanvasPixiRenderer = ({
   lockedNodeIds,
   overloadedNodeIds,
   processing,
+  responseTransits,
   transits,
   resizeTo,
   onNodeSelect,
@@ -828,6 +874,7 @@ const CanvasPixiRenderer = ({
         overloadedNodeIds={overloadedNodeIds}
         pendingEdge={pendingEdge}
         processing={processing}
+        responseTransits={responseTransits}
         selectedNodeId={selectedNodeId}
         stageHeight={stageHeight}
         stageWidth={stageWidth}

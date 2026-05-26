@@ -34,12 +34,13 @@ import { hasRunnablePath } from "../simulation/engine.js";
 import { OverloadEventDetector } from "../simulation/subscribers/overload-event-detector.js";
 import { TimeoutChecker } from "../simulation/subscribers/timeout-checker.js";
 import { WinConditionChecker } from "../simulation/subscribers/win-condition-checker.js";
-import type { Processing, Transit } from "../simulation/request-types.js";
+import type { Processing, ResponseTransit, Transit } from "../simulation/request-types.js";
 import type { LevelConfig } from "../simulation/types.js";
 import { computeAvailableComponents } from "../simulation/unlocks.js";
 
 const MOBILE_LAYOUT_BREAKPOINT = 768;
 const EMPTY_PROCESSING = new Map<string, Processing>();
+const EMPTY_RESPONSE_TRANSITS = new Map<string, ResponseTransit>();
 const EMPTY_TRANSITS = new Map<string, Transit>();
 
 interface GameSceneProps {
@@ -314,6 +315,7 @@ const GameScene = ({
             onSelectedNodeChange={setSelectedNodeId}
             overloadedNodeIds={overloadedNodeIds}
             processing={isSimulating ? simSnapshot.processing : EMPTY_PROCESSING}
+            responseTransits={isSimulating ? simSnapshot.responseTransits : EMPTY_RESPONSE_TRANSITS}
             selectedNodeId={selectedNodeId}
             transits={isSimulating ? simSnapshot.transits : EMPTY_TRANSITS}
           />

@@ -43,6 +43,7 @@ describe("game canvas", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -83,6 +84,7 @@ describe("game canvas", () => {
         onNodePlaced={onNodePlaced}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -125,6 +127,7 @@ describe("game canvas", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -147,6 +150,7 @@ describe("game canvas", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId="server-1"
         transits={new Map()}
       />,
@@ -171,6 +175,7 @@ describe("locked mode", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -217,6 +222,7 @@ describe("overloaded node state", () => {
         onSelectedNodeChange={noop}
         overloadedNodeIds={["server-1"]}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -241,6 +247,7 @@ describe("overloaded node state", () => {
         onSelectedNodeChange={noop}
         overloadedNodeIds={[]}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -256,6 +263,7 @@ describe("overloaded node state", () => {
         onSelectedNodeChange={noop}
         overloadedNodeIds={["server-1"]}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -280,6 +288,7 @@ describe("overloaded node state", () => {
         onSelectedNodeChange={noop}
         overloadedNodeIds={["server-1"]}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -295,6 +304,7 @@ describe("overloaded node state", () => {
         onSelectedNodeChange={noop}
         overloadedNodeIds={[]}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -323,6 +333,7 @@ describe("escape key", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={onSelectedNodeChange}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -347,6 +358,7 @@ describe("edge deletion", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -369,6 +381,7 @@ describe("edge deletion", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -394,6 +407,7 @@ describe("locked nodes", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId="users-1"
         transits={new Map()}
       />,
@@ -402,6 +416,27 @@ describe("locked nodes", () => {
     fireEvent.keyDown(window, { key: "Delete" });
 
     expect(dispatchGraph).not.toHaveBeenCalled();
+  });
+});
+
+describe("response transits", () => {
+  it("renders without errors when responseTransits is provided", () => {
+    render(
+      <GameCanvas
+        dispatchGraph={noop}
+        edges={[]}
+        nodes={[]}
+        onEdgeCreated={noop}
+        onNodePlaced={noop}
+        onSelectedNodeChange={noop}
+        processing={new Map()}
+        responseTransits={new Map()}
+        selectedNodeId={null}
+        transits={new Map()}
+      />,
+    );
+
+    expect(screen.getByTestId("game-canvas")).toBeInTheDocument();
   });
 });
 
@@ -422,6 +457,7 @@ describe("static graph rendering", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
@@ -443,6 +479,7 @@ describe("static graph rendering", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         processing={new Map()}
+        responseTransits={new Map()}
         selectedNodeId={null}
         transits={new Map()}
       />,
