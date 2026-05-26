@@ -29,6 +29,13 @@ describe(SimulationEngine, () => {
     expect(snap.nodeStates).toStrictEqual({});
   });
 
+  it("getSnapshot includes empty prev progress maps initially", () => {
+    const snap = engine.getSnapshot();
+
+    expect(snap.prevTransitProgresses.size).toBe(0);
+    expect(snap.prevResponseTransitProgresses.size).toBe(0);
+  });
+
   it("getSnapshot includes empty request maps initially", () => {
     const snap = engine.getSnapshot();
 
@@ -270,6 +277,18 @@ describe("transit and processing advancement", () => {
     const [transit] = [...snap.transits.values()];
 
     expect(transit?.progress).toBe(TICK_MS / 1000);
+  });
+
+  it("prevTransitProgresses captures each transit's progress before the tick", () => {
+    engine.tick(TICK_MS);
+    const transitId = [...engine.getSnapshot().transits.keys()][0]!;
+    const progressBeforeSecondTick = engine.getSnapshot().transits.get(transitId)!.progress;
+
+    engine.tick(TICK_MS);
+
+    expect(engine.getSnapshot().prevTransitProgresses.get(transitId)).toBe(
+      progressBeforeSecondTick,
+    );
   });
 
   it("transitions request to PROCESSING when transit completes", () => {

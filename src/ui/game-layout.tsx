@@ -26,7 +26,6 @@ import { placeComponent } from "../game/placement-actions.js";
 import { toggleTraffic, winLevel } from "../game/traffic-actions.js";
 import { usePhase } from "./hooks/use-phase.js";
 import { useSimulationSnapshot } from "./hooks/use-simulation-snapshot.js";
-import { useSimulationTick } from "./hooks/use-simulation-tick.js";
 import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
 import { graphReducer } from "../game/graph-reducer.js";
@@ -34,18 +33,15 @@ import { hasRunnablePath } from "../simulation/engine.js";
 import { OverloadEventDetector } from "../simulation/subscribers/overload-event-detector.js";
 import { TimeoutChecker } from "../simulation/subscribers/timeout-checker.js";
 import { WinConditionChecker } from "../simulation/subscribers/win-condition-checker.js";
-import type { Processing, ResponseTransit, Transit } from "../simulation/request-types.js";
 import type { LevelConfig } from "../simulation/types.js";
 import { computeAvailableComponents } from "../simulation/unlocks.js";
 
 const MOBILE_LAYOUT_BREAKPOINT = 768;
-const EMPTY_PROCESSING = new Map<string, Processing>();
-const EMPTY_RESPONSE_TRANSITS = new Map<string, ResponseTransit>();
-const EMPTY_TRANSITS = new Map<string, Transit>();
 
 interface GameSceneProps {
   completedLevels: string[];
   currentLevel: LevelDefinition;
+  engine?: SimulationEngine | undefined;
   initialEdges: ArchitectureEdge[];
   initialNodes: ArchitectureNode[];
   levelConfig: LevelConfig;
@@ -59,6 +55,7 @@ interface GameSceneProps {
 const GameScene = ({
   completedLevels,
   currentLevel,
+  engine: engineProp,
   initialEdges,
   initialNodes,
   levelConfig,
@@ -66,9 +63,10 @@ const GameScene = ({
   markLevelComplete,
 }: GameSceneProps) => {
   /* The engine is created once and kept for the lifetime of the scene, which
-    allows it to maintain its internal state and listeners across re-renders.*/
+    allows it to maintain its internal state and listeners across re-renders.
+    An external engine can be injected via the engine prop (used in tests). */
 
-  const engineRef = useRef<SimulationEngine | null>(null);
+  const engineRef = useRef<SimulationEngine | null>(engineProp ?? null);
   engineRef.current ??= new SimulationEngine();
 
   const engine = engineRef.current;
@@ -202,7 +200,11 @@ const GameScene = ({
     engine.setConfig(levelConfig);
   }, [levelConfig, engine]);
 
-  useSimulationTick({ engine, isSimulating });
+  useEffect(() => {
+    if (isSimulating) {
+      engine.reset();
+    }
+  }, [engine, isSimulating]);
 
   // Reset engine and per-level state whenever the level changes.
   // Subscribers are destroyed and recreated so they capture the new levelConfig.
@@ -305,6 +307,7 @@ const GameScene = ({
             componentToPlace={queuedComponentType}
             dispatchGraph={dispatchGraph}
             edges={graphState.edges}
+            engine={engine}
             isLocked={isSimulating}
             isSimulating={isSimulating}
             lockedNodeIds={currentLevel.lockedNodeIds}
@@ -314,10 +317,7 @@ const GameScene = ({
             onNodePlaced={handleNodePlaced}
             onSelectedNodeChange={setSelectedNodeId}
             overloadedNodeIds={overloadedNodeIds}
-            processing={isSimulating ? simSnapshot.processing : EMPTY_PROCESSING}
-            responseTransits={isSimulating ? simSnapshot.responseTransits : EMPTY_RESPONSE_TRANSITS}
             selectedNodeId={selectedNodeId}
-            transits={isSimulating ? simSnapshot.transits : EMPTY_TRANSITS}
           />
         </main>
         <aside

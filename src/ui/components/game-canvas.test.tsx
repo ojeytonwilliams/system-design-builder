@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { GraphAction } from "../../game/graph-reducer.js";
+import { SimulationEngine } from "../../simulation/simulation-engine.js";
 import { GameCanvas } from "./game-canvas.js";
 
 // oxlint-disable-next-line vitest/require-top-level-describe
@@ -9,6 +10,7 @@ beforeAll(() => {
 });
 
 const noop = () => {};
+const engine = new SimulationEngine();
 
 const INITIAL_NODES_TWO = [
   {
@@ -42,10 +44,8 @@ describe("game canvas", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
     const dropzone = screen.getByTestId("game-canvas-dropzone");
@@ -83,10 +83,8 @@ describe("game canvas", () => {
         onEdgeCreated={noop}
         onNodePlaced={onNodePlaced}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
     const dropzone = screen.getByTestId("game-canvas-dropzone");
@@ -126,10 +124,8 @@ describe("game canvas", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -148,11 +144,9 @@ describe("game canvas", () => {
         nodes={[...INITIAL_NODES_TWO]}
         onEdgeCreated={noop}
         onNodePlaced={noop}
+        engine={engine}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
         selectedNodeId="server-1"
-        transits={new Map()}
       />,
     );
 
@@ -174,10 +168,8 @@ describe("locked mode", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
     const dropzone = screen.getByTestId("game-canvas-dropzone");
@@ -221,10 +213,8 @@ describe("overloaded node state", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         overloadedNodeIds={["server-1"]}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -246,10 +236,8 @@ describe("overloaded node state", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         overloadedNodeIds={[]}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -262,10 +250,8 @@ describe("overloaded node state", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         overloadedNodeIds={["server-1"]}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -287,10 +273,8 @@ describe("overloaded node state", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         overloadedNodeIds={["server-1"]}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -303,10 +287,8 @@ describe("overloaded node state", () => {
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
         overloadedNodeIds={[]}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -332,10 +314,8 @@ describe("escape key", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={onSelectedNodeChange}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -357,10 +337,8 @@ describe("edge deletion", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -380,10 +358,8 @@ describe("edge deletion", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -405,11 +381,9 @@ describe("locked nodes", () => {
         nodes={LOCKED_USERS_NODE}
         onEdgeCreated={noop}
         onNodePlaced={noop}
+        engine={engine}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
         selectedNodeId="users-1"
-        transits={new Map()}
       />,
     );
 
@@ -429,10 +403,8 @@ describe("response transits", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -456,10 +428,8 @@ describe("static graph rendering", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 
@@ -478,10 +448,8 @@ describe("static graph rendering", () => {
         onEdgeCreated={noop}
         onNodePlaced={noop}
         onSelectedNodeChange={noop}
-        processing={new Map()}
-        responseTransits={new Map()}
+        engine={engine}
         selectedNodeId={null}
-        transits={new Map()}
       />,
     );
 

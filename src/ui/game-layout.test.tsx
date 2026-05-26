@@ -6,6 +6,7 @@ import { levelRegistry } from "../levels/index.js";
 import { level1 } from "../levels/level1.js";
 import { level3 } from "../levels/level3.js";
 import { loadProgress } from "../persistence.js";
+import { SimulationEngine } from "../simulation/simulation-engine.js";
 import type { LevelConfig } from "../simulation/types.js";
 
 // Win after 3 sustained seconds: traffic=40 < server capacity=50, no drops
@@ -89,9 +90,9 @@ const overloadEdges: ArchitectureEdge[] = [{ id: "edge-1", source: "users-1", ta
 
 // Default props for GameScene in tests — override per-test as needed
 const defaultSceneProps = {
-  canvasKey: 0,
   completedLevels: [] as string[],
   currentLevel: level1,
+  engine: undefined as SimulationEngine | undefined,
   initLevel: (): { newEdges: ArchitectureEdge[]; newNodes: ArchitectureNode[] } => ({
     newEdges: [],
     newNodes: [],
@@ -116,6 +117,7 @@ const renderScene = (overrides: Partial<typeof defaultSceneProps> = {}) => {
     <GameScene
       completedLevels={p.completedLevels}
       currentLevel={p.currentLevel}
+      engine={p.engine}
       initialEdges={p.initialEdges}
       initialNodes={p.initialNodes}
       levelConfig={p.levelConfig}
@@ -127,10 +129,12 @@ const renderScene = (overrides: Partial<typeof defaultSceneProps> = {}) => {
 
 // Wrapper for tests that need real level-progression state (initLevel / markLevelComplete)
 const GameSceneHarness = ({
+  engine,
   initialEdges,
   initialNodes,
   levelConfig,
 }: {
+  engine: SimulationEngine;
   initialEdges: ArchitectureEdge[];
   initialNodes: ArchitectureNode[];
   levelConfig: LevelConfig;
@@ -141,6 +145,7 @@ const GameSceneHarness = ({
     <GameScene
       completedLevels={completedLevels}
       currentLevel={currentLevel}
+      engine={engine}
       initialEdges={initialEdges}
       initialNodes={initialNodes}
       levelConfig={levelConfig}
@@ -190,14 +195,6 @@ describe("game layout", () => {
 });
 
 describe("simulation mode", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
   it("clicking Start Traffic transitions to simulate mode", () => {
     renderScene({
       initialEdges: overloadEdges,
@@ -224,7 +221,9 @@ describe("simulation mode", () => {
   });
 
   it("simulation ends automatically after the timeout expires", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: testLevelConfig,
@@ -233,14 +232,18 @@ describe("simulation mode", () => {
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
     act(() => {
-      vi.advanceTimersByTime(testLevelConfig.timeout * 1000 + 500);
+      for (let t = 0; t < testLevelConfig.timeout * 1000 + 500; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(screen.getByRole("button", { name: /start traffic/iv })).toBeInTheDocument();
   });
 
   it("inspector load field reflects overloaded state for the selected node", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: overloadLevelConfig,
@@ -250,14 +253,18 @@ describe("simulation mode", () => {
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
     act(() => {
-      vi.advanceTimersByTime(1000);
+      for (let t = 0; t < 1000; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(screen.getByText(/load:\s*300%\s*\(overloaded\)/iv)).toBeInTheDocument();
   });
 
   it("returns the selected node to normal load state when traffic drops below capacity", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: resolvingOverloadLevelConfig,
@@ -267,7 +274,9 @@ describe("simulation mode", () => {
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
     act(() => {
-      vi.advanceTimersByTime(3000);
+      for (let t = 0; t < 3000; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(screen.getByText(/load:\s*50%$/iv)).toBeInTheDocument();
@@ -276,12 +285,10 @@ describe("simulation mode", () => {
 
 describe("level system", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     localStorage.clear();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     localStorage.clear();
   });
 
@@ -302,7 +309,9 @@ describe("level system", () => {
   });
 
   it("shows the end-of-level screen when win condition is met", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: winLevelConfig,
@@ -310,14 +319,18 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(4000);
+      for (let t = 0; t < 4000; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(screen.getByRole("heading", { name: /level complete/iv })).toBeInTheDocument();
   });
 
   it("replay button dismisses end-of-level screen and returns to design mode", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: winLevelConfig,
@@ -325,7 +338,9 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(4000);
+      for (let t = 0; t < 4000; t += 16) {
+        engine.tick(16);
+      }
     });
     fireEvent.click(screen.getByRole("button", { name: /replay/iv }));
 
@@ -334,7 +349,9 @@ describe("level system", () => {
   });
 
   it("continue button dismisses end-of-level screen", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: winLevelConfig,
@@ -342,7 +359,9 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(4000);
+      for (let t = 0; t < 4000; t += 16) {
+        engine.tick(16);
+      }
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/iv }));
 
@@ -350,8 +369,10 @@ describe("level system", () => {
   });
 
   it("saves completed level to localStorage when a level is won", () => {
+    const engine = new SimulationEngine();
     render(
       <GameSceneHarness
+        engine={engine}
         initialEdges={overloadEdges}
         initialNodes={overloadNodes}
         levelConfig={winLevelConfig}
@@ -360,7 +381,9 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(4000);
+      for (let t = 0; t < 4000; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(loadProgress().completedLevels).toContain(levelRegistry.levels[0]!.id);
@@ -395,8 +418,10 @@ describe("level system", () => {
   });
 
   it("loads the next level after continue is clicked", () => {
+    const engine = new SimulationEngine();
     render(
       <GameSceneHarness
+        engine={engine}
         initialEdges={overloadEdges}
         initialNodes={overloadNodes}
         levelConfig={winLevelConfig}
@@ -405,7 +430,9 @@ describe("level system", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(4000);
+      for (let t = 0; t < 4000; t += 16) {
+        engine.tick(16);
+      }
     });
     fireEvent.click(screen.getByRole("button", { name: /continue/iv }));
 
@@ -493,12 +520,10 @@ describe("level progression strip", () => {
 
 describe("coach panel", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     localStorage.clear();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     localStorage.clear();
   });
 
@@ -511,8 +536,10 @@ describe("coach panel", () => {
 
   it("shows a timed coach message during simulation", () => {
     // Level 3 has a coachMessage at atSecond: 2 about the database bottleneck
+    const engine = new SimulationEngine();
     renderScene({
       currentLevel: level3,
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: overloadLevelConfig,
@@ -520,14 +547,18 @@ describe("coach panel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(3000);
+      for (let t = 0; t < 3000; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(screen.getByText(/database is the bottleneck/iv)).toBeInTheDocument();
   });
 
   it("shows a coaching message the first time overload occurs in a level", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: overloadLevelConfig,
@@ -535,7 +566,9 @@ describe("coach panel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(1000);
+      for (let t = 0; t < 1000; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(screen.getByText(/overload detected/iv)).toBeInTheDocument();
@@ -544,17 +577,17 @@ describe("coach panel", () => {
 
 describe("event log", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     localStorage.clear();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
     localStorage.clear();
   });
 
   it("logs placement and connections in chronological order", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: unlockedLevel3Nodes,
       levelConfig: resolvingOverloadLevelConfig,
@@ -562,7 +595,9 @@ describe("event log", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(3000);
+      for (let t = 0; t < 3000; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(screen.getByRole("heading", { name: /event log/iv })).toBeInTheDocument();
@@ -572,7 +607,9 @@ describe("event log", () => {
   });
 
   it("logs overload start and resolution events", () => {
+    const engine = new SimulationEngine();
     renderScene({
+      engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
       levelConfig: resolvingOverloadLevelConfig,
@@ -580,7 +617,9 @@ describe("event log", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      vi.advanceTimersByTime(3000);
+      for (let t = 0; t < 3000; t += 16) {
+        engine.tick(16);
+      }
     });
 
     expect(screen.getByText(/overload started/iv)).toBeInTheDocument();

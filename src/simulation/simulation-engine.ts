@@ -46,6 +46,8 @@ interface SimulationSnapshot {
   currentTrafficRate: number;
   elapsedMs: number;
   nodeStates: TrafficSnapshot;
+  prevResponseTransitProgresses: Map<string, number>;
+  prevTransitProgresses: Map<string, number>;
   processing: Map<string, Processing>;
   requests: Map<string, SimRequest>;
   responses: Map<string, SimResponse>;
@@ -58,6 +60,8 @@ const getInitialSnapshot = (): SimulationSnapshot => ({
   currentTrafficRate: 0,
   elapsedMs: 0,
   nodeStates: {},
+  prevResponseTransitProgresses: new Map(),
+  prevTransitProgresses: new Map(),
   processing: new Map(),
   requests: new Map(),
   responseTransits: new Map(),
@@ -101,6 +105,15 @@ class SimulationEngine {
   tick(deltaMs: number): void {
     if (this.config === null) {
       return;
+    }
+
+    const prevTransitProgresses = new Map<string, number>();
+    for (const [id, t] of this.transits) {
+      prevTransitProgresses.set(id, t.progress);
+    }
+    const prevResponseTransitProgresses = new Map<string, number>();
+    for (const [id, rt] of this.responseTransits) {
+      prevResponseTransitProgresses.set(id, rt.progress);
     }
 
     this.wallClockElapsedMs += deltaMs;
@@ -155,6 +168,8 @@ class SimulationEngine {
       currentTrafficRate: rate,
       elapsedMs: elapsed,
       nodeStates: trafficSnapshot,
+      prevResponseTransitProgresses,
+      prevTransitProgresses,
       processing: this.processing,
       requests: this.requests,
       responseTransits: this.responseTransits,
@@ -326,5 +341,7 @@ class SimulationEngine {
   }
 }
 
-export { isAtCapacity, shouldTimeOut, SimulationEngine };
+const TICK_INTERVAL_MS = 16;
+
+export { isAtCapacity, shouldTimeOut, SimulationEngine, TICK_INTERVAL_MS };
 export type { SimulationSnapshot };

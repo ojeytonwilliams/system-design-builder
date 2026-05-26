@@ -1,9 +1,11 @@
-import { Application, extend, useApplication } from "@pixi/react";
+import { Application, extend, useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { drawArrowHead, drawDashedBezier, getBezierControlPoints } from "./bezier-utils.js";
-import type { Processing, ResponseTransit, Transit } from "../../simulation/request-types.js";
+import { TICK_INTERVAL_MS } from "../../simulation/simulation-engine.js";
+import type { SimulationEngine } from "../../simulation/simulation-engine.js";
+import type { ResponseTransit, Transit } from "../../simulation/request-types.js";
 import {
   chooseBestHandles,
   getHandlePosition,
@@ -54,14 +56,12 @@ interface CanvasPixiRendererProps {
   onNodeDragEnd: (nodeId: string, position: { x: number; y: number }) => void;
   onNodeSelect: (nodeId: string) => void;
   onPaneClick: () => void;
+  engine: SimulationEngine;
   overloadedNodeIds: string[];
-  processing: Map<string, Processing>;
   resizeTo: { current: HTMLDivElement | null };
-  responseTransits: Map<string, ResponseTransit>;
   selectedNodeId: string | null;
   stageHeight: number;
   stageWidth: number;
-  transits: Map<string, Transit>;
 }
 
 interface HandleGraphicProps {
@@ -440,20 +440,31 @@ const LiveEdgeGraphic = ({ pendingEdge, nodes }: LiveEdgeGraphicProps) => {
 };
 
 interface TransitDotsLayerProps {
+  alpha: number;
   edges: ArchitectureEdge[];
   isSimulating: boolean;
   nodes: ArchitectureNode[];
+  prevProgresses: Map<string, number>;
   transits: Map<string, Transit>;
 }
 
-const TransitDotsLayer = ({ transits, edges, nodes, isSimulating }: TransitDotsLayerProps) => {
+const TransitDotsLayer = ({
+  alpha,
+  edges,
+  isSimulating,
+  nodes,
+  prevProgresses,
+  transits,
+}: TransitDotsLayerProps) => {
   const draw = (g: Graphics) => {
     g.clear();
     if (!isSimulating) {
       return;
     }
-    for (const transit of transits.values()) {
-      const pos = getTransitDotPosition(transit, edges, nodes);
+    for (const [id, transit] of transits) {
+      const prev = prevProgresses.get(id) ?? transit.progress;
+      const progress = prev + (transit.progress - prev) * alpha;
+      const pos = getTransitDotPosition({ edgeId: transit.edgeId, progress }, edges, nodes);
       if (pos !== null) {
         g.circle(pos.x, pos.y, 4);
         g.fill({ alpha: 0.9, color: REQUEST_DOT_COLOR });
@@ -465,26 +476,32 @@ const TransitDotsLayer = ({ transits, edges, nodes, isSimulating }: TransitDotsL
 };
 
 interface ResponseTransitDotsLayerProps {
+  alpha: number;
   edges: ArchitectureEdge[];
   isSimulating: boolean;
   nodes: ArchitectureNode[];
+  prevProgresses: Map<string, number>;
   responseTransits: Map<string, ResponseTransit>;
 }
 
 const ResponseTransitDotsLayer = ({
-  responseTransits,
+  alpha,
   edges,
-  nodes,
   isSimulating,
+  nodes,
+  prevProgresses,
+  responseTransits,
 }: ResponseTransitDotsLayerProps) => {
   const draw = (g: Graphics) => {
     g.clear();
     if (!isSimulating) {
       return;
     }
-    for (const transit of responseTransits.values()) {
+    for (const [id, transit] of responseTransits) {
+      const prev = prevProgresses.get(id) ?? transit.progress;
+      const progress = prev + (transit.progress - prev) * alpha;
       const pos = getTransitDotPosition(
-        { edgeId: transit.edgeId, progress: 1 - transit.progress },
+        { edgeId: transit.edgeId, progress: 1 - progress },
         edges,
         nodes,
       );
@@ -529,6 +546,7 @@ const EdgesLayer = ({
 
 interface PixiContentProps {
   edges: ArchitectureEdge[];
+  engine: SimulationEngine;
   isLocked: boolean;
   isSimulating: boolean;
   lockedNodeIds: string[];
@@ -548,17 +566,15 @@ interface PixiContentProps {
   onStagePointerUp: () => void;
   overloadedNodeIds: string[];
   pendingEdge: PendingEdge | null;
-  processing: Map<string, Processing>;
-  responseTransits: Map<string, ResponseTransit>;
   selectedNodeId: string | null;
   stageHeight: number;
   stageWidth: number;
-  transits: Map<string, Transit>;
 }
 
 const PixiContent = ({
   nodes,
   edges,
+  engine,
   stageWidth,
   stageHeight,
   isSimulating,
@@ -567,9 +583,6 @@ const PixiContent = ({
   lockedNodeIds,
   isLocked,
   pendingEdge,
-  processing,
-  responseTransits,
-  transits,
   onNodePointerDown,
   onNodeSelect,
   onNodeContextMenu,
@@ -583,6 +596,25 @@ const PixiContent = ({
   const { app, isInitialised } = useApplication() as ReturnType<typeof useApplication> & {
     isInitialised: boolean;
   };
+
+  const accumulatorRef = useRef(0);
+  const [alpha, setAlpha] = useState(0);
+
+  useTick((delta) => {
+    if (!isSimulating) {
+      accumulatorRef.current = 0;
+      return;
+    }
+    accumulatorRef.current += delta.elapsedMS;
+    while (accumulatorRef.current >= TICK_INTERVAL_MS) {
+      engine.tick(TICK_INTERVAL_MS);
+      accumulatorRef.current -= TICK_INTERVAL_MS;
+    }
+    setAlpha(accumulatorRef.current / TICK_INTERVAL_MS);
+  });
+
+  const snapshot = engine.getSnapshot();
+  const { processing, transits, responseTransits } = snapshot;
 
   useEffect(() => {
     if (!isInitialised) {
@@ -633,15 +665,19 @@ const PixiContent = ({
         pendingEdge={pendingEdge}
       />
       <TransitDotsLayer
+        alpha={alpha}
         edges={edges}
         isSimulating={isSimulating}
         nodes={nodes}
+        prevProgresses={snapshot.prevTransitProgresses}
         transits={transits}
       />
       <ResponseTransitDotsLayer
+        alpha={alpha}
         edges={edges}
         isSimulating={isSimulating}
         nodes={nodes}
+        prevProgresses={snapshot.prevResponseTransitProgresses}
         responseTransits={responseTransits}
       />
       <pixiContainer>
@@ -672,6 +708,7 @@ const PixiContent = ({
 const CanvasPixiRenderer = ({
   nodes,
   edges,
+  engine,
   selectedNodeId,
   stageWidth,
   stageHeight,
@@ -679,9 +716,6 @@ const CanvasPixiRenderer = ({
   isLocked,
   lockedNodeIds,
   overloadedNodeIds,
-  processing,
-  responseTransits,
-  transits,
   resizeTo,
   onNodeSelect,
   onEdgeSelect,
@@ -801,6 +835,7 @@ const CanvasPixiRenderer = ({
         nodes={liveNodes}
         onEdgeClick={onEdgeSelect}
         onEdgeContextMenu={onEdgeContextMenu}
+        engine={engine}
         onHandleClick={onHandleClick}
         onNodeContextMenu={onNodeContextMenu}
         onNodePointerDown={onNodePointerDown}
@@ -810,12 +845,9 @@ const CanvasPixiRenderer = ({
         onStagePointerUp={onStagePointerUp}
         overloadedNodeIds={overloadedNodeIds}
         pendingEdge={pendingEdge}
-        processing={processing}
-        responseTransits={responseTransits}
         selectedNodeId={selectedNodeId}
         stageHeight={stageHeight}
         stageWidth={stageWidth}
-        transits={transits}
       />
     </Application>
   );

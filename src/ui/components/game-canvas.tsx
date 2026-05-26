@@ -1,6 +1,6 @@
 import type { Dispatch, DragEvent } from "react";
 import { useEffect, useReducer, useRef, useState } from "react";
-import type { Processing, ResponseTransit, Transit } from "../../simulation/request-types.js";
+import type { SimulationEngine } from "../../simulation/simulation-engine.js";
 import {
   DEFAULT_DROP_POSITION,
   DEFAULT_LOCKED_NODE_IDS,
@@ -21,6 +21,7 @@ interface GameCanvasProps {
   componentToPlace?: ComponentType | null;
   dispatchGraph: Dispatch<GraphAction>;
   edges: ArchitectureEdge[];
+  engine: SimulationEngine;
   initialContextMenu?: ContextMenuState;
   initialSelectedEdgeId?: string | null;
   isLocked?: boolean;
@@ -32,10 +33,7 @@ interface GameCanvasProps {
   onNodePlaced: (componentType: ComponentType) => void;
   onSelectedNodeChange: (nodeId: string | null) => void;
   overloadedNodeIds?: string[];
-  processing: Map<string, Processing>;
-  responseTransits: Map<string, ResponseTransit>;
   selectedNodeId: string | null;
-  transits: Map<string, Transit>;
 }
 
 const relativeTo = (
@@ -50,6 +48,7 @@ const GameCanvas = ({
   componentToPlace,
   dispatchGraph,
   edges,
+  engine,
   initialContextMenu,
   initialSelectedEdgeId,
   isLocked = false,
@@ -61,10 +60,7 @@ const GameCanvas = ({
   onNodePlaced,
   onSelectedNodeChange,
   overloadedNodeIds = DEFAULT_OVERLOADED_NODE_IDS,
-  processing,
-  responseTransits,
   selectedNodeId,
-  transits,
 }: GameCanvasProps) => {
   const [canvasUI, dispatchCanvas] = useReducer(canvasUIReducer, {
     contextMenu: initialContextMenu ?? null,
@@ -229,6 +225,7 @@ const GameCanvas = ({
         {stageSize.width > 0 && stageSize.height > 0 && (
           <CanvasPixiRenderer
             edges={edgesWithSelection}
+            engine={engine}
             isLocked={isLocked}
             isSimulating={isSimulating}
             lockedNodeIds={lockedNodeIds}
@@ -241,13 +238,10 @@ const GameCanvas = ({
             onNodeSelect={onNodeSelect}
             onPaneClick={onPaneClick}
             overloadedNodeIds={overloadedNodeIds}
-            processing={processing}
             resizeTo={dropzoneRef}
-            responseTransits={responseTransits}
             selectedNodeId={selectedNodeId}
             stageHeight={stageSize.height}
             stageWidth={stageSize.width}
-            transits={transits}
           />
         )}
       </div>
