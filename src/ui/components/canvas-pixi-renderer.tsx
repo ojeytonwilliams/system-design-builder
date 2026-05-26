@@ -1,4 +1,4 @@
-import { Application, extend, useApplication, useTick } from "@pixi/react";
+import { Application, extend, useApplication } from "@pixi/react";
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -310,9 +310,7 @@ const PixiNodeGraphic = ({
 };
 
 interface PixiEdgeInnerProps {
-  dashOffset: number;
   edge: ArchitectureEdge;
-  isSimulating: boolean;
   onEdgeClick: (edgeId: string) => void;
   onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
   sourceNode: ArchitectureNode;
@@ -323,8 +321,6 @@ const PixiEdgeInner = ({
   edge,
   sourceNode,
   targetNode,
-  isSimulating,
-  dashOffset,
   onEdgeClick,
   onEdgeContextMenu,
 }: PixiEdgeInnerProps) => {
@@ -348,45 +344,12 @@ const PixiEdgeInner = ({
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
-      if (isSimulating) {
-        drawDashedBezier(
-          g,
-          {
-            cp1: { x: cp1X, y: cp1Y },
-            cp2: { x: cp2X, y: cp2Y },
-            p0: { x: srcX, y: srcY },
-            p3: { x: tgtX, y: tgtY },
-          },
-          {
-            alpha: 0.9,
-            color: strokeColor,
-            dashLen: 6,
-            gapLen: 6,
-            offset: dashOffset % 12,
-            width: strokeWidth,
-          },
-        );
-      } else {
-        g.moveTo(srcX, srcY);
-        g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
-        g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });
-      }
+      g.moveTo(srcX, srcY);
+      g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
+      g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });
       drawArrowHead(g, { x: cp2X, y: cp2Y }, { color: strokeColor, to: { x: tgtX, y: tgtY } });
     },
-    [
-      srcX,
-      srcY,
-      cp1X,
-      cp1Y,
-      cp2X,
-      cp2Y,
-      tgtX,
-      tgtY,
-      strokeColor,
-      strokeWidth,
-      isSimulating,
-      dashOffset,
-    ],
+    [srcX, srcY, cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY, strokeColor, strokeWidth],
   );
 
   return (
@@ -408,22 +371,13 @@ const PixiEdgeInner = ({
 };
 
 interface PixiEdgeGraphicProps {
-  dashOffset: number;
   edge: ArchitectureEdge;
-  isSimulating: boolean;
   nodes: ArchitectureNode[];
   onEdgeClick: (edgeId: string) => void;
   onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
 }
 
-const PixiEdgeGraphic = ({
-  edge,
-  nodes,
-  dashOffset,
-  isSimulating,
-  onEdgeClick,
-  onEdgeContextMenu,
-}: PixiEdgeGraphicProps) => {
+const PixiEdgeGraphic = ({ edge, nodes, onEdgeClick, onEdgeContextMenu }: PixiEdgeGraphicProps) => {
   const sourceNode = nodes.find((n) => n.id === edge.source);
   const targetNode = nodes.find((n) => n.id === edge.target);
   if (sourceNode === undefined || targetNode === undefined) {
@@ -431,9 +385,7 @@ const PixiEdgeGraphic = ({
   }
   return (
     <PixiEdgeInner
-      dashOffset={dashOffset}
       edge={edge}
-      isSimulating={isSimulating}
       onEdgeClick={onEdgeClick}
       onEdgeContextMenu={onEdgeContextMenu}
       sourceNode={sourceNode}
@@ -548,7 +500,6 @@ const ResponseTransitDotsLayer = ({
 
 interface EdgesLayerProps {
   edges: ArchitectureEdge[];
-  isSimulating: boolean;
   nodes: ArchitectureNode[];
   onEdgeClick: (edgeId: string) => void;
   onEdgeContextMenu: (edgeId: string, pos: { clientX: number; clientY: number }) => void;
@@ -558,36 +509,23 @@ interface EdgesLayerProps {
 const EdgesLayer = ({
   nodes,
   edges,
-  isSimulating,
   pendingEdge,
   onEdgeClick,
   onEdgeContextMenu,
-}: EdgesLayerProps) => {
-  const [dashOffset, setDashOffset] = useState(0);
-
-  useTick((delta) => {
-    if (isSimulating) {
-      setDashOffset((prev) => (prev - delta.deltaTime * 0.8) % 12);
-    }
-  });
-
-  return (
-    <pixiContainer>
-      {edges.map((edge) => (
-        <PixiEdgeGraphic
-          key={edge.id}
-          dashOffset={dashOffset}
-          edge={edge}
-          isSimulating={isSimulating}
-          nodes={nodes}
-          onEdgeClick={onEdgeClick}
-          onEdgeContextMenu={onEdgeContextMenu}
-        />
-      ))}
-      {pendingEdge !== null && <LiveEdgeGraphic nodes={nodes} pendingEdge={pendingEdge} />}
-    </pixiContainer>
-  );
-};
+}: EdgesLayerProps) => (
+  <pixiContainer>
+    {edges.map((edge) => (
+      <PixiEdgeGraphic
+        key={edge.id}
+        edge={edge}
+        nodes={nodes}
+        onEdgeClick={onEdgeClick}
+        onEdgeContextMenu={onEdgeContextMenu}
+      />
+    ))}
+    {pendingEdge !== null && <LiveEdgeGraphic nodes={nodes} pendingEdge={pendingEdge} />}
+  </pixiContainer>
+);
 
 interface PixiContentProps {
   edges: ArchitectureEdge[];
@@ -689,7 +627,6 @@ const PixiContent = ({
       <pixiGraphics draw={drawDotGrid} />
       <EdgesLayer
         edges={edges}
-        isSimulating={isSimulating}
         nodes={nodes}
         onEdgeClick={onEdgeClick}
         onEdgeContextMenu={onEdgeContextMenu}
