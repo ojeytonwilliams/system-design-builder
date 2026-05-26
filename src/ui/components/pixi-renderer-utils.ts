@@ -1,5 +1,5 @@
 import { chooseBestHandles, getHandlePosition } from "../../domain/canvas-logic";
-import { getBezierControlPoints, sampleCubicBezier } from "./bezier-utils";
+import { getBezierControlPoints, sampleCubicBezierByArcLength } from "./bezier-utils";
 
 const computeNodeFillRatio = (
   nodeId: string,
@@ -31,7 +31,7 @@ const getTransitDotPosition = (
   const src = getHandlePosition(sourceNode, sourceHandle);
   const tgt = getHandlePosition(targetNode, targetHandle);
   const { cp1, cp2 } = getBezierControlPoints(src, tgt);
-  return sampleCubicBezier(transit.progress, { cp1, cp2, p0: src, p3: tgt });
+  return sampleCubicBezierByArcLength(transit.progress, { cp1, cp2, p0: src, p3: tgt });
 };
 
 export { computeNodeFillRatio, getTransitDotPosition };

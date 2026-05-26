@@ -29,6 +29,7 @@ interface Point {
 }
 
 const BEZIER_STEPS = 80;
+const ARC_LENGTH_LUT_STEPS = 100;
 
 const sampleCubicBezier = (t: number, { cp1, cp2, p0, p3 }: BezierCurve): Point => {
   const mt = 1 - t;
@@ -107,6 +108,43 @@ const drawDashedBezier = (g: Graphics, curve: BezierCurve, style: DashStyle): vo
   g.stroke({ alpha, color, width });
 };
 
+const buildArcLengthLUT = (curve: BezierCurve): { arcLen: number; t: number }[] => {
+  const lut: { arcLen: number; t: number }[] = [{ arcLen: 0, t: 0 }];
+  let prev = sampleCubicBezier(0, curve);
+  let total = 0;
+  for (let i = 1; i <= ARC_LENGTH_LUT_STEPS; i++) {
+    const t = i / ARC_LENGTH_LUT_STEPS;
+    const curr = sampleCubicBezier(t, curve);
+    const dx = curr.x - prev.x;
+    const dy = curr.y - prev.y;
+    total += Math.sqrt(dx * dx + dy * dy);
+    lut.push({ arcLen: total, t });
+    prev = curr;
+  }
+  return lut;
+};
+
+const sampleCubicBezierByArcLength = (progress: number, curve: BezierCurve): Point => {
+  const lut = buildArcLengthLUT(curve);
+  const totalLen = lut[lut.length - 1]!.arcLen;
+  const targetLen = progress * totalLen;
+  let lo = 0;
+  let hi = lut.length - 1;
+  while (lo < hi - 1) {
+    const mid = (lo + hi) >> 1;
+    if (lut[mid]!.arcLen < targetLen) {
+      lo = mid;
+    } else {
+      hi = mid;
+    }
+  }
+  const a = lut[lo]!;
+  const b = lut[hi]!;
+  const segLen = b.arcLen - a.arcLen;
+  const t = segLen === 0 ? a.t : a.t + (b.t - a.t) * ((targetLen - a.arcLen) / segLen);
+  return sampleCubicBezier(t, curve);
+};
+
 const getBezierControlPoints = (src: Point, tgt: Point) => {
   const dx = Math.abs(tgt.x - src.x);
   const dy = Math.abs(tgt.y - src.y);
@@ -139,4 +177,10 @@ const drawArrowHead = (g: Graphics, from: Point, { color, to }: { color: number;
   g.fill({ color });
 };
 
-export { drawArrowHead, drawDashedBezier, getBezierControlPoints, sampleCubicBezier };
+export {
+  drawArrowHead,
+  drawDashedBezier,
+  getBezierControlPoints,
+  sampleCubicBezier,
+  sampleCubicBezierByArcLength,
+};
