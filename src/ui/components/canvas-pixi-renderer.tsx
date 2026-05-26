@@ -4,8 +4,7 @@ import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { drawArrowHead, drawDashedBezier, getBezierControlPoints } from "./bezier-utils.js";
 import { TICK_INTERVAL_MS } from "../../simulation/simulation-engine.js";
-import type { SimulationEngine } from "../../simulation/simulation-engine.js";
-import type { ResponseTransit, Transit } from "../../simulation/request-types.js";
+import type { SimulationEngine, SimulationSnapshot } from "../../simulation/simulation-engine.js";
 import {
   chooseBestHandles,
   getHandlePosition,
@@ -41,6 +40,11 @@ interface DragState {
   offsetY: number;
   x: number;
   y: number;
+}
+
+interface AnimState {
+  alpha: number;
+  snapshot: SimulationSnapshot;
 }
 
 interface CanvasPixiRendererProps {
@@ -440,77 +444,72 @@ const LiveEdgeGraphic = ({ pendingEdge, nodes }: LiveEdgeGraphicProps) => {
 };
 
 interface TransitDotsLayerProps {
-  alpha: number;
+  animRef: { current: AnimState };
   edges: ArchitectureEdge[];
   isSimulating: boolean;
   nodes: ArchitectureNode[];
-  prevProgresses: Map<string, number>;
-  transits: Map<string, Transit>;
 }
 
-const TransitDotsLayer = ({
-  alpha,
-  edges,
-  isSimulating,
-  nodes,
-  prevProgresses,
-  transits,
-}: TransitDotsLayerProps) => {
-  const draw = (g: Graphics) => {
-    g.clear();
-    if (!isSimulating) {
-      return;
-    }
-    for (const [id, transit] of transits) {
-      const prev = prevProgresses.get(id) ?? transit.progress;
-      const progress = prev + (transit.progress - prev) * alpha;
-      const pos = getTransitDotPosition({ edgeId: transit.edgeId, progress }, edges, nodes);
-      if (pos !== null) {
-        g.circle(pos.x, pos.y, 4);
-        g.fill({ alpha: 0.9, color: REQUEST_DOT_COLOR });
+const TransitDotsLayer = ({ animRef, edges, isSimulating, nodes }: TransitDotsLayerProps) => {
+  const draw = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      if (!isSimulating) {
+        return;
       }
-    }
-  };
+      const { alpha, snapshot } = animRef.current;
+      for (const [id, transit] of snapshot.transits) {
+        const prev = snapshot.prevTransitProgresses.get(id) ?? transit.progress;
+        const progress = prev + (transit.progress - prev) * alpha;
+        const pos = getTransitDotPosition({ edgeId: transit.edgeId, progress }, edges, nodes);
+        if (pos !== null) {
+          g.circle(pos.x, pos.y, 4);
+          g.fill({ alpha: 0.9, color: REQUEST_DOT_COLOR });
+        }
+      }
+    },
+    [animRef, edges, isSimulating, nodes],
+  );
 
   return <pixiGraphics draw={draw} />;
 };
 
 interface ResponseTransitDotsLayerProps {
-  alpha: number;
+  animRef: { current: AnimState };
   edges: ArchitectureEdge[];
   isSimulating: boolean;
   nodes: ArchitectureNode[];
-  prevProgresses: Map<string, number>;
-  responseTransits: Map<string, ResponseTransit>;
 }
 
 const ResponseTransitDotsLayer = ({
-  alpha,
+  animRef,
   edges,
   isSimulating,
   nodes,
-  prevProgresses,
-  responseTransits,
 }: ResponseTransitDotsLayerProps) => {
-  const draw = (g: Graphics) => {
-    g.clear();
-    if (!isSimulating) {
-      return;
-    }
-    for (const [id, transit] of responseTransits) {
-      const prev = prevProgresses.get(id) ?? transit.progress;
-      const progress = prev + (transit.progress - prev) * alpha;
-      const pos = getTransitDotPosition(
-        { edgeId: transit.edgeId, progress: 1 - progress },
-        edges,
-        nodes,
-      );
-      if (pos !== null) {
-        g.circle(pos.x, pos.y, 4);
-        g.fill({ alpha: 0.9, color: RESPONSE_DOT_COLOR });
+  const draw = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      if (!isSimulating) {
+        return;
       }
-    }
-  };
+      const { alpha, snapshot } = animRef.current;
+      for (const [id, transit] of snapshot.responseTransits) {
+        const prev = snapshot.prevResponseTransitProgresses.get(id) ?? transit.progress;
+        const progress = prev + (transit.progress - prev) * alpha;
+        const pos = getTransitDotPosition(
+          { edgeId: transit.edgeId, progress: 1 - progress },
+          edges,
+          nodes,
+        );
+        if (pos !== null) {
+          g.circle(pos.x, pos.y, 4);
+          g.fill({ alpha: 0.9, color: RESPONSE_DOT_COLOR });
+        }
+      }
+    },
+    [animRef, edges, isSimulating, nodes],
+  );
 
   return <pixiGraphics draw={draw} />;
 };
@@ -598,25 +597,25 @@ const PixiContent = ({
   };
 
   const accumulatorRef = useRef(0);
-  const [alpha, setAlpha] = useState(0);
+  const animRef = useRef<AnimState>({ alpha: 0, snapshot: engine.getSnapshot() });
 
   useTick((ticker) => {
     if (!isSimulating) {
       accumulatorRef.current = 0;
       return;
     }
-    // DeltaMS should be used instead of elapsedMS since the latter doesn't
-    // Respect Ticker speed.
-    accumulatorRef.current += ticker.deltaMS;
+    accumulatorRef.current += ticker.elapsedMS;
     while (accumulatorRef.current >= TICK_INTERVAL_MS) {
       engine.tick(TICK_INTERVAL_MS);
       accumulatorRef.current -= TICK_INTERVAL_MS;
     }
-    setAlpha(accumulatorRef.current / TICK_INTERVAL_MS);
+    animRef.current = {
+      alpha: accumulatorRef.current / TICK_INTERVAL_MS,
+      snapshot: engine.getSnapshot(),
+    };
   });
 
-  const snapshot = engine.getSnapshot();
-  const { processing, transits, responseTransits } = snapshot;
+  const { processing } = engine.getSnapshot();
 
   useEffect(() => {
     if (!isInitialised) {
@@ -666,21 +665,12 @@ const PixiContent = ({
         onEdgeContextMenu={onEdgeContextMenu}
         pendingEdge={pendingEdge}
       />
-      <TransitDotsLayer
-        alpha={alpha}
-        edges={edges}
-        isSimulating={isSimulating}
-        nodes={nodes}
-        prevProgresses={snapshot.prevTransitProgresses}
-        transits={transits}
-      />
+      <TransitDotsLayer animRef={animRef} edges={edges} isSimulating={isSimulating} nodes={nodes} />
       <ResponseTransitDotsLayer
-        alpha={alpha}
+        animRef={animRef}
         edges={edges}
         isSimulating={isSimulating}
         nodes={nodes}
-        prevProgresses={snapshot.prevResponseTransitProgresses}
-        responseTransits={responseTransits}
       />
       <pixiContainer>
         {nodes.map((node) => (
