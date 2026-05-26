@@ -600,12 +600,12 @@ const PixiContent = ({
   const accumulatorRef = useRef(0);
   const [alpha, setAlpha] = useState(0);
 
-  useTick((delta) => {
+  useTick((ticker) => {
     if (!isSimulating) {
       accumulatorRef.current = 0;
       return;
     }
-    accumulatorRef.current += delta.elapsedMS;
+    accumulatorRef.current += ticker.elapsedMS;
     while (accumulatorRef.current >= TICK_INTERVAL_MS) {
       engine.tick(TICK_INTERVAL_MS);
       accumulatorRef.current -= TICK_INTERVAL_MS;

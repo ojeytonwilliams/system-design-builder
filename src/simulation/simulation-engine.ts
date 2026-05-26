@@ -341,7 +341,7 @@ class SimulationEngine {
   }
 }
 
-const TICK_INTERVAL_MS = 16;
+const TICK_INTERVAL_MS = 1000 / 60;
 
 export { isAtCapacity, shouldTimeOut, SimulationEngine, TICK_INTERVAL_MS };
 export type { SimulationSnapshot };
