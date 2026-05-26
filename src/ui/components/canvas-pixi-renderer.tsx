@@ -605,7 +605,9 @@ const PixiContent = ({
       accumulatorRef.current = 0;
       return;
     }
-    accumulatorRef.current += ticker.elapsedMS;
+    // DeltaMS should be used instead of elapsedMS since the latter doesn't
+    // Respect Ticker speed.
+    accumulatorRef.current += ticker.deltaMS;
     while (accumulatorRef.current >= TICK_INTERVAL_MS) {
       engine.tick(TICK_INTERVAL_MS);
       accumulatorRef.current -= TICK_INTERVAL_MS;
