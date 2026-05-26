@@ -25,20 +25,16 @@ const getInspectorData = (
 
   const isFiniteCapacity = Number.isFinite(maxCapacity);
 
-  const incomingRate =
+  const opsPerSec =
     nodeState !== undefined && tickDeltaMs > 0
       ? nodeState.incomingOps / (tickDeltaMs / MS_PER_SECOND)
       : undefined;
 
-  const opsPerSec = incomingRate;
-
   const loadPercent =
-    incomingRate === undefined || !isFiniteCapacity
-      ? undefined
-      : (incomingRate / maxCapacity) * 100;
+    opsPerSec === undefined || !isFiniteCapacity ? undefined : (opsPerSec / maxCapacity) * 100;
 
   const isOverloaded =
-    incomingRate === undefined || !isFiniteCapacity ? undefined : incomingRate > maxCapacity;
+    opsPerSec === undefined || !isFiniteCapacity ? undefined : opsPerSec > maxCapacity;
 
   return {
     componentType,
