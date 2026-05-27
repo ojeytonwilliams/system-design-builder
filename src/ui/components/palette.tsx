@@ -16,9 +16,7 @@ const Resources = ({
   onPlaceComponent,
 }: ResourcesProps) => {
   let content = (
-    <p style={{ color: "oklch(0.58 0.022 252)", fontSize: "13px", margin: 0 }}>
-      Components will appear here.
-    </p>
+    <p style={{ color: "#d0d0d5", fontSize: "13px", margin: 0 }}>Components will appear here.</p>
   );
 
   if (availableComponents !== undefined) {
@@ -37,6 +35,7 @@ const Resources = ({
           if (onPlaceComponent === undefined) {
             return (
               <ResourceItem
+                accentColor={def.accentColor}
                 capacity={def.capacity}
                 componentType={componentType}
                 description={def.description}
@@ -51,6 +50,7 @@ const Resources = ({
 
           return (
             <ResourceItem
+              accentColor={def.accentColor}
               capacity={def.capacity}
               componentType={componentType}
               description={def.description}
@@ -70,11 +70,11 @@ const Resources = ({
   return (
     <div
       style={{
-        background: "oklch(0.21 0.022 268 / 0.78)",
-        border: "1px solid oklch(0.36 0.022 272 / 0.32)",
-        borderBottom: isCompact ? "none" : "1px solid oklch(0.36 0.022 272 / 0.32)",
+        background: "rgba(27, 27, 50, 0.85)",
+        border: "1px solid rgba(59, 59, 79, 0.4)",
+        borderBottom: isCompact ? "none" : "1px solid rgba(59, 59, 79, 0.4)",
         borderRadius: isCompact ? "0" : "16px",
-        borderRight: isCompact ? "none" : "1px solid oklch(0.36 0.022 272 / 0.32)",
+        borderRight: isCompact ? "none" : "1px solid rgba(59, 59, 79, 0.4)",
         height: "100%",
         padding: "14px",
       }}
@@ -89,7 +89,7 @@ const Resources = ({
       >
         <h2
           style={{
-            color: "oklch(0.58 0.022 252)",
+            color: "#d0d0d5",
             fontSize: "11px",
             fontWeight: 600,
             letterSpacing: "0.11em",
@@ -102,7 +102,7 @@ const Resources = ({
         {!isCompact && (
           <span
             style={{
-              color: "oklch(0.45 0.018 252)",
+              color: "#d0d0d5",
               fontSize: "10px",
               letterSpacing: "0.04em",
             }}

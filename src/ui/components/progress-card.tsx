@@ -1,105 +1,194 @@
-import { levelRegistry } from "../../levels/index.js";
-import { LevelStrip } from "./level-strip.js";
+import { useEffect, useRef, useState } from "react";
+
+const CX = 100;
+const CY = 100;
+const RADIUS = 80;
+const START_DEG = 135;
+const SWEEP_DEG = 270;
+const STROKE_W = 14;
+
+const COST_LERP = 0.08;
+
+const toRad = (deg: number) => (deg * Math.PI) / 180;
+
+const polarToXY = (deg: number) => ({
+  x: CX + RADIUS * Math.cos(toRad(deg)),
+  y: CY + RADIUS * Math.sin(toRad(deg)),
+});
+
+const arcPath = (fromDeg: number, toDeg: number): string => {
+  const s = polarToXY(fromDeg);
+  const e = polarToXY(toDeg);
+  const large = toDeg - fromDeg > 180 ? 1 : 0;
+  return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${RADIUS} ${RADIUS} 0 ${large} 1 ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
+};
 
 interface ProgressCardProps {
-  completedLevelIds: string[];
-  currentLevelId: string;
   monthlyBudget: number;
-  onSelectLevel: (id: string) => void;
   totalMonthlyCost: number;
 }
 
-const ProgressCard = ({
-  completedLevelIds,
-  currentLevelId,
-  monthlyBudget,
-  onSelectLevel,
-  totalMonthlyCost,
-}: ProgressCardProps) => {
-  const currentLevelNumber = levelRegistry.getLevelNumber(currentLevelId);
-  const totalLevels = levelRegistry.levels.length;
-  const budgetPercent = Math.min(100, (totalMonthlyCost / monthlyBudget) * 100);
+const ProgressCard = ({ monthlyBudget, totalMonthlyCost }: ProgressCardProps) => {
+  const [displayCost, setDisplayCost] = useState(totalMonthlyCost);
+  const targetCostRef = useRef(totalMonthlyCost);
+  targetCostRef.current = totalMonthlyCost;
+
+  useEffect(() => {
+    let animId = 0;
+
+    const tick = () => {
+      setDisplayCost((prev) => {
+        const target = targetCostRef.current;
+        const diff = target - prev;
+        if (Math.abs(diff) < 0.5) {
+          return target;
+        }
+        return prev + diff * COST_LERP;
+      });
+      animId = requestAnimationFrame(tick);
+    };
+
+    animId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animId);
+  }, []);
+
+  const ratio = Math.min(1, displayCost / monthlyBudget);
+  const fillEndDeg = START_DEG + ratio * SWEEP_DEG;
+  const isDanger = ratio >= 0.9;
+  const isWarning = ratio >= 0.7 && !isDanger;
+
+  const trackPath = arcPath(START_DEG, START_DEG + SWEEP_DEG);
+  const fillPath = ratio > 0.001 ? arcPath(START_DEG, fillEndDeg) : null;
+
+  const startPos = polarToXY(START_DEG);
+  const endPos = polarToXY(START_DEG + SWEEP_DEG);
+
+  let gradientStart = "#22d3ee";
+  let gradientEnd = "#a78bfa";
+  if (isDanger) {
+    gradientStart = "#f472b6";
+    gradientEnd = "#ef4444";
+  } else if (isWarning) {
+    gradientStart = "#facc15";
+    gradientEnd = "#f97316";
+  }
 
   return (
     <div
       style={{
-        background: "oklch(0.21 0.022 268 / 0.78)",
-        border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+        background: "linear-gradient(180deg, rgba(42, 42, 64, 0.7), rgba(27, 27, 50, 0.7))",
+        border: "1px solid rgba(59, 59, 79, 0.4)",
         borderRadius: "16px",
         display: "flex",
         flexDirection: "column",
-        gap: "12px",
         padding: "14px",
       }}
     >
-      <div
+      <h2
         style={{
-          alignItems: "center",
-          color: "oklch(0.58 0.022 252)",
-          display: "flex",
+          color: "#d0d0d5",
           fontSize: "11px",
           fontWeight: 600,
-          justifyContent: "space-between",
           letterSpacing: "0.11em",
+          margin: "0 0 8px",
           textTransform: "uppercase",
         }}
       >
-        <span>Progress</span>
-        <span>
-          Level {currentLevelNumber} / {totalLevels}
-        </span>
-      </div>
+        Budget Limit
+      </h2>
 
-      <LevelStrip
-        completedLevelIds={completedLevelIds}
-        currentLevelId={currentLevelId}
-        onSelectLevel={onSelectLevel}
-      />
+      <div style={{ height: "200px", margin: "0 auto", position: "relative", width: "200px" }}>
+        <svg height="200" viewBox="0 0 200 200" width="200">
+          <defs>
+            <linearGradient id="budgetFill" x1="0" x2="1" y1="0" y2="1">
+              <stop offset="0%" stopColor={gradientStart} />
+              <stop offset="100%" stopColor={gradientEnd} />
+            </linearGradient>
+          </defs>
 
-      <div>
+          <path
+            d={trackPath}
+            fill="none"
+            stroke="rgba(148,163,184,0.16)"
+            strokeLinecap="round"
+            strokeWidth={STROKE_W}
+          />
+
+          {fillPath !== null && (
+            <path
+              d={fillPath}
+              fill="none"
+              opacity="0.35"
+              stroke="url(#budgetFill)"
+              strokeLinecap="round"
+              strokeWidth={STROKE_W}
+              style={{ filter: "blur(6px)" }}
+            />
+          )}
+          {fillPath !== null && (
+            <path
+              d={fillPath}
+              fill="none"
+              stroke="url(#budgetFill)"
+              strokeLinecap="round"
+              strokeWidth={STROKE_W}
+            />
+          )}
+
+          <text
+            fill="#6b7280"
+            fontFamily="'Hack', ui-monospace, monospace"
+            fontSize="13"
+            textAnchor="middle"
+            x={startPos.x}
+            y={startPos.y + 26}
+          >
+            0
+          </text>
+          <text
+            fill="#6b7280"
+            fontFamily="'Hack', ui-monospace, monospace"
+            fontSize="13"
+            textAnchor="middle"
+            x={endPos.x}
+            y={endPos.y + 26}
+          >
+            ${monthlyBudget}
+          </text>
+        </svg>
+
         <div
           style={{
-            alignItems: "baseline",
+            alignItems: "center",
             display: "flex",
-            justifyContent: "space-between",
-            marginBottom: "6px",
+            flexDirection: "column",
+            inset: 0,
+            justifyContent: "center",
+            position: "absolute",
           }}
         >
           <span
             style={{
-              color: "oklch(0.58 0.022 252)",
-              fontSize: "11px",
+              color: "#f5f6f7",
+              fontFamily: "'Hack', ui-monospace, monospace",
+              fontSize: "28px",
               fontWeight: 600,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
+              letterSpacing: "-0.02em",
+              lineHeight: 1,
             }}
           >
-            Monthly budget
+            ${Math.round(displayCost)}
           </span>
-          <span style={{ fontFamily: "'Hack', ui-monospace, monospace", fontSize: "13px" }}>
-            <span style={{ color: "oklch(0.96 0.01 250)", fontWeight: 600 }}>
-              ${totalMonthlyCost}
-            </span>
-            <span style={{ color: "oklch(0.58 0.022 252)" }}> / ${monthlyBudget}</span>
-          </span>
-        </div>
-        <div
-          style={{
-            background: "oklch(0.3 0.02 270 / 0.6)",
-            borderRadius: "3px",
-            height: "5px",
-            overflow: "hidden",
-          }}
-        >
-          <div
+          <span
             style={{
-              background: "linear-gradient(90deg, #22d3ee, #a78bfa)",
-              borderRadius: "3px",
-              height: "100%",
-              transition: "width 0.3s ease",
-              width: `${budgetPercent}%`,
+              color: "#d0d0d5",
+              fontFamily: "'Hack', ui-monospace, monospace",
+              fontSize: "11px",
+              marginTop: "4px",
             }}
-          />
+          >
+            /month
+          </span>
         </div>
       </div>
     </div>

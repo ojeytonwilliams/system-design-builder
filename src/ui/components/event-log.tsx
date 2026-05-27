@@ -11,8 +11,8 @@ const EventLog = ({ entries }: EventLogProps) => (
   <section
     aria-label="Event Log"
     style={{
-      background: "oklch(0.21 0.022 268 / 0.78)",
-      border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+      background: "rgba(27, 27, 50, 0.85)",
+      border: "1px solid rgba(59, 59, 79, 0.4)",
       borderRadius: "16px",
       padding: "14px",
     }}
@@ -27,7 +27,7 @@ const EventLog = ({ entries }: EventLogProps) => (
     >
       <h2
         style={{
-          color: "oklch(0.58 0.022 252)",
+          color: "#d0d0d5",
           fontSize: "11px",
           fontWeight: 600,
           letterSpacing: "0.11em",
@@ -40,9 +40,9 @@ const EventLog = ({ entries }: EventLogProps) => (
       {entries.length > 0 && (
         <span
           style={{
-            background: "oklch(0.28 0.024 270 / 0.8)",
+            background: "rgba(59, 59, 79, 0.8)",
             borderRadius: "999px",
-            color: "oklch(0.58 0.022 252)",
+            color: "#d0d0d5",
             fontSize: "10px",
             fontWeight: 600,
             padding: "1px 7px",
@@ -70,7 +70,7 @@ const EventLog = ({ entries }: EventLogProps) => (
           key={entry.id}
           style={{
             borderRadius: "6px",
-            color: "oklch(0.78 0.018 252)",
+            color: "#d0d0d5",
             display: "flex",
             fontFamily: "'Hack', ui-monospace, monospace",
             fontSize: "11px",

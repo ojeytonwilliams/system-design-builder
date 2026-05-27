@@ -2,6 +2,7 @@ import type { ComponentType } from "../../domain/component-library.js";
 import type { DragEvent } from "react";
 
 interface ResourceItemProps {
+  accentColor?: string | undefined;
   capacity: number;
   componentType: ComponentType;
   description: string;
@@ -12,6 +13,13 @@ interface ResourceItemProps {
   onPlaceComponent?: (componentType: ComponentType) => void;
 }
 
+const withAlpha = (hex: string, alpha: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
 const handleDragStart = (componentType: ComponentType) => (event: DragEvent<HTMLButtonElement>) => {
   event.dataTransfer.effectAllowed = "copy";
   event.dataTransfer.setData("application/component-type", componentType);
@@ -19,6 +27,7 @@ const handleDragStart = (componentType: ComponentType) => (event: DragEvent<HTML
 };
 
 const ResourceItem = ({
+  accentColor,
   capacity,
   componentType,
   description,
@@ -28,6 +37,7 @@ const ResourceItem = ({
   monthlyCost,
   onPlaceComponent,
 }: ResourceItemProps) => {
+  const iconColor = accentColor ?? "#d0d0d5";
   const cursor = isDisabled ? "default" : "grab";
   const opacity = isDisabled ? 0.45 : 1;
 
@@ -38,7 +48,7 @@ const ResourceItem = ({
     onPlaceComponent(componentType);
   };
 
-  const capacityText = Number.isFinite(capacity) ? `${capacity} req/s` : "∞ req/s";
+  const capacityText = Number.isFinite(capacity) ? `${capacity} ops/s` : "∞ ops/s";
 
   return (
     <button
@@ -49,11 +59,10 @@ const ResourceItem = ({
       onClick={handleClick}
       onDragStart={handleDragStart(componentType)}
       style={{
-        background:
-          "linear-gradient(160deg, oklch(0.22 0.024 270 / 0.85), oklch(0.19 0.02 268 / 0.85))",
-        border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+        background: "linear-gradient(160deg, rgba(42, 42, 64, 0.85), rgba(27, 27, 50, 0.85))",
+        border: "1px solid rgba(59, 59, 79, 0.4)",
         borderRadius: "12px",
-        color: "oklch(0.96 0.01 250)",
+        color: "#f5f6f7",
         cursor,
         display: "flex",
         flexDirection: "column",
@@ -67,22 +76,35 @@ const ResourceItem = ({
     >
       <div style={{ alignItems: "center", display: "flex", gap: "8px" }}>
         {iconSvg !== undefined && (
-          <svg
-            aria-hidden="true"
-            dangerouslySetInnerHTML={{ __html: iconSvg }}
-            fill="none"
-            height="16"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="1.5"
-            viewBox="0 0 24 24"
-            width="16"
-          />
+          <div
+            style={{
+              alignItems: "center",
+              background: withAlpha(iconColor, 0.22),
+              borderRadius: "9999px",
+              display: "flex",
+              flexShrink: 0,
+              height: "28px",
+              justifyContent: "center",
+              width: "28px",
+            }}
+          >
+            <svg
+              aria-hidden="true"
+              dangerouslySetInnerHTML={{ __html: iconSvg }}
+              fill="none"
+              height="16"
+              stroke={iconColor}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="1.8"
+              viewBox="0 0 24 24"
+              width="16"
+            />
+          </div>
         )}
         <span
           style={{
-            color: "oklch(0.96 0.01 250)",
+            color: "#f5f6f7",
             flex: 1,
             fontSize: "13px",
             fontWeight: 600,
@@ -105,21 +127,22 @@ const ResourceItem = ({
       </div>
 
       <div style={{ alignItems: "center", display: "flex", gap: "8px" }}>
+        <span style={{ color: "#d0d0d5", flex: 1, fontSize: "12px", lineHeight: 1.4 }}>
+          {description}
+        </span>
         <span
           style={{
-            background: "oklch(0.28 0.024 270 / 0.8)",
-            border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+            background: "rgba(59, 59, 79, 0.8)",
+            border: "1px solid rgba(59, 59, 79, 0.4)",
             borderRadius: "4px",
-            color: "oklch(0.78 0.018 252)",
+            color: "#d0d0d5",
+            flexShrink: 0,
             fontFamily: "'Hack', ui-monospace, monospace",
             fontSize: "10px",
             padding: "1px 5px",
           }}
         >
           {capacityText}
-        </span>
-        <span style={{ color: "oklch(0.58 0.022 252)", fontSize: "12px", lineHeight: 1.4 }}>
-          {description}
         </span>
       </div>
     </button>

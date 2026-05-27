@@ -6,7 +6,7 @@ const level3: LevelDefinition = {
   coachMessages: [
     {
       atSecond: 2,
-      text: "Your database is the bottleneck — it can only handle 30 req/s but receives 85. Upgrade to a Large DB.",
+      text: "Your database is the bottleneck — it can only handle 30 ops/s but receives 85. Upgrade to a Large DB.",
     },
   ],
   componentUnlocks: [],
@@ -17,7 +17,7 @@ const level3: LevelDefinition = {
   id: "qDAgOLxhctiFfYmAfBSxb",
   lockedNodeIds: ["users-1", "lb-1", "server-1", "server-2"],
   monthlyBudget: 180,
-  objectiveText: "The database is overloaded. Upgrade it to handle 85 req/s.",
+  objectiveText: "The database is overloaded. Upgrade it to handle 85 ops/s.",
   startingEdges: [
     { id: "edge-u-lb", source: "users-1", target: "lb-1" },
     { id: "edge-lb-s1", source: "lb-1", target: "server-1" },

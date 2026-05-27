@@ -7,8 +7,8 @@ const Coach = ({ hasBottleneck = false, message }: CoachProps) => (
   <section
     aria-label="Coach"
     style={{
-      background: "linear-gradient(140deg, oklch(0.22 0.04 280 / 0.7), oklch(0.2 0.025 240 / 0.7))",
-      border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+      background: "linear-gradient(140deg, rgba(42, 42, 64, 0.7), rgba(27, 27, 50, 0.7))",
+      border: "1px solid rgba(59, 59, 79, 0.4)",
       borderRadius: "16px",
       padding: "14px",
     }}
@@ -34,19 +34,13 @@ const Coach = ({ hasBottleneck = false, message }: CoachProps) => (
             width: "28px",
           }}
         >
-          <svg
-            aria-hidden="true"
-            fill="oklch(0.14 0.02 260)"
-            height="16"
-            viewBox="0 0 24 24"
-            width="16"
-          >
+          <svg aria-hidden="true" fill="#0a0a23" height="16" viewBox="0 0 24 24" width="16">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
           </svg>
         </div>
         <h2
           style={{
-            color: "oklch(0.96 0.01 250)",
+            color: "#f5f6f7",
             fontSize: "11px",
             fontWeight: 600,
             letterSpacing: "0.11em",
@@ -77,7 +71,7 @@ const Coach = ({ hasBottleneck = false, message }: CoachProps) => (
 
     <p
       style={{
-        color: "oklch(0.78 0.018 252)",
+        color: "#d0d0d5",
         fontSize: "13px",
         lineHeight: 1.5,
         margin: 0,

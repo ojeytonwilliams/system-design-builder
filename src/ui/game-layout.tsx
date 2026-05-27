@@ -39,7 +39,6 @@ import type { LevelConfig } from "../simulation/types.js";
 import { computeAvailableComponents } from "../simulation/unlocks.js";
 
 const MOBILE_LAYOUT_BREAKPOINT = 768;
-const GAUGE_MAX = 300;
 
 interface GameSceneProps {
   completedLevels: string[];
@@ -123,6 +122,18 @@ const GameScene = ({
     .map(([id]) => id);
   const overloadedNodeIds = isSimulating ? simulationOverloadedNodeIds : [];
   const hasBottleneck = overloadedNodeIds.length > 0;
+
+  const bottleneckOpsPerSec =
+    overloadedNodeIds.length > 0
+      ? Math.min(
+          ...overloadedNodeIds.map((id) => {
+            const node = graphState.nodes.find((n) => n.id === id);
+            return node === undefined
+              ? Infinity
+              : (COMPONENT_LIBRARY[node.componentType].capacity ?? Infinity);
+          }),
+        )
+      : undefined;
 
   useEffect(() => {
     resetEvents(graphState.nodes, graphState.edges);
@@ -282,7 +293,7 @@ const GameScene = ({
     <div
       data-testid="game-layout-shell"
       style={{
-        background: "oklch(0.155 0.018 264)",
+        background: "#0a0a23",
         display: "flex",
         flexDirection: "column",
         fontFamily: "'Lato', system-ui, sans-serif",
@@ -295,17 +306,13 @@ const GameScene = ({
         {isCompactLayout ? (
           <div style={{ padding: "12px" }}>
             <TopBar
-              currentReqPerSec={currentTrafficRate}
+              completedLevelIds={completedLevels}
+              currentLevelId={currentLevel.id}
               isSimulating={isSimulating}
-              levelNumber={levelRegistry.getLevelNumber(currentLevel.id)}
-              levelTitle={currentLevel.title}
-              monthlyBudget={levelConfig.monthlyBudget}
               objectiveText={currentLevel.objectiveText}
+              onSelectLevel={handleSelectLevel}
               onStartTraffic={handleToggleTraffic}
-              remainingBudget={remainingBudget}
               startTrafficDisabled={!isRunnable}
-              totalMonthlyCost={totalMonthlyCost}
-              trafficTarget={levelConfig.trafficTarget}
             />
           </div>
         ) : (
@@ -313,34 +320,27 @@ const GameScene = ({
             style={{
               display: "grid",
               gap: "16px",
-              gridTemplateColumns: "1fr 580px",
+              gridTemplateColumns: "1fr 616px",
               padding: "16px 24px 0",
             }}
           >
             <TopBar
-              currentReqPerSec={currentTrafficRate}
+              completedLevelIds={completedLevels}
+              currentLevelId={currentLevel.id}
               isSimulating={isSimulating}
-              levelNumber={levelRegistry.getLevelNumber(currentLevel.id)}
-              levelTitle={currentLevel.title}
-              monthlyBudget={levelConfig.monthlyBudget}
               objectiveText={currentLevel.objectiveText}
+              onSelectLevel={handleSelectLevel}
               onStartTraffic={handleToggleTraffic}
-              remainingBudget={remainingBudget}
               startTrafficDisabled={!isRunnable}
-              totalMonthlyCost={totalMonthlyCost}
-              trafficTarget={levelConfig.trafficTarget}
             />
-            <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 300px" }}>
+            <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr" }}>
               <CircularGauge
-                currentReqPerSec={currentTrafficRate}
-                maxValue={GAUGE_MAX}
+                bottleneckOpsPerSec={bottleneckOpsPerSec}
+                currentReqPerSec={isSimulating ? currentTrafficRate : 0}
                 trafficTarget={levelConfig.trafficTarget}
               />
               <ProgressCard
-                completedLevelIds={completedLevels}
-                currentLevelId={currentLevel.id}
                 monthlyBudget={levelConfig.monthlyBudget}
-                onSelectLevel={handleSelectLevel}
                 totalMonthlyCost={totalMonthlyCost}
               />
             </div>
@@ -374,8 +374,8 @@ const GameScene = ({
 
         <main
           style={{
-            background: "oklch(0.19 0.022 268 / 0.5)",
-            border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+            background: "rgba(27, 27, 50, 0.6)",
+            border: "1px solid rgba(59, 59, 79, 0.4)",
             borderRadius: "16px",
             flex: 1,
             overflow: "hidden",

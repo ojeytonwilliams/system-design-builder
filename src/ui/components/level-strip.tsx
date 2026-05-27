@@ -38,9 +38,9 @@ const LevelStrip = ({ completedLevelIds, currentLevelId, onSelectLevel }: LevelS
       const status = getLevelStatus(level.id, currentLevelId, completedLevelIds);
       const isInteractive = status !== "locked";
 
-      let background = "oklch(0.22 0.02 270 / 0.6)";
-      let borderColor = "oklch(0.36 0.022 272 / 0.55)";
-      let color = "oklch(0.58 0.022 252)";
+      let background = "rgba(42, 42, 64, 0.6)";
+      let borderColor = "rgba(59, 59, 79, 0.55)";
+      let color = "#d0d0d5";
       let opacity = 1;
       let cursor = "pointer";
       let boxShadow = "none";
@@ -53,7 +53,7 @@ const LevelStrip = ({ completedLevelIds, currentLevelId, onSelectLevel }: LevelS
       } else if (status === "active") {
         background = "linear-gradient(135deg, #22d3ee, #a78bfa)";
         borderColor = "transparent";
-        color = "oklch(0.14 0.02 260)";
+        color = "#0a0a23";
         boxShadow = "0 4px 12px -4px rgba(167,139,250,.5)";
       } else {
         opacity = 0.35;

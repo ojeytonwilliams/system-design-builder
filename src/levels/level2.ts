@@ -6,7 +6,7 @@ const level2: LevelDefinition = {
   coachMessages: [
     {
       atSecond: 2,
-      text: "Both servers are receiving the full 80 req/s — way over their 50 req/s limit. Add a Load Balancer to split the traffic evenly.",
+      text: "Both servers are receiving the full 80 ops/s — way over their 50 ops/s limit. Add a Load Balancer to split the traffic evenly.",
     },
   ],
   componentUnlocks: [],

@@ -15,15 +15,15 @@ interface InspectorProps {
 const KvCell = ({ label, value }: { label: string; value: string }) => (
   <div
     style={{
-      background: "oklch(0.22 0.024 270 / 0.6)",
-      border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+      background: "rgba(42, 42, 64, 0.6)",
+      border: "1px solid rgba(59, 59, 79, 0.4)",
       borderRadius: "8px",
       padding: "7px 9px",
     }}
   >
     <div
       style={{
-        color: "oklch(0.58 0.022 252)",
+        color: "#d0d0d5",
         fontSize: "10px",
         fontWeight: 600,
         letterSpacing: "0.08em",
@@ -34,7 +34,7 @@ const KvCell = ({ label, value }: { label: string; value: string }) => (
     </div>
     <div
       style={{
-        color: "oklch(0.96 0.01 250)",
+        color: "#f5f6f7",
         fontFamily: "'Hack', ui-monospace, monospace",
         fontSize: "13px",
         fontWeight: 500,
@@ -56,40 +56,41 @@ const Inspector = ({
   opsPerSec,
   selectedNodeLabel,
 }: InspectorProps) => {
-  let loadText = "Load: —";
+  let loadText = "—";
 
   if (loadPercent !== undefined) {
     const roundedLoad = Math.round(loadPercent);
-    loadText = `Load: ${roundedLoad}%`;
-    if (isOverloaded) {
-      loadText = `${loadText} (Overloaded)`;
-    }
+    loadText = isOverloaded ? `${roundedLoad}% (Overloaded)` : `${roundedLoad}%`;
   }
 
-  const opsText = opsPerSec === undefined ? "— ops/s" : `${Math.round(opsPerSec)} ops/s`;
+  const opsText = opsPerSec === undefined ? "—" : `${Math.round(opsPerSec)} ops/s`;
 
   let capacityText: string | undefined = undefined;
   if (maxCapacity !== undefined) {
-    capacityText = maxCapacity === Infinity ? "Capacity: ∞" : `Capacity: ${maxCapacity} ops/s`;
+    capacityText = maxCapacity === Infinity ? "∞" : `${maxCapacity} ops/s`;
   }
 
-  const latencyText = latencyMs === undefined ? undefined : `Latency: ${latencyMs} ms`;
-  const costText = cost === undefined ? undefined : `Cost: $${cost}/hr`;
-  const typeLabel =
-    componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].label;
+  const latencyText = latencyMs === undefined ? undefined : `${latencyMs} ms`;
+  const costText = cost === undefined ? undefined : `$${cost}/hr`;
+  const description =
+    componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].description;
+  const iconSvg =
+    componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].iconSvg;
+  const accentColor =
+    componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].accentColor;
 
   return (
     <div
       style={{
-        background: "oklch(0.21 0.022 268 / 0.78)",
-        border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+        background: "rgba(27, 27, 50, 0.85)",
+        border: "1px solid rgba(59, 59, 79, 0.4)",
         borderRadius: "16px",
         padding: "14px",
       }}
     >
       <h2
         style={{
-          color: "oklch(0.58 0.022 252)",
+          color: "#d0d0d5",
           fontSize: "11px",
           fontWeight: 600,
           letterSpacing: "0.11em",
@@ -101,27 +102,54 @@ const Inspector = ({
       </h2>
 
       {selectedNodeLabel === undefined ? (
-        <p style={{ color: "oklch(0.58 0.022 252)", fontSize: "13px", margin: 0 }}>
+        <p style={{ color: "#d0d0d5", fontSize: "13px", margin: 0 }}>
           Select a component to inspect it.
         </p>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div>
-            <p
-              style={{
-                color: "oklch(0.96 0.01 250)",
-                fontSize: "14px",
-                fontWeight: 700,
-                margin: "0 0 2px",
-              }}
-            >
-              {selectedNodeLabel}
-            </p>
-            {typeLabel !== undefined && (
-              <p style={{ color: "oklch(0.58 0.022 252)", fontSize: "12px", margin: 0 }}>
-                {typeLabel}
-              </p>
+          <div style={{ alignItems: "center", display: "flex", gap: "10px" }}>
+            {iconSvg !== undefined && accentColor !== undefined && (
+              <div
+                style={{
+                  alignItems: "center",
+                  background: `rgba(${parseInt(accentColor.slice(1, 3), 16)}, ${parseInt(accentColor.slice(3, 5), 16)}, ${parseInt(accentColor.slice(5, 7), 16)}, 0.22)`,
+                  borderRadius: "9999px",
+                  display: "flex",
+                  flexShrink: 0,
+                  height: "28px",
+                  justifyContent: "center",
+                  width: "28px",
+                }}
+              >
+                <svg
+                  aria-hidden="true"
+                  dangerouslySetInnerHTML={{ __html: iconSvg }}
+                  fill="none"
+                  height="16"
+                  stroke={accentColor}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.8"
+                  viewBox="0 0 24 24"
+                  width="16"
+                />
+              </div>
             )}
+            <div>
+              <p
+                style={{
+                  color: "#f5f6f7",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  margin: "0 0 2px",
+                }}
+              >
+                {selectedNodeLabel}
+              </p>
+              {description !== undefined && (
+                <p style={{ color: "#d0d0d5", fontSize: "12px", margin: 0 }}>{description}</p>
+              )}
+            </div>
           </div>
 
           <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "1fr 1fr" }}>

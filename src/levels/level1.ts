@@ -6,7 +6,7 @@ const level1: LevelDefinition = {
   coachMessages: [
     {
       atSecond: 2,
-      text: "Your server is overloaded — 70 req/s is more than its 50 req/s limit. Swap it for a Large Server.",
+      text: "Your server is overloaded — 70 ops/s is more than its 50 ops/s limit. Swap it for a Large Server.",
     },
   ],
   componentUnlocks: [],
@@ -17,7 +17,7 @@ const level1: LevelDefinition = {
   id: "NMjN-fqxEfKXbExqPUizn",
   lockedNodeIds: ["users-1", "db-1"],
   monthlyBudget: 150,
-  objectiveText: "Your server is overloaded. Fix the architecture to handle 70 req/s.",
+  objectiveText: "Your server is overloaded. Fix the architecture to handle 70 ops/s.",
   startingEdges: [
     { id: "edge-u-s", source: "users-1", target: "server-1" },
     { id: "edge-s-d", source: "server-1", target: "db-1" },

@@ -41,7 +41,7 @@ describe("resource item", () => {
       />,
     );
 
-    expect(screen.getByText(/50 req\/s/u)).toBeInTheDocument();
+    expect(screen.getByText(/50 ops\/s/u)).toBeInTheDocument();
   });
 
   it("renders the description", () => {

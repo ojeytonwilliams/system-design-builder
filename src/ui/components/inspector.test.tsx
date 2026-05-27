@@ -29,13 +29,13 @@ describe("inspector", () => {
   it("shows load percentage when a node is selected", () => {
     render(<Inspector isOverloaded={false} loadPercent={80} selectedNodeLabel="Server" />);
 
-    expect(screen.getByText(/load:\s*80%/iv)).toBeInTheDocument();
+    expect(screen.getByText(/80%/iv)).toBeInTheDocument();
   });
 
   it("marks the load field as overloaded when load exceeds capacity", () => {
     render(<Inspector isOverloaded loadPercent={120} selectedNodeLabel="Server" />);
 
-    expect(screen.getByText(/load:\s*120%\s*\(overloaded\)/iv)).toBeInTheDocument();
+    expect(screen.getByText(/120%.*overloaded/iv)).toBeInTheDocument();
   });
 
   it("shows ops/sec when simulation data is provided", () => {
@@ -47,7 +47,7 @@ describe("inspector", () => {
   it("shows a dash for ops/sec when no simulation data", () => {
     render(<Inspector selectedNodeLabel="Server" />);
 
-    expect(screen.getByText(/ops\/s.*—|—.*ops\/s/iv)).toBeInTheDocument();
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
   });
 
   it("shows max capacity when provided", () => {

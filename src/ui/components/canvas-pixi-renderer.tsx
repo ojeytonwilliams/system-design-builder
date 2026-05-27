@@ -20,7 +20,7 @@ import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-uti
 extend({ Container, Graphics, Text });
 
 const BACKGROUND_GAP = 24;
-const CANVAS_BACKGROUND = 0x141925;
+const CANVAS_BACKGROUND = 0x0a0a23;
 const PORT_HIT_SIZE = 44;
 const REQUEST_DOT_COLOR = 0xa8c4e8;
 const RESPONSE_DOT_COLOR = 0x4fd47f;
@@ -92,7 +92,7 @@ const HandleGraphic = ({
     g.circle(0, 0, HANDLE_RADIUS);
     g.fill({ alpha: 0, color: 0x000000 });
     g.circle(0, 0, HANDLE_DOT_RADIUS);
-    g.fill({ color: 0x8898cc });
+    g.fill({ color: 0xd0d0d5 });
   }, []);
 
   return (
@@ -155,29 +155,13 @@ const PixiNodeGraphic = ({
   const def = COMPONENT_LIBRARY[node.componentType];
   const { accentColor } = def;
 
-  let fillColor = 0x1e2737;
-  let borderColor = hexToPixi(accentColor);
-  let borderWidth = 2;
-
-  if (isSelected) {
-    fillColor = 0x253047;
-    borderColor = 0x22d3ee;
-  }
-  if (isOverloaded) {
-    fillColor = 0x1e2737;
-    borderColor = 0xf472b6;
-    borderWidth = 3;
-  }
-
+  const fillColor = isSelected ? 0x2a2a40 : 0x1b1b32;
+  const borderColor = hexToPixi(accentColor);
   const accentColorHex = hexToPixi(accentColor);
 
   const drawBackground = useCallback(
     (g: Graphics) => {
       g.clear();
-      if (isOverloaded) {
-        g.roundRect(-3, -3, NODE_WIDTH + 6, NODE_MIN_HEIGHT + 6, 18);
-        g.stroke({ alpha: 0.5, color: 0xf472b6, width: borderWidth + 6 });
-      }
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.fill({ color: fillColor });
       if (fillRatio > 0) {
@@ -186,10 +170,31 @@ const PixiNodeGraphic = ({
         g.fill({ alpha: 0.18, color: accentColorHex });
       }
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
-      g.stroke({ color: borderColor, width: borderWidth });
+      g.stroke({ color: borderColor, width: 2 });
     },
-    [fillColor, borderColor, borderWidth, isOverloaded, fillRatio, accentColorHex],
+    [fillColor, borderColor, fillRatio, accentColorHex],
   );
+
+  const haloRef = useRef<Graphics>(null);
+  const haloTimeRef = useRef(0);
+  const isOverloadedRef = useRef(isOverloaded);
+  isOverloadedRef.current = isOverloaded;
+
+  useTick((ticker) => {
+    const g = haloRef.current;
+    if (!g) {
+      return;
+    }
+    g.clear();
+    if (!isOverloadedRef.current) {
+      haloTimeRef.current = 0;
+      return;
+    }
+    haloTimeRef.current += ticker.elapsedMS;
+    const t = Math.abs(Math.sin((haloTimeRef.current * Math.PI) / 2000));
+    g.roundRect(-4, -4, NODE_WIDTH + 8, NODE_MIN_HEIGHT + 8, 19);
+    g.stroke({ alpha: t * 0.45, color: 0xf472b6, width: 8 });
+  });
 
   const drawPill = useCallback(
     (g: Graphics) => {
@@ -251,7 +256,7 @@ const PixiNodeGraphic = ({
   );
 
   const labelStyle = new TextStyle({
-    fill: 0xe0e6f8,
+    fill: 0xf5f6f7,
     fontSize: 11,
     fontWeight: "700",
     wordWrap: true,
@@ -275,6 +280,7 @@ const PixiNodeGraphic = ({
       x={node.position.x}
       y={node.position.y}
     >
+      <pixiGraphics ref={haloRef} draw={() => {}} />
       <pixiGraphics draw={drawBackground} />
       <pixiGraphics draw={drawPill} x={(NODE_WIDTH - 40) / 2} y={12} />
       <pixiGraphics draw={drawIcon} x={iconX} y={iconY} />
@@ -346,7 +352,7 @@ const PixiEdgeInner = ({
   const { cp1, cp2 } = getBezierControlPoints(src, tgt);
   const edgeId = edge.id,
     isSelected = edge.selected === true;
-  const strokeColor = isSelected ? 0x22d3ee : 0x4a5a8a,
+  const strokeColor = isSelected ? 0x22d3ee : 0x3b3b4f,
     strokeWidth = isSelected ? 3 : 2;
   const cp1X = cp1.x,
     cp1Y = cp1.y,
@@ -666,7 +672,7 @@ const PixiContent = ({
       for (let gx = BACKGROUND_GAP; gx < stageWidth; gx += BACKGROUND_GAP) {
         for (let gy = BACKGROUND_GAP; gy < stageHeight; gy += BACKGROUND_GAP) {
           g.circle(gx, gy, 0.8);
-          g.fill({ alpha: 0.28, color: 0xbcc2e0 });
+          g.fill({ alpha: 0.28, color: 0xd0d0d5 });
         }
       }
     },

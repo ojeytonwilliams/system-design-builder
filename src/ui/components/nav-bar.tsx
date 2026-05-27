@@ -3,9 +3,9 @@ const NavBar = () => (
     style={{
       alignItems: "center",
       backdropFilter: "blur(10px)",
-      background: "oklch(0.12 0.014 260 / 0.95)",
-      borderBottom: "1px solid oklch(0.4 0.022 272 / 0.7)",
-      boxShadow: "0 1px 0 oklch(0.4 0.022 272 / 0.18), 0 6px 18px -10px rgba(0,0,0,0.6)",
+      background: "rgba(10, 10, 35, 0.95)",
+      borderBottom: "1px solid rgba(59, 59, 79, 0.7)",
+      boxShadow: "0 1px 0 rgba(59, 59, 79, 0.18), 0 6px 18px -10px rgba(0,0,0,0.6)",
       display: "grid",
       gridTemplateColumns: "1fr auto 1fr",
       height: "60px",
@@ -15,9 +15,8 @@ const NavBar = () => (
     <div style={{ alignItems: "center", display: "flex", gap: "10px" }}>
       <div
         style={{
-          background:
-            "linear-gradient(135deg, oklch(0.3 0.07 220 / 0.35), oklch(0.3 0.08 290 / 0.4))",
-          border: "1px solid oklch(0.36 0.022 272 / 0.55)",
+          background: "linear-gradient(135deg, rgba(42, 42, 64, 0.35), rgba(42, 42, 64, 0.4))",
+          border: "1px solid rgba(59, 59, 79, 0.55)",
           borderRadius: "9px",
           display: "grid",
           height: "32px",
@@ -41,7 +40,7 @@ const NavBar = () => (
       <div>
         <div
           style={{
-            color: "oklch(0.96 0.01 250)",
+            color: "#f5f6f7",
             fontSize: "14px",
             fontWeight: 700,
             letterSpacing: "0.02em",
@@ -49,9 +48,7 @@ const NavBar = () => (
         >
           StackCraft
         </div>
-        <div style={{ color: "oklch(0.58 0.022 252)", fontSize: "11px" }}>
-          System Design Playground
-        </div>
+        <div style={{ color: "#d0d0d5", fontSize: "11px" }}>System Design Playground</div>
       </div>
     </div>
 
@@ -63,7 +60,7 @@ const NavBar = () => (
       <a
         href="#"
         style={{
-          color: "oklch(0.78 0.018 252)",
+          color: "#d0d0d5",
           fontSize: "13px",
           fontWeight: 500,
           textDecoration: "none",
@@ -75,10 +72,10 @@ const NavBar = () => (
         aria-label="Menu"
         style={{
           alignItems: "center",
-          background: "oklch(0.22 0.022 268 / 0.6)",
-          border: "1px solid oklch(0.36 0.022 272 / 0.55)",
+          background: "rgba(42, 42, 64, 0.6)",
+          border: "1px solid rgba(59, 59, 79, 0.55)",
           borderRadius: "8px",
-          color: "oklch(0.78 0.018 252)",
+          color: "#d0d0d5",
           cursor: "pointer",
           display: "flex",
           height: "32px",
@@ -102,7 +99,7 @@ const NavBar = () => (
           alignItems: "center",
           background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
           borderRadius: "50%",
-          color: "oklch(0.14 0.02 260)",
+          color: "#0a0a23",
           display: "grid",
           fontSize: "11px",
           fontWeight: 700,

@@ -17,7 +17,7 @@ const level6: LevelDefinition = {
   id: "_quYqGvc5gWDbxLiwocDx",
   lockedNodeIds: ["users-1", "lb-1"],
   monthlyBudget: 300,
-  objectiveText: "The whole system is struggling under high traffic. Scale it to handle 220 req/s.",
+  objectiveText: "The whole system is struggling under high traffic. Scale it to handle 220 ops/s.",
   startingEdges: [
     { id: "edge-u-lb", source: "users-1", target: "lb-1" },
     { id: "edge-lb-s1", source: "lb-1", target: "server-1" },

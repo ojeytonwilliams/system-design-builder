@@ -30,7 +30,7 @@ const testLevelConfig: LevelConfig = {
   winSustainMs: 10_000,
 };
 
-// 150 req/s on a 50 req/s server = 300% load
+// 150 ops/s on a 50 ops/s server = 300% load
 const overloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
@@ -42,9 +42,9 @@ const overloadLevelConfig: LevelConfig = {
 };
 
 // Traffic ramps down from 100 → 0 over 4 seconds:
-// T=1: 75 req/s (overloaded, server capacity=50)
-// T=2: 50 req/s (resolves — exactly at capacity, no drops)
-// T=3: 25 req/s (50% load)
+// T=1: 75 ops/s (overloaded, server capacity=50)
+// T=2: 50 ops/s (resolves — exactly at capacity, no drops)
+// T=3: 25 ops/s (50% load)
 const resolvingOverloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
@@ -258,7 +258,7 @@ describe("simulation mode", () => {
       }
     });
 
-    expect(screen.getByText(/load:\s*300%\s*\(overloaded\)/iv)).toBeInTheDocument();
+    expect(screen.getByText(/300%.*overloaded/iv)).toBeInTheDocument();
   });
 
   it("returns the selected node to normal load state when traffic drops below capacity", () => {
@@ -279,7 +279,7 @@ describe("simulation mode", () => {
       }
     });
 
-    expect(screen.getByText(/load:\s*50%$/iv)).toBeInTheDocument();
+    expect(screen.getByText(/50%/iv)).toBeInTheDocument();
   });
 });
 
@@ -444,17 +444,17 @@ describe("level system", () => {
 });
 
 describe("level context UI", () => {
-  it("shows the active level title in the UI", () => {
+  it("shows the active level objective in the UI", () => {
     render(<GameLayout />);
 
-    expect(screen.getByText(/first request/iv)).toBeInTheDocument();
+    expect(screen.getAllByText(/fix the architecture/iv).length).toBeGreaterThan(0);
   });
 
   it("shows the level objective text", () => {
     render(<GameLayout />);
 
     expect(
-      screen.getByText("Your server is overloaded. Fix the architecture to handle 70 req/s."),
+      screen.getByText("Your server is overloaded. Fix the architecture to handle 70 ops/s."),
     ).toBeInTheDocument();
   });
 });
@@ -514,7 +514,7 @@ describe("level progression strip", () => {
     render(<GameLayout />);
     fireEvent.click(screen.getByTestId(`level-strip-level-${levelRegistry.levels[0]!.id}`));
 
-    expect(screen.getByText(/first request/iv)).toBeInTheDocument();
+    expect(screen.getAllByText(/fix the architecture/iv).length).toBeGreaterThan(0);
   });
 });
 
