@@ -451,27 +451,30 @@ interface TransitDotsLayerProps {
 }
 
 const TransitDotsLayer = ({ animRef, edges, isSimulating, nodes }: TransitDotsLayerProps) => {
-  const draw = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      if (!isSimulating) {
-        return;
-      }
-      const { alpha, snapshot } = animRef.current;
-      for (const [id, transit] of snapshot.transits) {
-        const prev = snapshot.prevTransitProgresses.get(id) ?? transit.progress;
-        const progress = prev + (transit.progress - prev) * alpha;
-        const pos = getTransitDotPosition({ edgeId: transit.edgeId, progress }, edges, nodes);
-        if (pos !== null) {
-          g.circle(pos.x, pos.y, 4);
-          g.fill({ alpha: 0.9, color: REQUEST_DOT_COLOR });
-        }
-      }
-    },
-    [animRef, edges, isSimulating, nodes],
-  );
+  const graphicsRef = useRef<Graphics>(null);
 
-  return <pixiGraphics draw={draw} />;
+  useTick(() => {
+    const g = graphicsRef.current;
+    if (!g) {
+      return;
+    }
+    g.clear();
+    if (!isSimulating) {
+      return;
+    }
+    const { alpha, snapshot } = animRef.current;
+    for (const [id, transit] of snapshot.transits) {
+      const prev = snapshot.prevTransitProgresses.get(id) ?? transit.progress;
+      const progress = prev + (transit.progress - prev) * alpha;
+      const pos = getTransitDotPosition({ edgeId: transit.edgeId, progress }, edges, nodes);
+      if (pos !== null) {
+        g.circle(pos.x, pos.y, 4);
+        g.fill({ alpha: 0.9, color: REQUEST_DOT_COLOR });
+      }
+    }
+  });
+
+  return <pixiGraphics ref={graphicsRef} draw={() => {}} />;
 };
 
 interface ResponseTransitDotsLayerProps {
@@ -487,31 +490,34 @@ const ResponseTransitDotsLayer = ({
   isSimulating,
   nodes,
 }: ResponseTransitDotsLayerProps) => {
-  const draw = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      if (!isSimulating) {
-        return;
-      }
-      const { alpha, snapshot } = animRef.current;
-      for (const [id, transit] of snapshot.responseTransits) {
-        const prev = snapshot.prevResponseTransitProgresses.get(id) ?? transit.progress;
-        const progress = prev + (transit.progress - prev) * alpha;
-        const pos = getTransitDotPosition(
-          { edgeId: transit.edgeId, progress: 1 - progress },
-          edges,
-          nodes,
-        );
-        if (pos !== null) {
-          g.circle(pos.x, pos.y, 4);
-          g.fill({ alpha: 0.9, color: RESPONSE_DOT_COLOR });
-        }
-      }
-    },
-    [animRef, edges, isSimulating, nodes],
-  );
+  const graphicsRef = useRef<Graphics>(null);
 
-  return <pixiGraphics draw={draw} />;
+  useTick(() => {
+    const g = graphicsRef.current;
+    if (!g) {
+      return;
+    }
+    g.clear();
+    if (!isSimulating) {
+      return;
+    }
+    const { alpha, snapshot } = animRef.current;
+    for (const [id, transit] of snapshot.responseTransits) {
+      const prev = snapshot.prevResponseTransitProgresses.get(id) ?? transit.progress;
+      const progress = prev + (transit.progress - prev) * alpha;
+      const pos = getTransitDotPosition(
+        { edgeId: transit.edgeId, progress: 1 - progress },
+        edges,
+        nodes,
+      );
+      if (pos !== null) {
+        g.circle(pos.x, pos.y, 4);
+        g.fill({ alpha: 0.9, color: RESPONSE_DOT_COLOR });
+      }
+    }
+  });
+
+  return <pixiGraphics ref={graphicsRef} draw={() => {}} />;
 };
 
 interface EdgesLayerProps {
