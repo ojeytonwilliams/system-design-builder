@@ -1,32 +1,85 @@
 interface CoachProps {
+  hasBottleneck?: boolean;
   message: string;
 }
 
-const Coach = ({ message }: CoachProps) => (
+const Coach = ({ hasBottleneck = false, message }: CoachProps) => (
   <section
     aria-label="Coach"
     style={{
-      background: "#f8f7f2",
-      borderBottom: "1px solid #d0cfc8",
-      padding: "0.85rem",
+      background: "linear-gradient(140deg, oklch(0.22 0.04 280 / 0.7), oklch(0.2 0.025 240 / 0.7))",
+      border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+      borderRadius: "16px",
+      padding: "14px",
     }}
   >
-    <h2
+    <div
       style={{
-        color: "#1a2744",
-        fontSize: "0.875rem",
-        letterSpacing: "0.06em",
-        margin: "0 0 0.5rem",
-        textTransform: "uppercase",
+        alignItems: "center",
+        display: "flex",
+        gap: "8px",
+        justifyContent: "space-between",
+        marginBottom: "10px",
       }}
     >
-      Coach
-    </h2>
+      <div style={{ alignItems: "center", display: "flex", gap: "8px" }}>
+        <div
+          style={{
+            alignItems: "center",
+            background: "linear-gradient(135deg, #a78bfa, #22d3ee)",
+            borderRadius: "8px",
+            display: "grid",
+            height: "28px",
+            placeItems: "center",
+            width: "28px",
+          }}
+        >
+          <svg
+            aria-hidden="true"
+            fill="oklch(0.14 0.02 260)"
+            height="16"
+            viewBox="0 0 24 24"
+            width="16"
+          >
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
+          </svg>
+        </div>
+        <h2
+          style={{
+            color: "oklch(0.96 0.01 250)",
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.11em",
+            margin: 0,
+            textTransform: "uppercase",
+          }}
+        >
+          Coach
+        </h2>
+      </div>
+
+      {hasBottleneck && (
+        <span
+          style={{
+            background: "oklch(0.4 0.12 30 / 0.22)",
+            border: "1px solid oklch(0.55 0.13 70 / 0.45)",
+            borderRadius: "999px",
+            color: "#facc15",
+            fontSize: "10px",
+            fontWeight: 600,
+            padding: "2px 8px",
+          }}
+        >
+          Bottleneck
+        </span>
+      )}
+    </div>
+
     <p
       style={{
-        color: "#2f3d5f",
-        fontSize: "0.85rem",
-        lineHeight: 1.4,
+        color: "oklch(0.78 0.018 252)",
+        fontSize: "13px",
+        lineHeight: 1.5,
         margin: 0,
       }}
     >

@@ -5,7 +5,7 @@ interface ResourceItemProps {
   capacity: number;
   componentType: ComponentType;
   description: string;
-  icon?: string;
+  iconSvg?: string;
   isDisabled?: boolean;
   label: string;
   monthlyCost: number;
@@ -22,25 +22,19 @@ const ResourceItem = ({
   capacity,
   componentType,
   description,
-  icon,
+  iconSvg,
   isDisabled = false,
   label,
   monthlyCost,
   onPlaceComponent,
 }: ResourceItemProps) => {
-  let cursor = "grab";
-  let opacity = 1;
-
-  if (isDisabled) {
-    cursor = "default";
-    opacity = 0.5;
-  }
+  const cursor = isDisabled ? "default" : "grab";
+  const opacity = isDisabled ? 0.45 : 1;
 
   const handleClick = () => {
     if (isDisabled || onPlaceComponent === undefined) {
       return;
     }
-
     onPlaceComponent(componentType);
   };
 
@@ -55,35 +49,79 @@ const ResourceItem = ({
       onClick={handleClick}
       onDragStart={handleDragStart(componentType)}
       style={{
-        alignItems: "flex-start",
-        background: "#ffffff",
-        border: "1px solid #d7d4ca",
-        borderRadius: "0.875rem",
-        color: "#1a2744",
+        background:
+          "linear-gradient(160deg, oklch(0.22 0.024 270 / 0.85), oklch(0.19 0.02 268 / 0.85))",
+        border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+        borderRadius: "12px",
+        color: "oklch(0.96 0.01 250)",
         cursor,
         display: "flex",
         flexDirection: "column",
-        gap: "0.25rem",
+        gap: "6px",
         opacity,
-        padding: "0.75rem 0.875rem",
+        padding: "10px 11px",
         textAlign: "left",
         width: "100%",
       }}
       type="button"
     >
-      <div style={{ alignItems: "center", display: "flex", gap: "0.5rem", width: "100%" }}>
-        {icon !== undefined && (
-          <span aria-hidden="true" style={{ fontSize: "1.1rem", lineHeight: 1 }}>
-            {icon}
+      <div style={{ alignItems: "center", display: "flex", gap: "8px" }}>
+        {iconSvg !== undefined && (
+          <svg
+            aria-hidden="true"
+            dangerouslySetInnerHTML={{ __html: iconSvg }}
+            fill="none"
+            height="16"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="1.5"
+            viewBox="0 0 24 24"
+            width="16"
+          />
+        )}
+        <span
+          style={{
+            color: "oklch(0.96 0.01 250)",
+            flex: 1,
+            fontSize: "13px",
+            fontWeight: 600,
+          }}
+        >
+          {label}
+        </span>
+        {monthlyCost > 0 && (
+          <span
+            style={{
+              color: "#22d3ee",
+              fontFamily: "'Hack', ui-monospace, monospace",
+              fontSize: "12px",
+              fontWeight: 600,
+            }}
+          >
+            {`$${monthlyCost}/mo`}
           </span>
         )}
-        <span style={{ flex: 1, fontSize: "0.9rem", fontWeight: 600 }}>{label}</span>
-        <span style={{ color: "#4f8f73", fontSize: "0.8rem", fontWeight: 700 }}>
-          ${monthlyCost}/mo
+      </div>
+
+      <div style={{ alignItems: "center", display: "flex", gap: "8px" }}>
+        <span
+          style={{
+            background: "oklch(0.28 0.024 270 / 0.8)",
+            border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+            borderRadius: "4px",
+            color: "oklch(0.78 0.018 252)",
+            fontFamily: "'Hack', ui-monospace, monospace",
+            fontSize: "10px",
+            padding: "1px 5px",
+          }}
+        >
+          {capacityText}
+        </span>
+        <span style={{ color: "oklch(0.58 0.022 252)", fontSize: "12px", lineHeight: 1.4 }}>
+          {description}
         </span>
       </div>
-      <div style={{ color: "#6b7280", fontSize: "0.75rem" }}>{capacityText}</div>
-      <div style={{ color: "#4f5b6b", fontSize: "0.75rem", lineHeight: 1.4 }}>{description}</div>
     </button>
   );
 };

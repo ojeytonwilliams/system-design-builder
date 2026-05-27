@@ -29,28 +29,34 @@ const LevelStrip = ({ completedLevelIds, currentLevelId, onSelectLevel }: LevelS
     aria-label="Level progression"
     style={{
       alignItems: "center",
-      background: "#111e38",
       display: "flex",
-      gap: "0.25rem",
+      gap: "6px",
       overflowX: "auto",
-      padding: "0.4rem 1rem",
     }}
   >
     {levelRegistry.levels.map((level) => {
       const status = getLevelStatus(level.id, currentLevelId, completedLevelIds);
       const isInteractive = status !== "locked";
 
-      let background = "#1e2e54";
+      let background = "oklch(0.22 0.02 270 / 0.6)";
+      let borderColor = "oklch(0.36 0.022 272 / 0.55)";
+      let color = "oklch(0.58 0.022 252)";
       let opacity = 1;
       let cursor = "pointer";
+      let boxShadow = "none";
 
       if (status === "completed") {
-        background = "#2d5a3d";
+        background =
+          "linear-gradient(135deg, oklch(0.5 0.13 160 / 0.25), oklch(0.45 0.1 200 / 0.25))";
+        borderColor = "oklch(0.6 0.13 160 / 0.5)";
+        color = "#a3e635";
       } else if (status === "active") {
-        background = "#3d4e7a";
+        background = "linear-gradient(135deg, #22d3ee, #a78bfa)";
+        borderColor = "transparent";
+        color = "oklch(0.14 0.02 260)";
+        boxShadow = "0 4px 12px -4px rgba(167,139,250,.5)";
       } else {
-        background = "#1a2744";
-        opacity = 0.45;
+        opacity = 0.35;
         cursor = "not-allowed";
       }
 
@@ -71,15 +77,18 @@ const LevelStrip = ({ completedLevelIds, currentLevelId, onSelectLevel }: LevelS
           type="button"
           style={{
             background,
-            border: "1px solid rgba(255,255,255,0.12)",
-            borderRadius: "0.375rem",
-            color: "#f5f5f0",
+            border: `1px solid ${borderColor}`,
+            borderRadius: "8px",
+            boxShadow,
+            color,
             cursor,
             flexShrink: 0,
-            fontSize: "0.75rem",
+            fontSize: "12px",
             fontWeight: 600,
+            height: "30px",
+            minWidth: "36px",
             opacity,
-            padding: "0.3rem 0.6rem",
+            padding: "0 10px",
           }}
         >
           {levelRegistry.getLevelNumber(level.id)}

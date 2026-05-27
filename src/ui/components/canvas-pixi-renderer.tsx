@@ -20,12 +20,14 @@ import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-uti
 extend({ Container, Graphics, Text });
 
 const BACKGROUND_GAP = 24;
-const CANVAS_BACKGROUND = 0xf8f5ec;
+const CANVAS_BACKGROUND = 0x141925;
 const PORT_HIT_SIZE = 44;
 const REQUEST_DOT_COLOR = 0xa8c4e8;
 const RESPONSE_DOT_COLOR = 0x4fd47f;
 const HANDLE_RADIUS = PORT_HIT_SIZE / 2;
 const HANDLE_DOT_RADIUS = 4;
+
+const hexToPixi = (hex: string): number => parseInt(hex.replace("#", ""), 16);
 
 interface PendingEdge {
   sourceHandle: HandleSide;
@@ -90,7 +92,7 @@ const HandleGraphic = ({
     g.circle(0, 0, HANDLE_RADIUS);
     g.fill({ alpha: 0, color: 0x000000 });
     g.circle(0, 0, HANDLE_DOT_RADIUS);
-    g.fill({ color: 0x7b8cb2 });
+    g.fill({ color: 0x8898cc });
   }, []);
 
   return (
@@ -153,45 +155,47 @@ const PixiNodeGraphic = ({
   const def = COMPONENT_LIBRARY[node.componentType];
   const { accentColor } = def;
 
-  let fillColor = 0xfffdf8;
-  let borderColor = 0x1a2744;
+  let fillColor = 0x1e2737;
+  let borderColor = hexToPixi(accentColor);
   let borderWidth = 2;
 
   if (isSelected) {
-    fillColor = 0xfff3ea;
-    borderColor = 0xe5634d;
+    fillColor = 0x253047;
+    borderColor = 0x22d3ee;
   }
   if (isOverloaded) {
-    fillColor = 0xffe4dd;
-    borderColor = 0xe5634d;
+    fillColor = 0x1e2737;
+    borderColor = 0xf472b6;
     borderWidth = 3;
   }
+
+  const accentColorHex = hexToPixi(accentColor);
 
   const drawBackground = useCallback(
     (g: Graphics) => {
       g.clear();
       if (isOverloaded) {
         g.roundRect(-3, -3, NODE_WIDTH + 6, NODE_MIN_HEIGHT + 6, 18);
-        g.stroke({ alpha: 0.5, color: 0xe5634d, width: borderWidth + 6 });
+        g.stroke({ alpha: 0.5, color: 0xf472b6, width: borderWidth + 6 });
       }
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.fill({ color: fillColor });
       if (fillRatio > 0) {
         const fillHeight = NODE_MIN_HEIGHT * fillRatio;
         g.roundRect(0, NODE_MIN_HEIGHT - fillHeight, NODE_WIDTH, fillHeight, 16);
-        g.fill({ alpha: 0.25, color: 0x7b8cb2 });
+        g.fill({ alpha: 0.18, color: accentColorHex });
       }
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.stroke({ color: borderColor, width: borderWidth });
     },
-    [fillColor, borderColor, borderWidth, isOverloaded, fillRatio],
+    [fillColor, borderColor, borderWidth, isOverloaded, fillRatio, accentColorHex],
   );
 
   const drawPill = useCallback(
     (g: Graphics) => {
       g.clear();
       g.roundRect(0, 0, 40, 40, 999);
-      g.fill({ alpha: 0.13, color: accentColor });
+      g.fill({ alpha: 0.22, color: accentColor });
     },
     [accentColor],
   );
@@ -235,14 +239,28 @@ const PixiNodeGraphic = ({
     [onHandleClick, nodeId],
   );
 
-  const iconStyle = new TextStyle({ fontSize: 20 });
+  const { iconSvg } = def;
+  const iconSvgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${accentColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>`;
+
+  const drawIcon = useCallback(
+    (g: Graphics) => {
+      g.clear();
+      g.svg(iconSvgStr);
+    },
+    [iconSvgStr],
+  );
+
   const labelStyle = new TextStyle({
-    fill: 0x1a2744,
+    fill: 0xe0e6f8,
     fontSize: 11,
     fontWeight: "700",
     wordWrap: true,
     wordWrapWidth: NODE_WIDTH - 8,
   });
+
+  const ICON_SIZE = 24;
+  const iconX = (NODE_WIDTH - ICON_SIZE) / 2;
+  const iconY = 12 + (40 - ICON_SIZE) / 2;
 
   return (
     <pixiContainer
@@ -259,13 +277,7 @@ const PixiNodeGraphic = ({
     >
       <pixiGraphics draw={drawBackground} />
       <pixiGraphics draw={drawPill} x={(NODE_WIDTH - 40) / 2} y={12} />
-      <pixiText
-        anchor={{ x: 0.5, y: 0.5 }}
-        style={iconStyle}
-        text={def.icon}
-        x={NODE_WIDTH / 2}
-        y={32}
-      />
+      <pixiGraphics draw={drawIcon} x={iconX} y={iconY} />
       <pixiText
         anchor={{ x: 0.5, y: 0 }}
         style={labelStyle}
@@ -334,7 +346,7 @@ const PixiEdgeInner = ({
   const { cp1, cp2 } = getBezierControlPoints(src, tgt);
   const edgeId = edge.id,
     isSelected = edge.selected === true;
-  const strokeColor = isSelected ? 0xe5634d : 0x7b8cb2,
+  const strokeColor = isSelected ? 0x22d3ee : 0x4a5a8a,
     strokeWidth = isSelected ? 3 : 2;
   const cp1X = cp1.x,
     cp1Y = cp1.y,
@@ -431,7 +443,7 @@ const LiveEdgeGraphic = ({ pendingEdge, nodes }: LiveEdgeGraphicProps) => {
           p0: { x: srcX, y: srcY },
           p3: { x: tgtX, y: tgtY },
         },
-        { alpha: 0.5, color: 0x7b8cb2, dashLen: 6, gapLen: 6, offset: 0, width: 2 },
+        { alpha: 0.5, color: 0xa78bfa, dashLen: 6, gapLen: 6, offset: 0, width: 2 },
       );
     },
     [srcX, srcY, cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY],
@@ -654,7 +666,7 @@ const PixiContent = ({
       for (let gx = BACKGROUND_GAP; gx < stageWidth; gx += BACKGROUND_GAP) {
         for (let gy = BACKGROUND_GAP; gy < stageHeight; gy += BACKGROUND_GAP) {
           g.circle(gx, gy, 0.8);
-          g.fill({ alpha: 0.18, color: 0x1a2744 });
+          g.fill({ alpha: 0.28, color: 0xbcc2e0 });
         }
       }
     },

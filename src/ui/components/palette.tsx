@@ -15,20 +15,8 @@ const Resources = ({
   isDisabled = false,
   onPlaceComponent,
 }: ResourcesProps) => {
-  let contentDisplay = "grid";
-  let contentGap = "0.75rem";
-  let contentOverflowX: "auto" | "visible" = "visible";
-  let contentPaddingBottom: string | undefined = undefined;
-
-  if (isCompact) {
-    contentDisplay = "flex";
-    contentGap = "0.5rem";
-    contentOverflowX = "auto";
-    contentPaddingBottom = "0.25rem";
-  }
-
   let content = (
-    <p style={{ color: "#6b6b6b", fontSize: "0.8125rem", margin: 0 }}>
+    <p style={{ color: "oklch(0.58 0.022 252)", fontSize: "13px", margin: 0 }}>
       Components will appear here.
     </p>
   );
@@ -37,10 +25,10 @@ const Resources = ({
     content = (
       <div
         style={{
-          display: contentDisplay,
-          gap: contentGap,
-          overflowX: contentOverflowX,
-          paddingBottom: contentPaddingBottom,
+          display: isCompact ? "flex" : "grid",
+          gap: isCompact ? "8px" : "8px",
+          overflowX: isCompact ? "auto" : "visible",
+          paddingBottom: isCompact ? "4px" : undefined,
         }}
       >
         {availableComponents.map((componentType) => {
@@ -52,7 +40,7 @@ const Resources = ({
                 capacity={def.capacity}
                 componentType={componentType}
                 description={def.description}
-                icon={def.icon}
+                iconSvg={def.iconSvg}
                 isDisabled={isDisabled}
                 key={componentType}
                 label={def.label}
@@ -66,7 +54,7 @@ const Resources = ({
               capacity={def.capacity}
               componentType={componentType}
               description={def.description}
-              icon={def.icon}
+              iconSvg={def.iconSvg}
               isDisabled={isDisabled}
               key={componentType}
               label={def.label}
@@ -79,35 +67,50 @@ const Resources = ({
     );
   }
 
-  let borderRight = "1px solid #d0cfc8";
-  let borderTop = "none";
-
-  if (isCompact) {
-    borderRight = "none";
-    borderTop = "1px solid #d0cfc8";
-  }
-
   return (
     <div
       style={{
-        background: "#fafaf7",
-        borderRight,
-        borderTop,
+        background: "oklch(0.21 0.022 268 / 0.78)",
+        border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+        borderBottom: isCompact ? "none" : "1px solid oklch(0.36 0.022 272 / 0.32)",
+        borderRadius: isCompact ? "0" : "16px",
+        borderRight: isCompact ? "none" : "1px solid oklch(0.36 0.022 272 / 0.32)",
         height: "100%",
-        padding: "1rem",
+        padding: "14px",
       }}
     >
-      <h2
+      <div
         style={{
-          color: "#1a2744",
-          fontSize: "0.875rem",
-          letterSpacing: "0.06em",
-          margin: "0 0 0.75rem",
-          textTransform: "uppercase",
+          alignItems: "center",
+          display: "flex",
+          justifyContent: "space-between",
+          marginBottom: "12px",
         }}
       >
-        Resources
-      </h2>
+        <h2
+          style={{
+            color: "oklch(0.58 0.022 252)",
+            fontSize: "11px",
+            fontWeight: 600,
+            letterSpacing: "0.11em",
+            margin: 0,
+            textTransform: "uppercase",
+          }}
+        >
+          Resources
+        </h2>
+        {!isCompact && (
+          <span
+            style={{
+              color: "oklch(0.45 0.018 252)",
+              fontSize: "10px",
+              letterSpacing: "0.04em",
+            }}
+          >
+            Drag onto canvas
+          </span>
+        )}
+      </div>
 
       {content}
     </div>

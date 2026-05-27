@@ -3,13 +3,15 @@ import { SimulationEngine } from "../simulation/simulation-engine.js";
 import { computeTotalCost } from "../domain/budget.js";
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
 import type { ComponentType } from "../domain/component-library.js";
+import { CircularGauge } from "./components/circular-gauge.js";
 import { Coach } from "./components/coach.js";
 import { EndOfLevelScreen } from "./components/end-of-level-screen.js";
 import { EventLog } from "./components/event-log.js";
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { GameCanvas } from "./components/game-canvas.js";
 import { Inspector } from "./components/inspector.js";
-import { LevelStrip } from "./components/level-strip.js";
+import { NavBar } from "./components/nav-bar.js";
+import { ProgressCard } from "./components/progress-card.js";
 import { Resources } from "./components/palette.js";
 import { TopBar } from "./components/top-bar.js";
 import { useCompactLayout } from "./hooks/use-compact-layout.js";
@@ -37,6 +39,7 @@ import type { LevelConfig } from "../simulation/types.js";
 import { computeAvailableComponents } from "../simulation/unlocks.js";
 
 const MOBILE_LAYOUT_BREAKPOINT = 768;
+const GAUGE_MAX = 300;
 
 interface GameSceneProps {
   completedLevels: string[];
@@ -119,6 +122,7 @@ const GameScene = ({
     .filter(([, s]) => s.droppedOps > 0)
     .map(([id]) => id);
   const overloadedNodeIds = isSimulating ? simulationOverloadedNodeIds : [];
+  const hasBottleneck = overloadedNodeIds.length > 0;
 
   useEffect(() => {
     resetEvents(graphState.nodes, graphState.edges);
@@ -206,10 +210,6 @@ const GameScene = ({
     }
   }, [engine, isSimulating]);
 
-  // Reset engine and per-level state whenever the level changes.
-  // Subscribers are destroyed and recreated so they capture the new levelConfig.
-  // OverloadEventDetector is created before engine.reset() to avoid a spurious
-  // RESOLVED event from transitioning out of a previously-overloaded state.
   useEffect(() => {
     overloadDetectorRef.current?.destroy();
     winCheckerRef.current?.destroy();
@@ -241,7 +241,6 @@ const GameScene = ({
     hasSeenOverloadThisLevelRef.current = false;
   }, [currentLevel.id, engine]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Show timed coach messages as elapsed time advances
   useEffect(() => {
     currentLevel.coachMessages.forEach((message, index) => {
       if (elapsedMs >= message.atSecond && !shownCoachMessageRef.current.has(index)) {
@@ -251,49 +250,119 @@ const GameScene = ({
     });
   }, [elapsedMs, currentLevel, setCoachMessage]);
 
+  const rightSidebar = (
+    <aside
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        flexShrink: 0,
+        gap: "12px",
+        overflowY: "auto",
+        width: isCompactLayout ? "100%" : "300px",
+      }}
+    >
+      <section aria-label="Inspector" style={{ flexShrink: 0 }}>
+        <Inspector
+          componentType={inspectorData.componentType}
+          cost={inspectorData.cost}
+          isOverloaded={inspectorData.isOverloaded}
+          latencyMs={inspectorData.latencyMs}
+          loadPercent={inspectorData.loadPercent}
+          maxCapacity={inspectorData.maxCapacity}
+          opsPerSec={inspectorData.opsPerSec}
+          selectedNodeLabel={inspectorData.selectedNodeLabel}
+        />
+      </section>
+      <Coach hasBottleneck={hasBottleneck} message={coachMessage} />
+      <EventLog entries={eventEntries} />
+    </aside>
+  );
+
   return (
     <div
       data-testid="game-layout-shell"
       style={{
-        background: "#f5f5f0",
+        background: "oklch(0.155 0.018 264)",
         display: "flex",
         flexDirection: "column",
-        fontFamily: "system-ui, sans-serif",
+        fontFamily: "'Lato', system-ui, sans-serif",
         height: "100dvh",
         overflowX: "hidden",
       }}
     >
-      <TopBar
-        currentReqPerSec={currentTrafficRate}
-        isSimulating={isSimulating}
-        levelNumber={levelRegistry.getLevelNumber(currentLevel.id)}
-        levelTitle={currentLevel.title}
-        monthlyBudget={levelConfig.monthlyBudget}
-        objectiveText={currentLevel.objectiveText}
-        onStartTraffic={handleToggleTraffic}
-        remainingBudget={remainingBudget}
-        startTrafficDisabled={!isRunnable}
-        totalMonthlyCost={totalMonthlyCost}
-        trafficTarget={levelConfig.trafficTarget}
-      />
-      <LevelStrip
-        completedLevelIds={completedLevels}
-        currentLevelId={currentLevel.id}
-        onSelectLevel={handleSelectLevel}
-      />
+      <header style={{ flexShrink: 0 }}>
+        <NavBar />
+        {isCompactLayout ? (
+          <div style={{ padding: "12px" }}>
+            <TopBar
+              currentReqPerSec={currentTrafficRate}
+              isSimulating={isSimulating}
+              levelNumber={levelRegistry.getLevelNumber(currentLevel.id)}
+              levelTitle={currentLevel.title}
+              monthlyBudget={levelConfig.monthlyBudget}
+              objectiveText={currentLevel.objectiveText}
+              onStartTraffic={handleToggleTraffic}
+              remainingBudget={remainingBudget}
+              startTrafficDisabled={!isRunnable}
+              totalMonthlyCost={totalMonthlyCost}
+              trafficTarget={levelConfig.trafficTarget}
+            />
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gap: "16px",
+              gridTemplateColumns: "1fr 580px",
+              padding: "16px 24px 0",
+            }}
+          >
+            <TopBar
+              currentReqPerSec={currentTrafficRate}
+              isSimulating={isSimulating}
+              levelNumber={levelRegistry.getLevelNumber(currentLevel.id)}
+              levelTitle={currentLevel.title}
+              monthlyBudget={levelConfig.monthlyBudget}
+              objectiveText={currentLevel.objectiveText}
+              onStartTraffic={handleToggleTraffic}
+              remainingBudget={remainingBudget}
+              startTrafficDisabled={!isRunnable}
+              totalMonthlyCost={totalMonthlyCost}
+              trafficTarget={levelConfig.trafficTarget}
+            />
+            <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 300px" }}>
+              <CircularGauge
+                currentReqPerSec={currentTrafficRate}
+                maxValue={GAUGE_MAX}
+                trafficTarget={levelConfig.trafficTarget}
+              />
+              <ProgressCard
+                completedLevelIds={completedLevels}
+                currentLevelId={currentLevel.id}
+                monthlyBudget={levelConfig.monthlyBudget}
+                onSelectLevel={handleSelectLevel}
+                totalMonthlyCost={totalMonthlyCost}
+              />
+            </div>
+          </div>
+        )}
+      </header>
+
       <div
         style={{
           display: "flex",
           flex: 1,
           flexDirection: isCompactLayout ? "column" : "row",
+          gap: "16px",
           minHeight: 0,
           overflow: "hidden",
+          padding: isCompactLayout ? "12px" : "16px 24px 24px",
         }}
       >
         {!isCompactLayout && (
           <section
             aria-label="Resources"
-            style={{ flexShrink: 0, overflowY: "auto", width: "16rem" }}
+            style={{ flexShrink: 0, overflowY: "auto", width: "260px" }}
           >
             <Resources
               availableComponents={availableComponents}
@@ -302,7 +371,17 @@ const GameScene = ({
             />
           </section>
         )}
-        <main style={{ flex: 1, overflow: "hidden", position: "relative" }}>
+
+        <main
+          style={{
+            background: "oklch(0.19 0.022 268 / 0.5)",
+            border: "1px solid oklch(0.36 0.022 272 / 0.32)",
+            borderRadius: "16px",
+            flex: 1,
+            overflow: "hidden",
+            position: "relative",
+          }}
+        >
           <GameCanvas
             componentToPlace={queuedComponentType}
             dispatchGraph={dispatchGraph}
@@ -320,42 +399,24 @@ const GameScene = ({
             selectedNodeId={selectedNodeId}
           />
         </main>
-        <aside
-          style={{
-            borderLeft: isCompactLayout ? "none" : "1px solid #d0cfc8",
-            display: "flex",
-            flexDirection: "column",
-            flexShrink: 0,
-            overflowY: "auto",
-            width: isCompactLayout ? "100%" : "16rem",
-          }}
-        >
-          <section aria-label="Inspector" style={{ flexShrink: 0 }}>
-            <Inspector
-              componentType={inspectorData.componentType}
-              cost={inspectorData.cost}
-              isOverloaded={inspectorData.isOverloaded}
-              latencyMs={inspectorData.latencyMs}
-              loadPercent={inspectorData.loadPercent}
-              maxCapacity={inspectorData.maxCapacity}
-              opsPerSec={inspectorData.opsPerSec}
-              selectedNodeLabel={inspectorData.selectedNodeLabel}
-            />
-          </section>
-          <Coach message={coachMessage} />
-          <EventLog entries={eventEntries} />
-        </aside>
-        {isCompactLayout && (
-          <section aria-label="Resources" style={{ flexShrink: 0, width: "100%" }}>
-            <Resources
-              availableComponents={availableComponents}
-              isCompact
-              isDisabled={isSimulating}
-              onPlaceComponent={handlePlaceComponent}
-            />
-          </section>
+
+        {isCompactLayout ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <section aria-label="Resources" style={{ flexShrink: 0 }}>
+              <Resources
+                availableComponents={availableComponents}
+                isCompact
+                isDisabled={isSimulating}
+                onPlaceComponent={handlePlaceComponent}
+              />
+            </section>
+            {rightSidebar}
+          </div>
+        ) : (
+          rightSidebar
         )}
       </div>
+
       {phase === "WON" && (
         <EndOfLevelScreen
           feedbackLines={currentLevel.feedbackText}
