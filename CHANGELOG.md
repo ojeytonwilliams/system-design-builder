@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.2] - 2026-05-29
+
+### Refactoring
+
+- **Scale-corrected ops/s display**: `getInspectorData` now divides the rolling-window `opsPerSec` by `TIME_SCALE` (imported from `component-library`) before returning it to the inspector, so displayed throughput reflects human-readable req/s rather than the simulation's internal rate.
+
 ## [2.8.1] - 2026-05-29
 
 ### Refactoring

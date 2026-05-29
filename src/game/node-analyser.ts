@@ -1,4 +1,4 @@
-import { COMPONENT_LIBRARY } from "../domain/component-library.js";
+import { COMPONENT_LIBRARY, TIME_SCALE } from "../domain/component-library.js";
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import type { InspectorProps } from "../ui/components/inspector.js";
 import type { NodeMetricsSnapshot } from "../simulation/metrics.js";
@@ -22,7 +22,7 @@ const getInspectorData = (
 
   const isFiniteCapacity = Number.isFinite(maxCapacity);
 
-  const opsPerSec = metrics?.opsPerSec;
+  const opsPerSec = metrics?.opsPerSec === undefined ? undefined : metrics.opsPerSec / TIME_SCALE;
 
   const loadPercent =
     metrics === undefined || !isFiniteCapacity

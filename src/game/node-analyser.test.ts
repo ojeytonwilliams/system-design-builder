@@ -1,4 +1,5 @@
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
+import { TIME_SCALE } from "../domain/component-library.js";
 import { getInspectorData } from "./node-analyser.js";
 import type { NodeMetricsSnapshot } from "../simulation/metrics.js";
 
@@ -23,14 +24,14 @@ describe(getInspectorData, () => {
     expect(getInspectorData("missing-id", [serverNode], new Map())).toStrictEqual({});
   });
 
-  it("opsPerSec equals nodeMetrics.get(nodeId)?.opsPerSec", () => {
+  it("opsPerSec equals nodeMetrics opsPerSec divided by TIME_SCALE", () => {
     const nodeMetrics: NodeMetricsSnapshot = new Map([
       ["server-1", { incomingOpsPerSec: 20, isOverloaded: false, opsPerSec: 15 }],
     ]);
 
     const result = getInspectorData("server-1", [serverNode], nodeMetrics);
 
-    expect(result.opsPerSec).toBe(15);
+    expect(result.opsPerSec).toBe(15 / TIME_SCALE);
   });
 
   it("opsPerSec is undefined when node has no metrics entry", () => {
