@@ -1,5 +1,5 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
-import { isAtCapacity, shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
+import { shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
 import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
 import type { LevelConfig } from "./types.js";
 
@@ -26,7 +26,11 @@ describe(SimulationEngine, () => {
     const snap = engine.getSnapshot();
 
     expect(snap.elapsedMs).toBe(0);
-    expect(snap.nodeStates).toStrictEqual({});
+    expect(snap.nodeMetrics).toStrictEqual(new Map());
+  });
+
+  it("getSnapshot includes deliveryOpsPerSec of 0 initially", () => {
+    expect(engine.getSnapshot().deliveryOpsPerSec).toBe(0);
   });
 
   it("getSnapshot includes empty prev progress maps initially", () => {
@@ -62,14 +66,12 @@ describe(SimulationEngine, () => {
     expect(snap.currentTrafficRate).toBe(100 + delta);
   });
 
-  it("tick() updates the snapshot", () => {
+  it("tick() populates nodeMetrics for graph nodes", () => {
     engine.setGraph([{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }], []);
     engine.tick(1000);
     const snap = engine.getSnapshot();
 
-    expect(snap.nodeStates).toStrictEqual({
-      "users-1": { droppedOps: 0, handledOps: 100 + delta, incomingOps: 100 + delta },
-    });
+    expect(snap.nodeMetrics.has("users-1")).toBe(true);
   });
 
   it("step() notifies subscribers synchronously", () => {
@@ -100,7 +102,14 @@ describe(SimulationEngine, () => {
     const snap = engine.getSnapshot();
 
     expect(snap.elapsedMs).toBe(0);
-    expect(snap.nodeStates).toStrictEqual({});
+    expect(snap.nodeMetrics).toStrictEqual(new Map());
+  });
+
+  it("reset() resets deliveryOpsPerSec to 0", () => {
+    engine.tick(1);
+    engine.reset();
+
+    expect(engine.getSnapshot().deliveryOpsPerSec).toBe(0);
   });
 
   it("reset() clears request maps", () => {
@@ -223,7 +232,7 @@ describe("tick", () => {
     engine.setGraph([node], []);
     engine.tick(1);
 
-    expect(engine.getSnapshot().nodeStates).toHaveProperty("server-1");
+    expect(engine.getSnapshot().nodeMetrics.has("server-1")).toBe(true);
   });
 });
 
@@ -446,9 +455,8 @@ describe("response creation", () => {
     });
   });
 
-  describe("dropped requests", () => {
-    it("does not create a response for a dropped request", () => {
-      // trafficRate high enough to spawn >50 requests in one tick, overflowing server capacity
+  describe("unbounded queues — requests enter processing regardless of node occupancy", () => {
+    it("does not drop requests when node occupancy exceeds component capacity", () => {
       const overloadConfig: LevelConfig = {
         cacheHitRate: 0,
         monthlyBudget: 100,
@@ -461,15 +469,15 @@ describe("response creation", () => {
       const engine = new SimulationEngine();
       engine.setConfig(overloadConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: 55 requests spawn; tick 2: all transits complete, 50 → processing, 5 → dropped
+      // tick 1: 55 requests spawn; tick 2: all transits complete → all enter processing (no drops)
       engine.tick(TICK_MS);
       engine.tick(TICK_MS);
 
       const snap = engine.getSnapshot();
       const droppedRequests = [...snap.requests.values()].filter((r) => r.status === "DROPPED");
 
-      expect(droppedRequests.length).toBeGreaterThan(0);
-      expect(snap.responses.size).toBe(0);
+      expect(droppedRequests).toHaveLength(0);
+      expect(snap.processing.size).toBeGreaterThan(50);
     });
   });
 });
@@ -603,31 +611,90 @@ describe("response transit advancement", () => {
   });
 });
 
-describe(isAtCapacity, () => {
-  it("returns false when no requests are processing at the node", () => {
-    expect(isAtCapacity({ componentType: "db", id: "db-1" }, [])).toBe(false);
+describe("rolling metrics", () => {
+  const TICK_MS = 500;
+  const SPAWN_RATE = (TIME_SCALE * 1000) / TICK_MS;
+
+  const config: LevelConfig = {
+    cacheHitRate: 0,
+    monthlyBudget: 100,
+    timeout: 60000,
+    trafficPeak: SPAWN_RATE,
+    trafficStart: SPAWN_RATE,
+    trafficTarget: SPAWN_RATE,
+    winSustainMs: 3_000,
+  };
+
+  const usersNode: ArchitectureNode = {
+    componentType: "users",
+    id: "users-1",
+    position: { x: 0, y: 0 },
+  };
+  const serverNode: ArchitectureNode = {
+    componentType: "server",
+    id: "server-1",
+    position: { x: 0, y: 0 },
+  };
+  const edgeE1: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
+
+  it("deliveryOpsPerSec becomes > 0 after enough ticks for a response to complete a round trip", () => {
+    const engine = new SimulationEngine();
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode], [edgeE1]);
+    // tick 1: transit starts; tick 2: transit completes, processing starts;
+    // tick 3: processing completes, request fulfilled, response transit starts;
+    // tick 4: response transit completes → delivery recorded
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+
+    expect(engine.getSnapshot().deliveryOpsPerSec).toBeGreaterThan(0);
   });
 
-  it("returns false when below capacity", () => {
-    expect(isAtCapacity({ componentType: "db", id: "db-1" }, [{ nodeId: "db-1" }])).toBe(false);
+  it("nodeMetrics shows isOverloaded: true for a node when incomingOpsPerSec > capacity", () => {
+    const overloadConfig: LevelConfig = {
+      cacheHitRate: 0,
+      monthlyBudget: 100,
+      timeout: 60000,
+      // trafficRate 11000 → scaledRate 110 req/s → 55 per 500ms tick → 55 arrive per tick
+      // 55/3 ≈ 18 arr/s initially, grows: after 4 ticks arrivals=165, 165/3=55 > capacity(50)
+      trafficPeak: 11000,
+      trafficStart: 11000,
+      trafficTarget: 11000,
+      winSustainMs: 3_000,
+    };
+    const engine = new SimulationEngine();
+    engine.setConfig(overloadConfig);
+    engine.setGraph([usersNode, serverNode], [edgeE1]);
+    // 4 ticks: ticks 2,3,4 each deliver 55 arrivals → 165 arrivals / 3s = 55 > server capacity 50
+    for (let i = 0; i < 4; i++) {
+      engine.tick(TICK_MS);
+    }
+
+    expect(engine.getSnapshot().nodeMetrics.get("server-1")?.isOverloaded).toBe(true);
   });
 
-  it("returns true when at capacity", () => {
-    const entries = Array.from({ length: 30 }, () => ({ nodeId: "db-1" }));
+  it("reset() clears the metrics window so deliveryOpsPerSec returns to 0", () => {
+    const engine = new SimulationEngine();
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode], [edgeE1]);
+    for (let i = 0; i < 4; i++) {
+      engine.tick(TICK_MS);
+    }
+    engine.reset();
 
-    expect(isAtCapacity({ componentType: "db", id: "db-1" }, entries)).toBe(true);
+    expect(engine.getSnapshot().deliveryOpsPerSec).toBe(0);
   });
 
-  it("returns false for infinite-capacity nodes", () => {
-    const entries = Array.from({ length: 1000 }, () => ({ nodeId: "lb-1" }));
+  it("reset() clears the metrics window so nodeMetrics returns to empty Map", () => {
+    const engine = new SimulationEngine();
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode], [edgeE1]);
+    engine.tick(TICK_MS);
+    engine.reset();
 
-    expect(isAtCapacity({ componentType: "load-balancer", id: "lb-1" }, entries)).toBe(false);
-  });
-
-  it("ignores processing entries for other nodes", () => {
-    const entries = Array.from({ length: 30 }, () => ({ nodeId: "db-2" }));
-
-    expect(isAtCapacity({ componentType: "db", id: "db-1" }, entries)).toBe(false);
+    expect(engine.getSnapshot().nodeMetrics).toStrictEqual(new Map());
   });
 });
 

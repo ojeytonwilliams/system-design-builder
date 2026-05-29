@@ -1,6 +1,8 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
-import { computeTrafficFlow, getLinearTrafficRate } from "./engine.js";
+import { getLinearTrafficRate } from "./engine.js";
+import { addBucket, computeDeliveryOpsPerSec, computeNodeMetrics } from "./metrics.js";
+import type { MetricsWindow, NodeEventCounts, NodeMetricsSnapshot } from "./metrics.js";
 import { requestRouter } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
 import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
@@ -14,18 +16,10 @@ import type {
 } from "./request-types.js";
 import { transitionRequest } from "./transition-request.js";
 import type { RequestMaps } from "./transition-request.js";
-import type { LevelConfig, TrafficSnapshot } from "./types.js";
+import type { LevelConfig } from "./types.js";
 
 const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
 const REQUEST_TIMEOUT_MS = 10_000;
-
-const isAtCapacity = (
-  node: { componentType: keyof typeof COMPONENT_LIBRARY; id: string },
-  processingEntries: { nodeId: string }[],
-): boolean => {
-  const { capacity } = COMPONENT_LIBRARY[node.componentType];
-  return processingEntries.filter((p) => p.nodeId === node.id).length >= capacity;
-};
 
 const shouldTimeOut = (
   request: { spawnedAtSimMs: number; status: RequestStatus },
@@ -44,8 +38,9 @@ const shouldTimeOut = (
 
 interface SimulationSnapshot {
   currentTrafficRate: number;
+  deliveryOpsPerSec: number;
   elapsedMs: number;
-  nodeStates: TrafficSnapshot;
+  nodeMetrics: NodeMetricsSnapshot;
   prevResponseTransitProgresses: Map<string, number>;
   prevTransitProgresses: Map<string, number>;
   processing: Map<string, Processing>;
@@ -58,8 +53,9 @@ interface SimulationSnapshot {
 
 const getInitialSnapshot = (): SimulationSnapshot => ({
   currentTrafficRate: 0,
+  deliveryOpsPerSec: 0,
   elapsedMs: 0,
-  nodeStates: {},
+  nodeMetrics: new Map(),
   prevResponseTransitProgresses: new Map(),
   prevTransitProgresses: new Map(),
   processing: new Map(),
@@ -83,6 +79,7 @@ class SimulationEngine {
   private readonly responseTransits = new Map<string, ResponseTransit>();
   private pendingSpawns = 0;
   private wallClockElapsedMs = 0;
+  private metricsWindow: MetricsWindow = [];
 
   getSnapshot = (): SimulationSnapshot => this.state;
 
@@ -125,11 +122,6 @@ class SimulationEngine {
       trafficPeak: this.config.trafficPeak,
       trafficStart: this.config.trafficStart,
     });
-    const trafficSnapshot = computeTrafficFlow(this.graphNodes, this.graphEdges, {
-      cacheHitRate: this.config.cacheHitRate,
-      deltaMs,
-      trafficRate: rate,
-    });
 
     const usersNode = this.graphNodes.find((n) => n.componentType === "users");
     const outgoingEdge =
@@ -159,15 +151,38 @@ class SimulationEngine {
       transits: this.transits,
     };
 
-    this.advanceTransits(deltaMs, maps);
-    this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate);
-    this.advanceResponseTransits(deltaMs);
+    const tickEvents = new Map<string, NodeEventCounts>();
+    const usersNodeId = usersNode?.id ?? "";
+
+    this.advanceTransits(deltaMs, maps, tickEvents);
+    this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate, tickEvents);
+    this.advanceResponseTransits(deltaMs, tickEvents, usersNodeId);
     this.timeoutRequests(maps);
+
+    this.metricsWindow = addBucket(this.metricsWindow, {
+      nodeEvents: tickEvents,
+      wallClockMs: this.wallClockElapsedMs,
+    });
+
+    const rawMetrics = computeNodeMetrics(this.metricsWindow);
+    const nodeMetrics: NodeMetricsSnapshot = new Map(
+      this.graphNodes.map((n) => {
+        const m = rawMetrics.get(n.id) ?? {
+          incomingOpsPerSec: 0,
+          isOverloaded: false,
+          opsPerSec: 0,
+        };
+        const { capacity } = COMPONENT_LIBRARY[n.componentType];
+        return [n.id, { ...m, isOverloaded: isFinite(capacity) && m.incomingOpsPerSec > capacity }];
+      }),
+    );
+    const deliveryOpsPerSec = computeDeliveryOpsPerSec(this.metricsWindow, usersNodeId);
 
     this.state = {
       currentTrafficRate: rate,
+      deliveryOpsPerSec,
       elapsedMs: elapsed,
-      nodeStates: trafficSnapshot,
+      nodeMetrics,
       prevResponseTransitProgresses,
       prevTransitProgresses,
       processing: this.processing,
@@ -188,11 +203,16 @@ class SimulationEngine {
     this.responseTransits.clear();
     this.pendingSpawns = 0;
     this.wallClockElapsedMs = 0;
+    this.metricsWindow = [];
     this.state = getInitialSnapshot();
     this.notify();
   }
 
-  private advanceTransits(deltaMs: number, maps: RequestMaps): void {
+  private advanceTransits(
+    deltaMs: number,
+    maps: RequestMaps,
+    tickEvents: Map<string, NodeEventCounts>,
+  ): void {
     for (const [requestId, transit] of [...this.transits]) {
       const newElapsed = transit.elapsedMs + deltaMs;
 
@@ -206,23 +226,26 @@ class SimulationEngine {
         } else {
           const { latencyMs } = COMPONENT_LIBRARY[targetNode.componentType];
 
-          if (isAtCapacity(targetNode, [...maps.processing.values()])) {
-            transitionRequest(requestId, { status: "DROPPED" }, maps);
-          } else {
-            transitionRequest(
-              requestId,
-              {
-                processing: {
-                  durationMs: latencyMs * TIME_SCALE,
-                  elapsedMs: 0,
-                  nodeId: targetNode.id,
-                  progress: 0,
-                },
-                status: "PROCESSING",
+          transitionRequest(
+            requestId,
+            {
+              processing: {
+                durationMs: latencyMs * TIME_SCALE,
+                elapsedMs: 0,
+                nodeId: targetNode.id,
+                progress: 0,
               },
-              maps,
-            );
-          }
+              status: "PROCESSING",
+            },
+            maps,
+          );
+
+          const existing = tickEvents.get(targetNode.id) ?? {
+            arrivalCount: 0,
+            completedCount: 0,
+            deliveryCount: 0,
+          };
+          tickEvents.set(targetNode.id, { ...existing, arrivalCount: existing.arrivalCount + 1 });
         }
       } else {
         transit.elapsedMs = newElapsed;
@@ -231,7 +254,12 @@ class SimulationEngine {
     }
   }
 
-  private advanceProcessing(deltaMs: number, maps: RequestMaps, cacheHitRate: number): void {
+  private advanceProcessing(
+    deltaMs: number,
+    maps: RequestMaps,
+    cacheHitRate: number,
+    tickEvents: Map<string, NodeEventCounts>,
+  ): void {
     for (const [requestId, proc] of [...this.processing]) {
       const newElapsed = proc.elapsedMs + deltaMs;
 
@@ -240,6 +268,16 @@ class SimulationEngine {
           cacheHitRate,
           edges: this.graphEdges,
           nodes: this.graphNodes,
+        });
+
+        const existing = tickEvents.get(proc.nodeId) ?? {
+          arrivalCount: 0,
+          completedCount: 0,
+          deliveryCount: 0,
+        };
+        tickEvents.set(proc.nodeId, {
+          ...existing,
+          completedCount: existing.completedCount + 1,
         });
 
         if (result.status === "FULFILLED") {
@@ -275,7 +313,11 @@ class SimulationEngine {
     }
   }
 
-  private advanceResponseTransits(deltaMs: number): void {
+  private advanceResponseTransits(
+    deltaMs: number,
+    tickEvents: Map<string, NodeEventCounts>,
+    usersNodeId: string,
+  ): void {
     for (const [responseId, transit] of [...this.responseTransits]) {
       const newElapsed = transit.elapsedMs + deltaMs;
 
@@ -288,6 +330,7 @@ class SimulationEngine {
 
           if (nextEdgeId === undefined) {
             this.responses.delete(responseId);
+            this.recordDelivery(tickEvents, usersNodeId);
           } else {
             response.remainingEdgeIds = remaining;
             this.responseTransits.set(responseId, {
@@ -304,6 +347,18 @@ class SimulationEngine {
         transit.progress = newElapsed / transit.durationMs;
       }
     }
+  }
+
+  private recordDelivery(tickEvents: Map<string, NodeEventCounts>, usersNodeId: string): void {
+    if (usersNodeId === "") {
+      return;
+    }
+    const existing = tickEvents.get(usersNodeId) ?? {
+      arrivalCount: 0,
+      completedCount: 0,
+      deliveryCount: 0,
+    };
+    tickEvents.set(usersNodeId, { ...existing, deliveryCount: existing.deliveryCount + 1 });
   }
 
   private spawnResponse(requestId: string, maps: RequestMaps): void {
@@ -343,5 +398,5 @@ class SimulationEngine {
 
 const TICK_INTERVAL_MS = 1000 / 60;
 
-export { isAtCapacity, shouldTimeOut, SimulationEngine, TICK_INTERVAL_MS };
+export { shouldTimeOut, SimulationEngine, TICK_INTERVAL_MS };
 export type { SimulationSnapshot };

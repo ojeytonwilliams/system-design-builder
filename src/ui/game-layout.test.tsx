@@ -30,14 +30,27 @@ const testLevelConfig: LevelConfig = {
   winSustainMs: 10_000,
 };
 
-// 150 ops/s on a 50 ops/s server = 300% load
+// scaledRate = 15000/TIME_SCALE = 150 req/s → 300% of server capacity (50)
+// Overload shows after rolling window fills (at ~t=4s)
 const overloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
-  timeout: 10,
-  trafficPeak: 150,
-  trafficStart: 150,
-  trafficTarget: 150,
+  timeout: 60,
+  trafficPeak: 15000,
+  trafficStart: 15000,
+  trafficTarget: 15000,
+  winSustainMs: 10_000,
+};
+
+// scaledRate = 2500/TIME_SCALE = 25 req/s → 50% of server capacity (50)
+// Steady-state load shown after rolling window fills (at ~t=4s)
+const normalLoadLevelConfig: LevelConfig = {
+  cacheHitRate: 0,
+  monthlyBudget: 99999,
+  timeout: 60,
+  trafficPeak: 2500,
+  trafficStart: 2500,
+  trafficTarget: 2500,
   winSustainMs: 10_000,
 };
 
@@ -53,6 +66,18 @@ const resolvingOverloadLevelConfig: LevelConfig = {
   trafficStart: 100,
   trafficTarget: 40,
   winSustainMs: 10_000,
+};
+
+// scaledRate drops from 100 to 0 over 6s; rolling-window overload starts ~t=3.3s,
+// resolves ~t=4.5s — used to test overload start/resolution events
+const overloadResolvingConfig: LevelConfig = {
+  cacheHitRate: 0,
+  monthlyBudget: 99999,
+  timeout: 6,
+  trafficPeak: 0,
+  trafficStart: 10000,
+  trafficTarget: 5000,
+  winSustainMs: 99_000,
 };
 
 const overloadNodes: ArchitectureNode[] = [
@@ -253,12 +278,12 @@ describe("simulation mode", () => {
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
     act(() => {
-      for (let t = 0; t < 1000; t += 16) {
+      for (let t = 0; t < 5000; t += 16) {
         engine.tick(16);
       }
     });
 
-    expect(screen.getByText(/300%.*overloaded/iv)).toBeInTheDocument();
+    expect(screen.getByText(/\d+%.*\(overloaded\)/iv)).toBeInTheDocument();
   });
 
   it("returns the selected node to normal load state when traffic drops below capacity", () => {
@@ -267,14 +292,14 @@ describe("simulation mode", () => {
       engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
-      levelConfig: resolvingOverloadLevelConfig,
+      levelConfig: normalLoadLevelConfig,
     });
 
     fireEvent.click(screen.getByTestId("canvas-node-server-1"));
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
 
     act(() => {
-      for (let t = 0; t < 3000; t += 16) {
+      for (let t = 0; t < 5000; t += 16) {
         engine.tick(16);
       }
     });
@@ -558,6 +583,7 @@ describe("coach panel", () => {
   it("shows a coaching message the first time overload occurs in a level", () => {
     const engine = new SimulationEngine();
     renderScene({
+      currentLevel: { ...level1, coachMessages: [] },
       engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
@@ -566,7 +592,7 @@ describe("coach panel", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      for (let t = 0; t < 1000; t += 16) {
+      for (let t = 0; t < 5000; t += 16) {
         engine.tick(16);
       }
     });
@@ -612,12 +638,12 @@ describe("event log", () => {
       engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
-      levelConfig: resolvingOverloadLevelConfig,
+      levelConfig: overloadResolvingConfig,
     });
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      for (let t = 0; t < 3000; t += 16) {
+      for (let t = 0; t < 6000; t += 16) {
         engine.tick(16);
       }
     });

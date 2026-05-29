@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.8.0] - 2026-05-29
+
+### Refactoring
+
+- **Pure discrete simulation — rolling metrics**: Removed the BFS-based `computeTrafficFlow()` model entirely. The engine now accumulates arrival, completion, and delivery events per tick into a 3-second rolling window (`MetricsWindow`). `nodeMetrics` (including `isOverloaded`) and `deliveryOpsPerSec` are derived from actual discrete request counts rather than a parallel mathematical model, so displayed throughput reflects responses that have genuinely completed the round trip.
+- **Unbounded processing queues**: Removed the `isAtCapacity` early-drop mechanism. Requests always enter processing; overload is detected solely by `incomingOpsPerSec > capacity` in the rolling window, giving a more realistic queuing model.
+- All downstream consumers (`OverloadEventDetector`, `WinConditionChecker`, `unlocks`, `node-analyser`, `game-layout`) migrated from `TrafficSnapshot` to `NodeMetricsSnapshot`.
+
 ## [2.7.2] - 2026-05-29
 
 ### Refactoring

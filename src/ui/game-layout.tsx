@@ -78,7 +78,7 @@ const GameScene = ({
   const timeoutCheckerRef = useRef<TimeoutChecker | null>(null);
 
   const simSnapshot = useSimulationSnapshot(engine);
-  const { currentTrafficRate, elapsedMs, nodeStates, tickDeltaMs } = simSnapshot;
+  const { deliveryOpsPerSec, elapsedMs, nodeMetrics } = simSnapshot;
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
@@ -99,7 +99,7 @@ const GameScene = ({
   const shownCoachMessageRef = useRef<Set<number>>(new Set());
   const hasSeenOverloadThisLevelRef = useRef(false);
 
-  const inspectorData = getInspectorData(selectedNodeId, graphState.nodes, nodeStates, tickDeltaMs);
+  const inspectorData = getInspectorData(selectedNodeId, graphState.nodes, nodeMetrics);
 
   const isRunnable = hasRunnablePath(graphState.nodes, graphState.edges);
   const totalMonthlyCost = computeTotalCost(graphState.nodes);
@@ -110,15 +110,15 @@ const GameScene = ({
     currentLevel.componentUnlocks,
     {
       graphNodes: graphState.nodes,
+      nodeMetrics,
       overloadDurations: overloadDetectorRef.current?.getOverloadDurations() ?? new Map(),
-      snapshot: simSnapshot.nodeStates,
     },
   );
 
   const isSimulating = phase === "SIMULATING";
 
-  const simulationOverloadedNodeIds = Object.entries(nodeStates)
-    .filter(([, s]) => s.droppedOps > 0)
+  const simulationOverloadedNodeIds = [...nodeMetrics.entries()]
+    .filter(([, m]) => m.isOverloaded)
     .map(([id]) => id);
   const overloadedNodeIds = isSimulating ? simulationOverloadedNodeIds : [];
   const hasBottleneck = overloadedNodeIds.length > 0;
@@ -336,7 +336,7 @@ const GameScene = ({
             <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr" }}>
               <CircularGauge
                 bottleneckOpsPerSec={bottleneckOpsPerSec}
-                currentReqPerSec={isSimulating ? currentTrafficRate : 0}
+                currentReqPerSec={isSimulating ? deliveryOpsPerSec : 0}
                 trafficTarget={levelConfig.trafficTarget}
               />
               <ProgressCard

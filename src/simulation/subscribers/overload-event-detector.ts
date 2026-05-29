@@ -1,7 +1,7 @@
 import { updateOverloadDurations } from "../unlocks.js";
 import type { OverloadDurations } from "../unlocks.js";
 import type { SimulationEngine } from "../simulation-engine.js";
-import type { TrafficSnapshot } from "../types.js";
+import type { NodeMetricsSnapshot } from "../metrics.js";
 
 interface OverloadEventCallbacks {
   onOverloadResolved: () => void;
@@ -15,13 +15,13 @@ class OverloadEventDetector {
 
   constructor(engine: SimulationEngine, callbacks: OverloadEventCallbacks) {
     this.unsubscribe = engine.subscribe(() => {
-      const { nodeStates, tickDeltaMs } = engine.getSnapshot();
-      this.run(nodeStates, callbacks, tickDeltaMs);
+      const { nodeMetrics, tickDeltaMs } = engine.getSnapshot();
+      this.run(nodeMetrics, callbacks, tickDeltaMs);
     });
   }
 
-  run(nodeStates: TrafficSnapshot, callbacks: OverloadEventCallbacks, deltaMs: number): void {
-    const hasOverload = Object.values(nodeStates).some((s) => s.droppedOps > 0);
+  run(nodeMetrics: NodeMetricsSnapshot, callbacks: OverloadEventCallbacks, deltaMs: number): void {
+    const hasOverload = [...nodeMetrics.values()].some((m) => m.isOverloaded);
 
     if (hasOverload && !this.prevHasOverload) {
       callbacks.onOverloadStarted();
@@ -29,7 +29,7 @@ class OverloadEventDetector {
       callbacks.onOverloadResolved();
     }
 
-    this.overloadDurations = updateOverloadDurations(this.overloadDurations, nodeStates, deltaMs);
+    this.overloadDurations = updateOverloadDurations(this.overloadDurations, nodeMetrics, deltaMs);
     this.prevHasOverload = hasOverload;
   }
 

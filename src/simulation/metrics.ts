@@ -16,6 +16,7 @@ type MetricsWindow = MetricsBucket[];
 
 interface NodeMetrics {
   incomingOpsPerSec: number;
+  isOverloaded: boolean;
   opsPerSec: number;
 }
 
@@ -44,6 +45,7 @@ const computeNodeMetrics = (window: MetricsWindow): NodeMetricsSnapshot => {
   for (const [nodeId, { arrivals, completions }] of totals) {
     snapshot.set(nodeId, {
       incomingOpsPerSec: arrivals / windowSeconds,
+      isOverloaded: false,
       opsPerSec: completions / windowSeconds,
     });
   }

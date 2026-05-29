@@ -8,6 +8,6 @@ describe(useSimulationSnapshot, () => {
     const { result } = renderHook(() => useSimulationSnapshot(engine));
 
     expect(result.current.elapsedMs).toBe(0);
-    expect(result.current.nodeStates).toStrictEqual({});
+    expect(result.current.nodeMetrics).toStrictEqual(new Map());
   });
 });

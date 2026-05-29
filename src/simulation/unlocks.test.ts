@@ -4,23 +4,23 @@ import {
   evaluateUnlockTrigger,
   updateOverloadDurations,
 } from "./unlocks.js";
-import type { TrafficSnapshot } from "./types.js";
+import type { NodeMetricsSnapshot } from "./metrics.js";
 
 const pos = { x: 0, y: 0 };
 
 const emptyInput = {
   graphNodes: [] as ArchitectureNode[],
+  nodeMetrics: new Map() as NodeMetricsSnapshot,
   overloadDurations: new Map<string, number>(),
-  snapshot: {} as TrafficSnapshot,
 };
 
-const overloadedSnapshot: TrafficSnapshot = {
-  "server-1": { droppedOps: 10, handledOps: 50, incomingOps: 60 },
-};
+const overloadedMetrics: NodeMetricsSnapshot = new Map([
+  ["server-1", { incomingOpsPerSec: 60, isOverloaded: true, opsPerSec: 30 }],
+]);
 
-const normalSnapshot: TrafficSnapshot = {
-  "server-1": { droppedOps: 0, handledOps: 40, incomingOps: 40 },
-};
+const normalMetrics: NodeMetricsSnapshot = new Map([
+  ["server-1", { incomingOpsPerSec: 40, isOverloaded: false, opsPerSec: 40 }],
+]);
 
 const twoServerNodes: ArchitectureNode[] = [
   { componentType: "server", id: "server-1", position: pos },
@@ -29,19 +29,19 @@ const twoServerNodes: ArchitectureNode[] = [
 
 describe(evaluateUnlockTrigger, () => {
   describe("capacity reached", () => {
-    it("returns true when any node has dropped ops", () => {
-      const input = { ...emptyInput, snapshot: overloadedSnapshot };
+    it("returns true when any node has isOverloaded: true", () => {
+      const input = { ...emptyInput, nodeMetrics: overloadedMetrics };
 
       expect(evaluateUnlockTrigger({ type: "CAPACITY_REACHED" }, input)).toBe(true);
     });
 
-    it("returns false when no nodes have dropped ops", () => {
-      const input = { ...emptyInput, snapshot: normalSnapshot };
+    it("returns false when no nodes have isOverloaded: true", () => {
+      const input = { ...emptyInput, nodeMetrics: normalMetrics };
 
       expect(evaluateUnlockTrigger({ type: "CAPACITY_REACHED" }, input)).toBe(false);
     });
 
-    it("returns false when snapshot is empty", () => {
+    it("returns false when nodeMetrics is empty", () => {
       expect(evaluateUnlockTrigger({ type: "CAPACITY_REACHED" }, emptyInput)).toBe(false);
     });
   });
@@ -131,7 +131,7 @@ describe(evaluateUnlockTrigger, () => {
 
 describe(updateOverloadDurations, () => {
   it("starts tracking a node that becomes overloaded", () => {
-    const result = updateOverloadDurations(new Map(), overloadedSnapshot, 1000);
+    const result = updateOverloadDurations(new Map(), overloadedMetrics, 1000);
 
     expect(result.get("server-1")).toBe(1000);
   });
@@ -139,7 +139,7 @@ describe(updateOverloadDurations, () => {
   it("accumulates ms for a node that remains overloaded", () => {
     const prev = new Map([["server-1", 3000]]);
 
-    const result = updateOverloadDurations(prev, overloadedSnapshot, 1000);
+    const result = updateOverloadDurations(prev, overloadedMetrics, 1000);
 
     expect(result.get("server-1")).toBe(4000);
   });
@@ -147,7 +147,7 @@ describe(updateOverloadDurations, () => {
   it("resets duration for a node that is no longer overloaded", () => {
     const prev = new Map([["server-1", 5000]]);
 
-    const result = updateOverloadDurations(prev, normalSnapshot, 1000);
+    const result = updateOverloadDurations(prev, normalMetrics, 1000);
 
     expect(result.has("server-1")).toBe(false);
   });
@@ -155,7 +155,7 @@ describe(updateOverloadDurations, () => {
   it("returns a new Map rather than mutating the previous one", () => {
     const prev = new Map([["server-1", 3000]]);
 
-    const result = updateOverloadDurations(prev, overloadedSnapshot, 1000);
+    const result = updateOverloadDurations(prev, overloadedMetrics, 1000);
 
     expect(result).not.toBe(prev);
   });

@@ -1,15 +1,15 @@
 import type { Mock } from "vitest";
 import { SimulationEngine } from "../simulation-engine.js";
 import { OverloadEventDetector } from "./overload-event-detector.js";
-import type { TrafficSnapshot } from "../types.js";
+import type { NodeMetricsSnapshot } from "../metrics.js";
 
-const cleanSnapshot: TrafficSnapshot = {
-  "server-1": { droppedOps: 0, handledOps: 100, incomingOps: 100 },
-};
+const cleanMetrics: NodeMetricsSnapshot = new Map([
+  ["server-1", { incomingOpsPerSec: 10, isOverloaded: false, opsPerSec: 10 }],
+]);
 
-const overloadSnapshot: TrafficSnapshot = {
-  "server-1": { droppedOps: 50, handledOps: 50, incomingOps: 100 },
-};
+const overloadMetrics: NodeMetricsSnapshot = new Map([
+  ["server-1", { incomingOpsPerSec: 60, isOverloaded: true, opsPerSec: 30 }],
+]);
 
 describe(OverloadEventDetector, () => {
   let engine: SimulationEngine;
@@ -30,42 +30,42 @@ describe(OverloadEventDetector, () => {
 
   const DELTA_MS = 1000;
 
-  const run = (snapshot: TrafficSnapshot): void => {
-    detector.run(snapshot, { onOverloadResolved, onOverloadStarted }, DELTA_MS);
+  const run = (nodeMetrics: NodeMetricsSnapshot): void => {
+    detector.run(nodeMetrics, { onOverloadResolved, onOverloadStarted }, DELTA_MS);
   };
 
   describe("event detection", () => {
     it("fires onOverloadStarted on the first overloaded tick", () => {
-      run(overloadSnapshot);
+      run(overloadMetrics);
 
       expect(onOverloadStarted).toHaveBeenCalledOnce();
       expect(onOverloadResolved).not.toHaveBeenCalled();
     });
 
     it("does not fire onOverloadStarted on subsequent overloaded ticks", () => {
-      run(overloadSnapshot);
-      run(overloadSnapshot);
+      run(overloadMetrics);
+      run(overloadMetrics);
 
       expect(onOverloadStarted).toHaveBeenCalledOnce();
     });
 
     it("fires onOverloadResolved when overload clears", () => {
-      run(overloadSnapshot);
-      run(cleanSnapshot);
+      run(overloadMetrics);
+      run(cleanMetrics);
 
       expect(onOverloadResolved).toHaveBeenCalledOnce();
     });
 
     it("does not fire onOverloadResolved on a clean tick when not overloaded", () => {
-      run(cleanSnapshot);
+      run(cleanMetrics);
 
       expect(onOverloadResolved).not.toHaveBeenCalled();
     });
 
     it("fires onOverloadStarted again after a resolved overload", () => {
-      run(overloadSnapshot);
-      run(cleanSnapshot);
-      run(overloadSnapshot);
+      run(overloadMetrics);
+      run(cleanMetrics);
+      run(overloadMetrics);
 
       expect(onOverloadStarted).toHaveBeenCalledTimes(2);
     });
@@ -77,21 +77,21 @@ describe(OverloadEventDetector, () => {
     });
 
     it("accumulates duration in ms for an overloaded node", () => {
-      run(overloadSnapshot);
+      run(overloadMetrics);
 
       expect(detector.getOverloadDurations().get("server-1")).toBe(DELTA_MS);
     });
 
     it("accumulates ms on sustained overload", () => {
-      run(overloadSnapshot);
-      run(overloadSnapshot);
+      run(overloadMetrics);
+      run(overloadMetrics);
 
       expect(detector.getOverloadDurations().get("server-1")).toBe(DELTA_MS * 2);
     });
 
     it("removes a node entry when it recovers", () => {
-      run(overloadSnapshot);
-      run(cleanSnapshot);
+      run(overloadMetrics);
+      run(cleanMetrics);
 
       expect(detector.getOverloadDurations().has("server-1")).toBe(false);
     });
@@ -99,24 +99,24 @@ describe(OverloadEventDetector, () => {
 
   describe("reset", () => {
     it("clears overloadDurations", () => {
-      run(overloadSnapshot);
+      run(overloadMetrics);
       detector.reset();
 
       expect(detector.getOverloadDurations().size).toBe(0);
     });
 
     it("allows onOverloadStarted to fire again on the next overloaded tick", () => {
-      run(overloadSnapshot);
+      run(overloadMetrics);
       detector.reset();
       onOverloadStarted.mockClear();
 
-      run(overloadSnapshot);
+      run(overloadMetrics);
 
       expect(onOverloadStarted).toHaveBeenCalledOnce();
     });
 
     it("does not fire onOverloadResolved when reset while overloaded", () => {
-      run(overloadSnapshot);
+      run(overloadMetrics);
       detector.reset();
       engine.reset();
 

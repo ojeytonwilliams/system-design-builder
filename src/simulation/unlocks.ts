@@ -1,7 +1,7 @@
 import type { ComponentType } from "../domain/component-library.js";
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import type { ComponentUnlock, UnlockTrigger } from "../levels/types.js";
-import type { TrafficSnapshot } from "./types.js";
+import type { NodeMetricsSnapshot } from "./metrics.js";
 
 type OverloadDurations = Map<string, number>;
 
@@ -9,21 +9,21 @@ const SERVER_TYPES = new Set<ComponentType>(["server", "server-large"]);
 
 interface EvaluateUnlockInput {
   graphNodes: ArchitectureNode[];
+  nodeMetrics: NodeMetricsSnapshot;
   overloadDurations: OverloadDurations;
-  snapshot: TrafficSnapshot;
 }
 
 const MS_PER_SECOND = 1000;
 
 const updateOverloadDurations = (
   prev: OverloadDurations,
-  snapshot: TrafficSnapshot,
+  nodeMetrics: NodeMetricsSnapshot,
   deltaMs: number,
 ): OverloadDurations => {
   const next = new Map<string, number>();
 
-  for (const [nodeId, state] of Object.entries(snapshot)) {
-    if (state.droppedOps > 0) {
+  for (const [nodeId, metrics] of nodeMetrics) {
+    if (metrics.isOverloaded) {
       next.set(nodeId, (prev.get(nodeId) ?? 0) + deltaMs);
     }
   }
@@ -34,7 +34,7 @@ const updateOverloadDurations = (
 const evaluateUnlockTrigger = (trigger: UnlockTrigger, input: EvaluateUnlockInput): boolean => {
   switch (trigger.type) {
     case "CAPACITY_REACHED":
-      return Object.values(input.snapshot).some((s) => s.droppedOps > 0);
+      return [...input.nodeMetrics.values()].some((m) => m.isOverloaded);
 
     case "OVERLOAD_SUSTAINED":
       return [...input.overloadDurations.values()].some(

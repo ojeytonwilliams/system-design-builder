@@ -1,5 +1,6 @@
 import type { SimulationEngine } from "../simulation-engine.js";
-import type { LevelConfig, TrafficSnapshot } from "../types.js";
+import type { NodeMetricsSnapshot } from "../metrics.js";
+import type { LevelConfig } from "../types.js";
 
 interface WinCallbacks {
   onWin: () => void;
@@ -7,7 +8,7 @@ interface WinCallbacks {
 
 interface WinSnapshot {
   currentTrafficRate: number;
-  nodeStates: TrafficSnapshot;
+  nodeMetrics: NodeMetricsSnapshot;
   tickDeltaMs: number;
 }
 
@@ -29,7 +30,7 @@ class WinConditionChecker {
       return;
     }
 
-    const hasOverload = Object.values(snapshot.nodeStates).some((s) => s.droppedOps > 0);
+    const hasOverload = [...snapshot.nodeMetrics.values()].some((m) => m.isOverloaded);
     const atOrAboveTarget = snapshot.currentTrafficRate >= this.levelConfig.trafficTarget;
 
     if (atOrAboveTarget && !hasOverload) {

@@ -1,10 +1,4 @@
-interface NodeTrafficState {
-  droppedOps: number;
-  handledOps: number;
-  incomingOps: number;
-}
-
-type TrafficSnapshot = Record<string, NodeTrafficState>;
+import type { NodeMetrics, NodeMetricsSnapshot } from "./metrics.js";
 
 interface LevelConfig {
   cacheHitRate: number;
@@ -16,10 +10,4 @@ interface LevelConfig {
   winSustainMs: number;
 }
 
-interface FlowConfig {
-  cacheHitRate: number;
-  deltaMs: number;
-  trafficRate: number;
-}
-
-export type { FlowConfig, LevelConfig, TrafficSnapshot };
+export type { LevelConfig, NodeMetrics, NodeMetricsSnapshot };
