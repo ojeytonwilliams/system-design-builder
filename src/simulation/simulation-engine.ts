@@ -1,11 +1,10 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
-import { COMPONENT_LIBRARY } from "../domain/component-library.js";
+import { COMPONENT_LIBRARY, EDGE_TRANSIT_MS } from "../domain/component-library.js";
 import { getLinearTrafficRate } from "./engine.js";
 import { addBucket, computeDeliveryOpsPerSec, computeNodeMetrics } from "./metrics.js";
 import type { MetricsWindow, NodeEventCounts, NodeMetricsSnapshot } from "./metrics.js";
 import { requestRouter } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
-import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
 import type {
   Processing,
   RequestStatus,
@@ -18,7 +17,6 @@ import { transitionRequest } from "./transition-request.js";
 import type { RequestMaps } from "./transition-request.js";
 import type { LevelConfig } from "./types.js";
 
-const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
 const REQUEST_TIMEOUT_MS = 10_000;
 
 const shouldTimeOut = (
@@ -230,7 +228,7 @@ class SimulationEngine {
             requestId,
             {
               processing: {
-                durationMs: latencyMs * TIME_SCALE,
+                durationMs: latencyMs,
                 elapsedMs: 0,
                 nodeId: targetNode.id,
                 progress: 0,
@@ -289,7 +287,7 @@ class SimulationEngine {
             {
               status: "IN_TRANSIT",
               transit: {
-                durationMs: VISUAL_TRANSIT_MS,
+                durationMs: EDGE_TRANSIT_MS,
                 edgeId: result.edgeId,
                 elapsedMs: 0,
                 progress: 0,
@@ -334,7 +332,7 @@ class SimulationEngine {
           } else {
             response.remainingEdgeIds = remaining;
             this.responseTransits.set(responseId, {
-              durationMs: VISUAL_TRANSIT_MS,
+              durationMs: EDGE_TRANSIT_MS,
               edgeId: nextEdgeId,
               elapsedMs: 0,
               progress: 0,
@@ -381,7 +379,7 @@ class SimulationEngine {
       status: "IN_TRANSIT",
     });
     this.responseTransits.set(responseId, {
-      durationMs: VISUAL_TRANSIT_MS,
+      durationMs: EDGE_TRANSIT_MS,
       edgeId: firstEdgeId,
       elapsedMs: 0,
       progress: 0,

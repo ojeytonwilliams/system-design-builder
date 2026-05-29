@@ -5,6 +5,13 @@ import { LoadBalancerIcon } from "../assets/icons/load-balancer-icon.js";
 import { ServerIcon } from "../assets/icons/server-icon.js";
 import { UsersIcon } from "../assets/icons/users-icon.js";
 
+/** Ratio of visual animation time to real-world time. A component with a
+ * real-world latency of 10ms will animate for 10 * TIME_SCALE = 1000ms. */
+const TIME_SCALE = 100;
+
+/** Visual duration of a request travelling along a graph edge. */
+const EDGE_TRANSIT_MS = 10 * TIME_SCALE;
+
 interface ComponentDefinition {
   accentColor: string;
   capacity: number;
@@ -31,7 +38,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Caches frequent DB reads in memory",
     icon: CacheIcon,
     label: "Cache",
-    latencyMs: 5,
+    latencyMs: 5 * TIME_SCALE,
     monthlyCost: 25,
   },
   db: {
@@ -40,7 +47,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Stores and retrieves application data",
     icon: DbIcon,
     label: "Small DB",
-    latencyMs: 15,
+    latencyMs: 15 * TIME_SCALE,
     monthlyCost: 15,
   },
   "db-large": {
@@ -49,7 +56,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "High-capacity managed database",
     icon: DbIcon,
     label: "Large DB",
-    latencyMs: 10,
+    latencyMs: 10 * TIME_SCALE,
     monthlyCost: 50,
   },
   "load-balancer": {
@@ -58,7 +65,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Splits traffic evenly across servers",
     icon: LoadBalancerIcon,
     label: "Load Balancer",
-    latencyMs: 2,
+    latencyMs: 2 * TIME_SCALE,
     monthlyCost: 20,
   },
   server: {
@@ -67,7 +74,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Handles incoming web requests",
     icon: ServerIcon,
     label: "Small Server",
-    latencyMs: 10,
+    latencyMs: 10 * TIME_SCALE,
     monthlyCost: 20,
   },
   "server-large": {
@@ -76,7 +83,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "High-capacity web server",
     icon: ServerIcon,
     label: "Large Server",
-    latencyMs: 8,
+    latencyMs: 8 * TIME_SCALE,
     monthlyCost: 80,
   },
   users: {
@@ -93,5 +100,5 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
 const isComponentType = (value: string): value is ComponentType =>
   Object.hasOwn(COMPONENT_LIBRARY, value);
 
-export { COMPONENT_LIBRARY, isComponentType };
+export { COMPONENT_LIBRARY, EDGE_TRANSIT_MS, isComponentType, TIME_SCALE };
 export type { ComponentDefinition, ComponentType };

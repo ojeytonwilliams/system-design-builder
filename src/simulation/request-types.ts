@@ -1,4 +1,6 @@
 const EDGE_TRANSIT_INTERNAL_MS = 10;
+/** The time scale factor for the simulation. This is used to slow down the
+  simulation relative to real time. */
 const TIME_SCALE = 100;
 
 type RequestStatus = "DROPPED" | "FULFILLED" | "IN_TRANSIT" | "PROCESSING" | "TIMED_OUT";
