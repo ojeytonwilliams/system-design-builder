@@ -20,6 +20,9 @@ import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-uti
 extend({ Container, Graphics, Text });
 
 const BACKGROUND_GAP = 24;
+const ICON_SIZE = 24;
+const PILL_SIZE = 40;
+const PILL_MARGIN_TOP = 12;
 const CANVAS_BACKGROUND = 0x0a0a23;
 const PORT_HIT_SIZE = 44;
 const REQUEST_DOT_COLOR = 0xa8c4e8;
@@ -244,17 +247,6 @@ const PixiNodeGraphic = ({
     [onHandleClick, nodeId],
   );
 
-  const { iconSvg } = def;
-  const iconSvgStr = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="${accentColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>`;
-
-  const drawIcon = useCallback(
-    (g: Graphics) => {
-      g.clear();
-      g.svg(iconSvgStr);
-    },
-    [iconSvgStr],
-  );
-
   const labelStyle = new TextStyle({
     fill: 0xf5f6f7,
     fontSize: 11,
@@ -262,10 +254,6 @@ const PixiNodeGraphic = ({
     wordWrap: true,
     wordWrapWidth: NODE_WIDTH - 8,
   });
-
-  const ICON_SIZE = 24;
-  const iconX = (NODE_WIDTH - ICON_SIZE) / 2;
-  const iconY = 12 + (40 - ICON_SIZE) / 2;
 
   return (
     <pixiContainer
@@ -283,7 +271,6 @@ const PixiNodeGraphic = ({
       <pixiGraphics ref={haloRef} draw={() => {}} />
       <pixiGraphics draw={drawBackground} />
       <pixiGraphics draw={drawPill} x={(NODE_WIDTH - 40) / 2} y={12} />
-      <pixiGraphics draw={drawIcon} x={iconX} y={iconY} />
       <pixiText
         anchor={{ x: 0.5, y: 0 }}
         style={labelStyle}
@@ -836,36 +823,65 @@ const CanvasPixiRenderer = ({
   }, [onPaneClick]);
 
   return (
-    <Application
-      antialias
-      autoDensity
-      background={CANVAS_BACKGROUND}
-      resolution={window.devicePixelRatio}
-      resizeTo={resizeTo}
-    >
-      <PixiContent
-        edges={edges}
-        isLocked={isLocked}
-        isSimulating={isSimulating}
-        lockedNodeIds={lockedNodeIds}
-        nodes={liveNodes}
-        onEdgeClick={onEdgeSelect}
-        onEdgeContextMenu={onEdgeContextMenu}
-        engine={engine}
-        onHandleClick={onHandleClick}
-        onNodeContextMenu={onNodeContextMenu}
-        onNodePointerDown={onNodePointerDown}
-        onNodeSelect={onNodeSelect}
-        onPaneClick={handlePaneClick}
-        onStagePointerMove={onStagePointerMove}
-        onStagePointerUp={onStagePointerUp}
-        overloadedNodeIds={overloadedNodeIds}
-        pendingEdge={pendingEdge}
-        selectedNodeId={selectedNodeId}
-        stageHeight={stageHeight}
-        stageWidth={stageWidth}
-      />
-    </Application>
+    <>
+      <Application
+        antialias
+        autoDensity
+        background={CANVAS_BACKGROUND}
+        resolution={window.devicePixelRatio}
+        resizeTo={resizeTo}
+      >
+        <PixiContent
+          edges={edges}
+          isLocked={isLocked}
+          isSimulating={isSimulating}
+          lockedNodeIds={lockedNodeIds}
+          nodes={liveNodes}
+          onEdgeClick={onEdgeSelect}
+          onEdgeContextMenu={onEdgeContextMenu}
+          engine={engine}
+          onHandleClick={onHandleClick}
+          onNodeContextMenu={onNodeContextMenu}
+          onNodePointerDown={onNodePointerDown}
+          onNodeSelect={onNodeSelect}
+          onPaneClick={handlePaneClick}
+          onStagePointerMove={onStagePointerMove}
+          onStagePointerUp={onStagePointerUp}
+          overloadedNodeIds={overloadedNodeIds}
+          pendingEdge={pendingEdge}
+          selectedNodeId={selectedNodeId}
+          stageHeight={stageHeight}
+          stageWidth={stageWidth}
+        />
+      </Application>
+      <div
+        aria-hidden="true"
+        style={{
+          height: "100%",
+          left: 0,
+          pointerEvents: "none",
+          position: "absolute",
+          top: 0,
+          width: "100%",
+        }}
+      >
+        {liveNodes.map((node) => {
+          const def = COMPONENT_LIBRARY[node.componentType];
+          const Icon = def.icon;
+          const iconLeft = node.position.x + (NODE_WIDTH - ICON_SIZE) / 2;
+          const iconTop = node.position.y + PILL_MARGIN_TOP + (PILL_SIZE - ICON_SIZE) / 2;
+          return (
+            <Icon
+              key={node.id}
+              height={ICON_SIZE}
+              stroke={def.accentColor}
+              style={{ left: `${iconLeft}px`, position: "absolute", top: `${iconTop}px` }}
+              width={ICON_SIZE}
+            />
+          );
+        })}
+      </div>
+    </>
   );
 };
 

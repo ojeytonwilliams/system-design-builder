@@ -1,12 +1,12 @@
 import type { ComponentType } from "../../domain/component-library.js";
-import type { DragEvent } from "react";
+import type { DragEvent, FC, SVGProps } from "react";
 
 interface ResourceItemProps {
   accentColor?: string | undefined;
   capacity: number;
   componentType: ComponentType;
   description: string;
-  iconSvg?: string;
+  icon?: FC<SVGProps<SVGSVGElement>>;
   isDisabled?: boolean;
   label: string;
   monthlyCost: number;
@@ -31,7 +31,7 @@ const ResourceItem = ({
   capacity,
   componentType,
   description,
-  iconSvg,
+  icon: Icon,
   isDisabled = false,
   label,
   monthlyCost,
@@ -75,7 +75,7 @@ const ResourceItem = ({
       type="button"
     >
       <div style={{ alignItems: "center", display: "flex", gap: "8px" }}>
-        {iconSvg !== undefined && (
+        {Icon !== undefined && (
           <div
             style={{
               alignItems: "center",
@@ -88,18 +88,7 @@ const ResourceItem = ({
               width: "28px",
             }}
           >
-            <svg
-              aria-hidden="true"
-              dangerouslySetInnerHTML={{ __html: iconSvg }}
-              fill="none"
-              height="16"
-              stroke={iconColor}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.8"
-              viewBox="0 0 24 24"
-              width="16"
-            />
+            <Icon aria-hidden="true" height="16" stroke={iconColor} width="16" />
           </div>
         )}
         <span

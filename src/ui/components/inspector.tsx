@@ -74,8 +74,7 @@ const Inspector = ({
   const costText = cost === undefined ? undefined : `$${cost}/hr`;
   const description =
     componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].description;
-  const iconSvg =
-    componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].iconSvg;
+  const Icon = componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].icon;
   const accentColor =
     componentType === undefined ? undefined : COMPONENT_LIBRARY[componentType].accentColor;
 
@@ -108,7 +107,7 @@ const Inspector = ({
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
           <div style={{ alignItems: "center", display: "flex", gap: "10px" }}>
-            {iconSvg !== undefined && accentColor !== undefined && (
+            {Icon !== undefined && accentColor !== undefined && (
               <div
                 style={{
                   alignItems: "center",
@@ -121,18 +120,7 @@ const Inspector = ({
                   width: "28px",
                 }}
               >
-                <svg
-                  aria-hidden="true"
-                  dangerouslySetInnerHTML={{ __html: iconSvg }}
-                  fill="none"
-                  height="16"
-                  stroke={accentColor}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="1.8"
-                  viewBox="0 0 24 24"
-                  width="16"
-                />
+                <Icon aria-hidden="true" height="16" stroke={accentColor} width="16" />
               </div>
             )}
             <div>

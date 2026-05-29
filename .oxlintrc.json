@@ -128,7 +128,8 @@
         "react/react-in-jsx-scope": "off",
         /* Default max of 2 is too restrictive for typical component trees */
         "react/jsx-max-depth": ["error", { "max": 5 }],
-        "react/only-export-components": "error"
+        "react/only-export-components": "error",
+        "react/jsx-props-no-spreading": ["error", { "exceptions": ["svg"] }]
       }
     }
   ]

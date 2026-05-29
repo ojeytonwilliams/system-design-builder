@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.2] - 2026-05-29
+
+### Refactoring
+
+- **SVG icons converted to React components**: Raw `.svg` files and `?raw` string imports are replaced by typed TSX components (`CacheIcon`, `DbIcon`, etc.), eliminating `dangerouslySetInnerHTML` from the palette and inspector. Each component holds its own shape and applies sensible stroke defaults, so call sites only need to pass `stroke`, `width`, and `height`.
+- Canvas node icons move from Pixi's `g.svg()` (which required reconstructing an SVG string from inner markup) to an absolutely-positioned HTML overlay rendered from the same React components, keeping the canvas and DOM representations in sync with a single source of truth.
+
 ## [2.7.1] - 2026-05-22
 
 ### Refactoring
