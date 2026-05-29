@@ -30,8 +30,7 @@ const testLevelConfig: LevelConfig = {
   winSustainMs: 10_000,
 };
 
-// scaledRate = 15000/TIME_SCALE = 150 req/s → 300% of server capacity (50)
-// Overload shows after rolling window fills (at ~t=4s)
+// 150 req/s → 300% of server capacity (50); overload shows after rolling window fills (~t=4s)
 const overloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
@@ -42,8 +41,7 @@ const overloadLevelConfig: LevelConfig = {
   winSustainMs: 10_000,
 };
 
-// scaledRate = 2500/TIME_SCALE = 25 req/s → 50% of server capacity (50)
-// Steady-state load shown after rolling window fills (at ~t=4s)
+// 25 req/s → 50% of server capacity (50); steady-state load shown after rolling window fills (~t=4s)
 const normalLoadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
@@ -68,7 +66,7 @@ const resolvingOverloadLevelConfig: LevelConfig = {
   winSustainMs: 10_000,
 };
 
-// scaledRate drops from 100 to 0 over 6s; rolling-window overload starts ~t=3.3s,
+// Traffic drops from 100 to 50 req/s over 6s; rolling-window overload starts ~t=3.3s,
 // resolves ~t=4.5s — used to test overload start/resolution events
 const overloadResolvingConfig: LevelConfig = {
   cacheHitRate: 0,

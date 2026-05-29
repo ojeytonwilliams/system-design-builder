@@ -37,10 +37,10 @@
 
 ## Phase 4: Clean up exports and tests
 
-- [ ] TASK: Remove TIME_SCALE and EDGE_TRANSIT_INTERNAL_MS from `request-types.ts`
+- [x] TASK: Remove TIME_SCALE and EDGE_TRANSIT_INTERNAL_MS from `request-types.ts`
   - Delete both exports; fix any resulting import errors
 
-- [ ] TASK: Update simulation test files to remove TIME_SCALE and use EDGE_TRANSIT_MS
+- [x] TASK: Update simulation test files to remove TIME_SCALE and use EDGE_TRANSIT_MS
   - `simulation-engine.test.ts`: replace `(TIME_SCALE * 1000) / TICK_MS` with `1000 / TICK_MS`; replace `VISUAL_TRANSIT_MS` with `EDGE_TRANSIT_MS` imported from component-library; remove TIME_SCALE import; update traffic rate constants
   - `request-spawner.test.ts`: replace `(TIME_SCALE * 1000) / DELTA_MS` with `1000 / DELTA_MS`; replace `VISUAL_TRANSIT_MS` with `EDGE_TRANSIT_MS` imported from component-library; remove TIME_SCALE import; update traffic rate constants
   - `game-layout.test.tsx`: remove comments that explained the TIME_SCALE division on traffic rates

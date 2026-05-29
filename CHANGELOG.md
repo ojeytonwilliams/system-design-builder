@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.3] - 2026-05-29
+
+### Refactoring
+
+- **Remove TIME_SCALE and EDGE_TRANSIT_INTERNAL_MS from `request-types.ts`**: Both constants had been superseded by their counterparts in `component-library.ts`. Deleted the exports and cleaned up the last stale comments in test fixtures that referred to the old `scaledRate = X/TIME_SCALE` formula. `TIME_SCALE` now lives exclusively in `component-library.ts`; no simulation file imports it.
+
 ## [2.8.2] - 2026-05-29
 
 ### Refactoring
