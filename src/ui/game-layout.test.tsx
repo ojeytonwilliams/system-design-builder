@@ -36,9 +36,9 @@ const overloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
   timeout: 60,
-  trafficPeak: 15000,
-  trafficStart: 15000,
-  trafficTarget: 15000,
+  trafficPeak: 150,
+  trafficStart: 150,
+  trafficTarget: 150,
   winSustainMs: 10_000,
 };
 
@@ -48,9 +48,9 @@ const normalLoadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
   timeout: 60,
-  trafficPeak: 2500,
-  trafficStart: 2500,
-  trafficTarget: 2500,
+  trafficPeak: 25,
+  trafficStart: 25,
+  trafficTarget: 25,
   winSustainMs: 10_000,
 };
 
@@ -75,8 +75,8 @@ const overloadResolvingConfig: LevelConfig = {
   monthlyBudget: 99999,
   timeout: 6,
   trafficPeak: 0,
-  trafficStart: 10000,
-  trafficTarget: 5000,
+  trafficStart: 100,
+  trafficTarget: 50,
   winSustainMs: 99_000,
 };
 

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.1] - 2026-05-29
+
+### Refactoring
+
+- **Direct req/s traffic rates**: Removed the `/ TIME_SCALE` division from `request-spawner.ts` so traffic rates are interpreted as direct req/s values. Previously, `trafficRate` was divided by 100 inside the spawner; now the caller supplies the already-scaled value. All affected test fixtures in `game-layout.test.tsx`, `request-spawner.test.ts`, and `simulation-engine.test.ts` have been updated to divide constants by 100 accordingly (e.g. `trafficPeak: 15000 → 150`). `VISUAL_TRANSIT_MS` is replaced throughout by `EDGE_TRANSIT_MS` imported from `component-library`.
+
 ## [2.8.0] - 2026-05-29
 
 ### Refactoring

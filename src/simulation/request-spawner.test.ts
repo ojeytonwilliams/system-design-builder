@@ -1,16 +1,14 @@
+import { EDGE_TRANSIT_MS } from "../domain/component-library.js";
 import { spawnRequests } from "./request-spawner.js";
-import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
-
-const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
 
 // A tick interval that gives exactly 1 spawn per tick at rate RATE_ONE_PER_TICK
 const DELTA_MS = 16;
-// trafficRate / TIME_SCALE * (DELTA_MS / 1000) = 1  →  trafficRate = TIME_SCALE * 1000 / DELTA_MS
-// = 6250
-const RATE_ONE_PER_TICK = (TIME_SCALE * 1000) / DELTA_MS;
-// = 12500
+// trafficRate * (DELTA_MS / 1000) = 1  →  trafficRate = 1000 / DELTA_MS
+// = 62.5
+const RATE_ONE_PER_TICK = 1000 / DELTA_MS;
+// = 125
 const RATE_TWO_PER_TICK = RATE_ONE_PER_TICK * 2;
-// = 3125
+// = 31.25
 const RATE_HALF_PER_TICK = RATE_ONE_PER_TICK / 2;
 
 const baseParams = {
@@ -138,7 +136,7 @@ describe(spawnRequests, () => {
     it("sets durationMs to the visual transit duration", () => {
       const result = spawnRequests({ ...baseParams });
 
-      expect(result.transits[0]?.durationMs).toBe(VISUAL_TRANSIT_MS);
+      expect(result.transits[0]?.durationMs).toBe(EDGE_TRANSIT_MS);
     });
 
     it("matches requestId in transit to request id", () => {
@@ -166,7 +164,7 @@ describe(spawnRequests, () => {
       const result = spawnRequests({ ...baseParams, trafficRate: RATE_TWO_PER_TICK });
 
       expect(result.transits[0]?.progress).toBe(0);
-      expect(result.transits[1]?.progress).toBeCloseTo(DELTA_MS / 2 / VISUAL_TRANSIT_MS);
+      expect(result.transits[1]?.progress).toBeCloseTo(DELTA_MS / 2 / EDGE_TRANSIT_MS);
     });
   });
 });

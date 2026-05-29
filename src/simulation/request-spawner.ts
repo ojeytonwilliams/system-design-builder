@@ -1,8 +1,7 @@
-import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
+import { EDGE_TRANSIT_MS } from "../domain/component-library.js";
 import type { SimRequest, Transit } from "./request-types.js";
 
 const MS_PER_SECOND = 1000;
-const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
 
 interface SpawnParams {
   deltaMs: number;
@@ -29,8 +28,7 @@ const spawnRequests = ({
   usersNodeId,
   wallClockElapsedMs,
 }: SpawnParams): SpawnResult => {
-  const scaledRate = trafficRate / TIME_SCALE;
-  const accumulated = pendingSpawns + scaledRate * (deltaMs / MS_PER_SECOND);
+  const accumulated = pendingSpawns + trafficRate * (deltaMs / MS_PER_SECOND);
   const count = Math.floor(accumulated);
   const remaining = accumulated - count;
 
@@ -40,7 +38,7 @@ const spawnRequests = ({
   for (let i = 0; i < count; i++) {
     const id = idGenerator();
     const elapsedMs = (i / count) * deltaMs;
-    const progress = elapsedMs / VISUAL_TRANSIT_MS;
+    const progress = elapsedMs / EDGE_TRANSIT_MS;
 
     requests.push({
       id,
@@ -52,7 +50,7 @@ const spawnRequests = ({
     });
 
     transits.push({
-      durationMs: VISUAL_TRANSIT_MS,
+      durationMs: EDGE_TRANSIT_MS,
       edgeId: outgoingEdgeId,
       elapsedMs,
       progress,

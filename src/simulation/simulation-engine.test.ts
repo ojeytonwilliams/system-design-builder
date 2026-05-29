@@ -1,6 +1,6 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
-import { EDGE_TRANSIT_INTERNAL_MS, TIME_SCALE } from "./request-types.js";
+import { EDGE_TRANSIT_MS } from "../domain/component-library.js";
 import type { LevelConfig } from "./types.js";
 
 const baseConfig: LevelConfig = {
@@ -238,7 +238,7 @@ describe("tick", () => {
 
 describe("transit and processing advancement", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = (TIME_SCALE * 1000) / TICK_MS;
+  const SPAWN_RATE = 1000 / TICK_MS;
 
   const levelConfig: LevelConfig = {
     cacheHitRate: 0,
@@ -360,7 +360,7 @@ describe("transit and processing advancement", () => {
 
 describe("response creation", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = (TIME_SCALE * 1000) / TICK_MS;
+  const SPAWN_RATE = 1000 / TICK_MS;
 
   const singleEdgeConfig: LevelConfig = {
     cacheHitRate: 0,
@@ -484,8 +484,7 @@ describe("response creation", () => {
 
 describe("response transit advancement", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = (TIME_SCALE * 1000) / TICK_MS;
-  const VISUAL_TRANSIT_MS = EDGE_TRANSIT_INTERNAL_MS * TIME_SCALE;
+  const SPAWN_RATE = 1000 / TICK_MS;
 
   const config: LevelConfig = {
     cacheHitRate: 0,
@@ -542,7 +541,7 @@ describe("response transit advancement", () => {
         (t) => t.responseId === responseId,
       );
 
-      expect(transit?.progress).toBe(TICK_MS / VISUAL_TRANSIT_MS);
+      expect(transit?.progress).toBe(TICK_MS / EDGE_TRANSIT_MS);
     });
 
     it("removes the response when the transit completes", () => {
@@ -613,7 +612,7 @@ describe("response transit advancement", () => {
 
 describe("rolling metrics", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = (TIME_SCALE * 1000) / TICK_MS;
+  const SPAWN_RATE = 1000 / TICK_MS;
 
   const config: LevelConfig = {
     cacheHitRate: 0,
