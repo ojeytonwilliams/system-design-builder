@@ -48,7 +48,9 @@ const ResourceItem = ({
     onPlaceComponent(componentType);
   };
 
-  const capacityText = Number.isFinite(capacity) ? `${capacity} ops/s` : "∞ ops/s";
+  const capacityText = Number.isFinite(capacity)
+    ? `${Math.round(capacity * 1000)} ops/s`
+    : "∞ ops/s";
 
   return (
     <button

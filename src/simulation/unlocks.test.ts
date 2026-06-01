@@ -15,11 +15,11 @@ const emptyInput = {
 };
 
 const overloadedMetrics: NodeMetricsSnapshot = new Map([
-  ["server-1", { incomingOpsPerSec: 60, isOverloaded: true, opsPerSec: 30 }],
+  ["server-1", { incomingOpsPerMs: 60, isOverloaded: true, opsPerMs: 30 }],
 ]);
 
 const normalMetrics: NodeMetricsSnapshot = new Map([
-  ["server-1", { incomingOpsPerSec: 40, isOverloaded: false, opsPerSec: 40 }],
+  ["server-1", { incomingOpsPerMs: 40, isOverloaded: false, opsPerMs: 40 }],
 ]);
 
 const twoServerNodes: ArchitectureNode[] = [

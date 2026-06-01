@@ -8,7 +8,7 @@ interface InspectorProps {
   latencyMs?: number | undefined;
   loadPercent?: number | undefined;
   maxCapacity?: number | undefined;
-  opsPerSec?: number | undefined;
+  opsPerMs?: number | undefined;
   selectedNodeLabel?: string | undefined;
 }
 
@@ -53,7 +53,7 @@ const Inspector = ({
   latencyMs,
   loadPercent,
   maxCapacity,
-  opsPerSec,
+  opsPerMs,
   selectedNodeLabel,
 }: InspectorProps) => {
   let loadText = "—";
@@ -63,11 +63,11 @@ const Inspector = ({
     loadText = isOverloaded ? `${roundedLoad}% (Overloaded)` : `${roundedLoad}%`;
   }
 
-  const opsText = opsPerSec === undefined ? "—" : `${Math.round(opsPerSec)} ops/s`;
+  const opsText = opsPerMs === undefined ? "—" : `${Math.round(opsPerMs * 1000)} ops/s`;
 
   let capacityText: string | undefined = undefined;
   if (maxCapacity !== undefined) {
-    capacityText = maxCapacity === Infinity ? "∞" : `${maxCapacity} ops/s`;
+    capacityText = maxCapacity === Infinity ? "∞" : `${Math.round(maxCapacity * 1000)} ops/s`;
   }
 
   const latencyText = latencyMs === undefined ? undefined : `${latencyMs} ms`;

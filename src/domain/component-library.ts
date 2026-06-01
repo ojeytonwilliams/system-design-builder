@@ -31,7 +31,7 @@ type ComponentType =
 const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   cache: {
     accentColor: "#facc15",
-    capacity: 200,
+    capacity: 0.2,
     description: "Caches frequent DB reads in memory",
     icon: CacheIcon,
     label: "Cache",
@@ -40,7 +40,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   },
   db: {
     accentColor: "#f472b6",
-    capacity: 30,
+    capacity: 0.03,
     description: "Stores and retrieves application data",
     icon: DbIcon,
     label: "Small DB",
@@ -49,7 +49,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   },
   "db-large": {
     accentColor: "#f472b6",
-    capacity: 90,
+    capacity: 0.09,
     description: "High-capacity managed database",
     icon: DbIcon,
     label: "Large DB",
@@ -67,7 +67,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   },
   server: {
     accentColor: "#22d3ee",
-    capacity: 50,
+    capacity: 0.05,
     description: "Handles incoming web requests",
     icon: ServerIcon,
     label: "Small Server",
@@ -76,7 +76,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   },
   "server-large": {
     accentColor: "#22d3ee",
-    capacity: 150,
+    capacity: 0.15,
     description: "High-capacity web server",
     icon: ServerIcon,
     label: "Large Server",

@@ -7,7 +7,7 @@ import {
 } from "../domain/component-library.js";
 import type { ComponentType, ConnectionLibrary } from "../domain/component-library.js";
 import { getLinearTrafficRate } from "./engine.js";
-import { addBucket, computeDeliveryOpsPerSec, computeNodeMetrics } from "./metrics.js";
+import { addBucket, computeDeliveryOpsPerMs, computeNodeMetrics } from "./metrics.js";
 import type { MetricsWindow, NodeEventCounts, NodeMetricsSnapshot } from "./metrics.js";
 import { requestRouter } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
@@ -44,7 +44,7 @@ const shouldTimeOut = (
 
 interface SimulationSnapshot {
   currentTrafficRate: number;
-  deliveryOpsPerSec: number;
+  deliveryOpsPerMs: number;
   elapsedMs: number;
   nodeMetrics: NodeMetricsSnapshot;
   prevResponseTransitProgresses: Map<string, number>;
@@ -59,7 +59,7 @@ interface SimulationSnapshot {
 
 const getInitialSnapshot = (): SimulationSnapshot => ({
   currentTrafficRate: 0,
-  deliveryOpsPerSec: 0,
+  deliveryOpsPerMs: 0,
   elapsedMs: 0,
   nodeMetrics: new Map(),
   prevResponseTransitProgresses: new Map(),
@@ -185,25 +185,25 @@ class SimulationEngine {
     const nodeMetrics: NodeMetricsSnapshot = new Map(
       this.graphNodes.map((n) => {
         const m = rawMetrics.get(n.id) ?? {
-          incomingOpsPerSec: 0,
+          incomingOpsPerMs: 0,
           isOverloaded: false,
-          opsPerSec: 0,
+          opsPerMs: 0,
         };
         const { capacity } = this.componentLibrary[n.componentType];
         return [
           n.id,
           {
             ...m,
-            isOverloaded: isFinite(capacity) && m.incomingOpsPerSec > capacity,
+            isOverloaded: isFinite(capacity) && m.incomingOpsPerMs > capacity,
           },
         ];
       }),
     );
-    const deliveryOpsPerSec = computeDeliveryOpsPerSec(this.metricsWindow, usersNodeId);
+    const deliveryOpsPerMs = computeDeliveryOpsPerMs(this.metricsWindow, usersNodeId);
 
     this.state = {
       currentTrafficRate: rate,
-      deliveryOpsPerSec,
+      deliveryOpsPerMs,
       elapsedMs: elapsed,
       nodeMetrics,
       prevResponseTransitProgresses,

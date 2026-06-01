@@ -4,11 +4,11 @@ import { OverloadEventDetector } from "./overload-event-detector.js";
 import type { NodeMetricsSnapshot } from "../metrics.js";
 
 const cleanMetrics: NodeMetricsSnapshot = new Map([
-  ["server-1", { incomingOpsPerSec: 10, isOverloaded: false, opsPerSec: 10 }],
+  ["server-1", { incomingOpsPerMs: 10, isOverloaded: false, opsPerMs: 10 }],
 ]);
 
 const overloadMetrics: NodeMetricsSnapshot = new Map([
-  ["server-1", { incomingOpsPerSec: 60, isOverloaded: true, opsPerSec: 30 }],
+  ["server-1", { incomingOpsPerMs: 60, isOverloaded: true, opsPerMs: 30 }],
 ]);
 
 describe(OverloadEventDetector, () => {

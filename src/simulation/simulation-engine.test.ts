@@ -3,12 +3,12 @@ import { shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
 import type { LevelConfig } from "./types.js";
 
 const testComponentLibrary = {
-  cache: { capacity: 200, latencyMs: 1000 },
-  db: { capacity: 30, latencyMs: 1500 },
-  "db-large": { capacity: 90, latencyMs: 1000 },
+  cache: { capacity: 0.2, latencyMs: 1000 },
+  db: { capacity: 0.03, latencyMs: 1500 },
+  "db-large": { capacity: 0.09, latencyMs: 1000 },
   "load-balancer": { capacity: Infinity, latencyMs: 1000 },
-  server: { capacity: 50, latencyMs: 1000 },
-  "server-large": { capacity: 150, latencyMs: 1000 },
+  server: { capacity: 0.05, latencyMs: 1000 },
+  "server-large": { capacity: 0.15, latencyMs: 1000 },
   users: { capacity: Infinity, latencyMs: 0 },
 };
 const testConnectionLibrary = { standard: { transitMs: 1000 } };
@@ -41,8 +41,8 @@ describe(SimulationEngine, () => {
     expect(snap.nodeMetrics).toStrictEqual(new Map());
   });
 
-  it("getSnapshot includes deliveryOpsPerSec of 0 initially", () => {
-    expect(engine.getSnapshot().deliveryOpsPerSec).toBe(0);
+  it("getSnapshot includes deliveryOpsPerMs of 0 initially", () => {
+    expect(engine.getSnapshot().deliveryOpsPerMs).toBe(0);
   });
 
   it("getSnapshot includes empty prev progress maps initially", () => {
@@ -117,11 +117,11 @@ describe(SimulationEngine, () => {
     expect(snap.nodeMetrics).toStrictEqual(new Map());
   });
 
-  it("reset() resets deliveryOpsPerSec to 0", () => {
+  it("reset() resets deliveryOpsPerMs to 0", () => {
     engine.tick(1);
     engine.reset();
 
-    expect(engine.getSnapshot().deliveryOpsPerSec).toBe(0);
+    expect(engine.getSnapshot().deliveryOpsPerMs).toBe(0);
   });
 
   it("reset() clears request maps", () => {
@@ -648,7 +648,7 @@ describe("rolling metrics", () => {
   };
   const edgeE1: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
 
-  it("deliveryOpsPerSec becomes > 0 after enough ticks for a response to complete a round trip", () => {
+  it("deliveryOpsPerMs becomes > 0 after enough ticks for a response to complete a round trip", () => {
     const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
@@ -660,16 +660,16 @@ describe("rolling metrics", () => {
     engine.tick(TICK_MS);
     engine.tick(TICK_MS);
 
-    expect(engine.getSnapshot().deliveryOpsPerSec).toBeGreaterThan(0);
+    expect(engine.getSnapshot().deliveryOpsPerMs).toBeGreaterThan(0);
   });
 
-  it("nodeMetrics shows isOverloaded: true for a node when incomingOpsPerSec > capacity", () => {
+  it("nodeMetrics shows isOverloaded: true for a node when incomingOpsPerMs > capacity", () => {
     const overloadConfig: LevelConfig = {
       cacheHitRate: 0,
       monthlyBudget: 100,
       timeout: 60_000,
       // trafficRate 11 req/ms → 5500 spawn per 500ms tick (11 * 500ms)
-      // each tick delivers 5500 arrivals → well above capacity(50)
+      // each tick delivers 5500 arrivals → incomingOpsPerMs ≈ 7.33 >> server capacity 0.05
       trafficPeak: 11,
       trafficStart: 11,
       trafficTarget: 11,
@@ -678,7 +678,7 @@ describe("rolling metrics", () => {
     const engine = makeEngine();
     engine.setConfig(overloadConfig);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
-    // 4 ticks: 5500 arrivals/tick across 3 ticks = 5500 incomingOpsPerSec >> server capacity 50
+    // 4 ticks: arrivals / 3000ms window → incomingOpsPerMs >> server capacity 0.05
     for (let i = 0; i < 4; i++) {
       engine.tick(TICK_MS);
     }
@@ -686,7 +686,7 @@ describe("rolling metrics", () => {
     expect(engine.getSnapshot().nodeMetrics.get("server-1")?.isOverloaded).toBe(true);
   });
 
-  it("reset() clears the metrics window so deliveryOpsPerSec returns to 0", () => {
+  it("reset() clears the metrics window so deliveryOpsPerMs returns to 0", () => {
     const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
@@ -695,7 +695,7 @@ describe("rolling metrics", () => {
     }
     engine.reset();
 
-    expect(engine.getSnapshot().deliveryOpsPerSec).toBe(0);
+    expect(engine.getSnapshot().deliveryOpsPerMs).toBe(0);
   });
 
   it("reset() clears the metrics window so nodeMetrics returns to empty Map", () => {

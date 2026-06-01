@@ -39,7 +39,7 @@ describe("inspector", () => {
   });
 
   it("shows ops/sec when simulation data is provided", () => {
-    render(<Inspector opsPerSec={75} selectedNodeLabel="Server" />);
+    render(<Inspector opsPerMs={0.075} selectedNodeLabel="Server" />);
 
     expect(screen.getByText(/75\s*ops\/s/iv)).toBeInTheDocument();
   });
@@ -51,7 +51,7 @@ describe("inspector", () => {
   });
 
   it("shows max capacity when provided", () => {
-    render(<Inspector maxCapacity={100} selectedNodeLabel="Server" />);
+    render(<Inspector maxCapacity={0.1} selectedNodeLabel="Server" />);
 
     expect(screen.getByText(/capacity.*100|100.*ops\/s/iv)).toBeInTheDocument();
   });

@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.6] - 2026-06-01
+
+### Refactoring
+
+- **Convert internal metrics from ops/s to ops/ms**: All simulation-internal rate fields renamed from `*PerSec` to `*PerMs` (`incomingOpsPerMs`, `opsPerMs`, `deliveryOpsPerMs`). `computeNodeMetrics` now divides by `ROLLING_WINDOW_MS` (ms) instead of window seconds; `computeDeliveryOpsPerSec` renamed to `computeDeliveryOpsPerMs`. Component library capacities changed from ops/s (e.g. `50`) to ops/ms (e.g. `0.05`). The UI layer (`inspector.tsx`, `palette-item.tsx`, `game-layout.tsx`) converts to ops/s for display by multiplying by 1000. Seconds are now only used at the UI boundary.
+
 ## [2.8.5] - 2026-06-01
 
 ### Refactoring

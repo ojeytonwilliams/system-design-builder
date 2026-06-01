@@ -46,9 +46,9 @@ const normalLoadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
   timeout: 60_000,
-  trafficPeak: 25 / 10,
-  trafficStart: 25 / 10,
-  trafficTarget: 25 / 10,
+  trafficPeak: 0.00025,
+  trafficStart: 0.00025,
+  trafficTarget: 0.00025,
   winSustainMs: 10_000,
 };
 
@@ -284,8 +284,7 @@ describe("simulation mode", () => {
     expect(screen.getByText(/\d+%.*\(overloaded\)/iv)).toBeInTheDocument();
   });
 
-  // oxlint-disable-next-line vitest/no-disabled-tests
-  it.skip("returns the selected node to normal load state when traffic drops below capacity", () => {
+  it("returns the selected node to normal load state when traffic drops below capacity", () => {
     const engine = new SimulationEngine();
     renderScene({
       engine,
@@ -305,7 +304,7 @@ describe("simulation mode", () => {
 
     const inspector = screen.getByTestId("inspector");
 
-    expect(inspector).toHaveTextContent(/50%/iv);
+    expect(inspector).not.toHaveTextContent(/\(overloaded\)/iv);
   });
 });
 

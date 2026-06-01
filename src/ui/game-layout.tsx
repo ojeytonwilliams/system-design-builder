@@ -78,7 +78,7 @@ const GameScene = ({
   const timeoutCheckerRef = useRef<TimeoutChecker | null>(null);
 
   const simSnapshot = useSimulationSnapshot(engine);
-  const { deliveryOpsPerSec, elapsedMs, nodeMetrics } = simSnapshot;
+  const { deliveryOpsPerMs, elapsedMs, nodeMetrics } = simSnapshot;
   const [phase, dispatchPhase] = usePhase();
 
   const { appendEvent, eventEntries, resetEvents } = useEventLog();
@@ -128,9 +128,11 @@ const GameScene = ({
       ? Math.min(
           ...overloadedNodeIds.map((id) => {
             const node = graphState.nodes.find((n) => n.id === id);
-            return node === undefined
-              ? Infinity
-              : (COMPONENT_LIBRARY[node.componentType].capacity ?? Infinity);
+            const capacityOpsPerMs =
+              node === undefined
+                ? Infinity
+                : (COMPONENT_LIBRARY[node.componentType].capacity ?? Infinity);
+            return capacityOpsPerMs * 1000;
           }),
         )
       : undefined;
@@ -280,7 +282,7 @@ const GameScene = ({
           latencyMs={inspectorData.latencyMs}
           loadPercent={inspectorData.loadPercent}
           maxCapacity={inspectorData.maxCapacity}
-          opsPerSec={inspectorData.opsPerSec}
+          opsPerMs={inspectorData.opsPerMs}
           selectedNodeLabel={inspectorData.selectedNodeLabel}
         />
       </section>
@@ -336,7 +338,7 @@ const GameScene = ({
             <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr" }}>
               <CircularGauge
                 bottleneckOpsPerSec={bottleneckOpsPerSec}
-                currentReqPerSec={isSimulating ? deliveryOpsPerSec : 0}
+                currentReqPerSec={isSimulating ? deliveryOpsPerMs * 1000 : 0}
                 trafficTarget={levelConfig.trafficTarget * 1_000}
               />
               <ProgressCard

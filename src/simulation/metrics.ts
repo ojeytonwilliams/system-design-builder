@@ -1,4 +1,3 @@
-const MS_PER_SECOND = 1000;
 const ROLLING_WINDOW_MS = 3000;
 
 interface NodeEventCounts {
@@ -15,9 +14,9 @@ interface MetricsBucket {
 type MetricsWindow = MetricsBucket[];
 
 interface NodeMetrics {
-  incomingOpsPerSec: number;
+  incomingOpsPerMs: number;
   isOverloaded: boolean;
-  opsPerSec: number;
+  opsPerMs: number;
 }
 
 type NodeMetricsSnapshot = Map<string, NodeMetrics>;
@@ -41,18 +40,17 @@ const computeNodeMetrics = (window: MetricsWindow): NodeMetricsSnapshot => {
   }
 
   const snapshot: NodeMetricsSnapshot = new Map();
-  const windowSeconds = ROLLING_WINDOW_MS / MS_PER_SECOND;
   for (const [nodeId, { arrivals, completions }] of totals) {
     snapshot.set(nodeId, {
-      incomingOpsPerSec: arrivals / windowSeconds,
+      incomingOpsPerMs: arrivals / ROLLING_WINDOW_MS,
       isOverloaded: false,
-      opsPerSec: completions / windowSeconds,
+      opsPerMs: completions / ROLLING_WINDOW_MS,
     });
   }
   return snapshot;
 };
 
-const computeDeliveryOpsPerSec = (window: MetricsWindow, usersNodeId: string): number => {
+const computeDeliveryOpsPerMs = (window: MetricsWindow, usersNodeId: string): number => {
   let total = 0;
   for (const bucket of window) {
     const counts = bucket.nodeEvents.get(usersNodeId);
@@ -60,8 +58,8 @@ const computeDeliveryOpsPerSec = (window: MetricsWindow, usersNodeId: string): n
       total += counts.deliveryCount;
     }
   }
-  return total / (ROLLING_WINDOW_MS / MS_PER_SECOND);
+  return total / ROLLING_WINDOW_MS;
 };
 
-export { addBucket, computeDeliveryOpsPerSec, computeNodeMetrics, ROLLING_WINDOW_MS };
+export { addBucket, computeDeliveryOpsPerMs, computeNodeMetrics, ROLLING_WINDOW_MS };
 export type { MetricsBucket, MetricsWindow, NodeEventCounts, NodeMetrics, NodeMetricsSnapshot };

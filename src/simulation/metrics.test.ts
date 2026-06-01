@@ -1,4 +1,4 @@
-import { addBucket, computeDeliveryOpsPerSec, computeNodeMetrics } from "./metrics.js";
+import { addBucket, computeDeliveryOpsPerMs, computeNodeMetrics } from "./metrics.js";
 import type { MetricsBucket } from "./metrics.js";
 
 const makeBucket = (
@@ -56,14 +56,14 @@ describe(computeNodeMetrics, () => {
     expect(computeNodeMetrics([])).toStrictEqual(new Map());
   });
 
-  it("returns opsPerSec = completedCount / 3 for a single bucket", () => {
+  it("returns opsPerMs = completedCount / 3000 for a single bucket", () => {
     const result = computeNodeMetrics([makeBucket(1000, { "node-1": { completedCount: 30 } })]);
-    expect(result.get("node-1")?.opsPerSec).toBe(10);
+    expect(result.get("node-1")?.opsPerMs).toBe(30 / 3000);
   });
 
-  it("returns incomingOpsPerSec = arrivalCount / 3 for a single bucket", () => {
+  it("returns incomingOpsPerMs = arrivalCount / 3000 for a single bucket", () => {
     const result = computeNodeMetrics([makeBucket(1000, { "node-1": { arrivalCount: 60 } })]);
-    expect(result.get("node-1")?.incomingOpsPerSec).toBe(20);
+    expect(result.get("node-1")?.incomingOpsPerMs).toBe(60 / 3000);
   });
 
   it("sums counts across multiple buckets", () => {
@@ -72,29 +72,29 @@ describe(computeNodeMetrics, () => {
       makeBucket(2000, { "node-1": { arrivalCount: 12, completedCount: 15 } }),
     ];
     const result = computeNodeMetrics(buckets);
-    expect(result.get("node-1")?.opsPerSec).toBe(10);
-    expect(result.get("node-1")?.incomingOpsPerSec).toBe(10);
+    expect(result.get("node-1")?.opsPerMs).toBe(30 / 3000);
+    expect(result.get("node-1")?.incomingOpsPerMs).toBe(30 / 3000);
   });
 });
 
-describe(computeDeliveryOpsPerSec, () => {
+describe(computeDeliveryOpsPerMs, () => {
   it("returns 0 for an empty window", () => {
-    expect(computeDeliveryOpsPerSec([], "users-1")).toBe(0);
+    expect(computeDeliveryOpsPerMs([], "users-1")).toBe(0);
   });
 
-  it("returns deliveryCount / 3 for the given users node id", () => {
-    const result = computeDeliveryOpsPerSec(
+  it("returns deliveryCount / 3000 for the given users node id", () => {
+    const result = computeDeliveryOpsPerMs(
       [makeBucket(1000, { "users-1": { deliveryCount: 9 } })],
       "users-1",
     );
-    expect(result).toBe(3);
+    expect(result).toBe(9 / 3000);
   });
 
   it("ignores delivery counts for other node ids", () => {
-    const result = computeDeliveryOpsPerSec(
+    const result = computeDeliveryOpsPerMs(
       [makeBucket(1000, { "server-1": { deliveryCount: 6 }, "users-1": { deliveryCount: 9 } })],
       "users-1",
     );
-    expect(result).toBe(3);
+    expect(result).toBe(9 / 3000);
   });
 });

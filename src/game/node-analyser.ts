@@ -22,15 +22,15 @@ const getInspectorData = (
 
   const isFiniteCapacity = Number.isFinite(maxCapacity);
 
-  const opsPerSec = metrics?.opsPerSec === undefined ? undefined : toRealRate(metrics.opsPerSec);
+  const opsPerMs = metrics?.opsPerMs === undefined ? undefined : toRealRate(metrics.opsPerMs);
 
-  const incomingOpsPerSec =
-    metrics?.incomingOpsPerSec === undefined ? undefined : toRealRate(metrics.incomingOpsPerSec);
+  const incomingOpsPerMs =
+    metrics?.incomingOpsPerMs === undefined ? undefined : toRealRate(metrics.incomingOpsPerMs);
 
   const loadPercent =
-    incomingOpsPerSec === undefined || !isFiniteCapacity
+    incomingOpsPerMs === undefined || !isFiniteCapacity
       ? undefined
-      : (incomingOpsPerSec / maxCapacity) * 100;
+      : (incomingOpsPerMs / maxCapacity) * 100;
 
   const isOverloaded = metrics?.isOverloaded ?? false;
 
@@ -41,7 +41,7 @@ const getInspectorData = (
     latencyMs,
     loadPercent,
     maxCapacity,
-    opsPerSec,
+    opsPerMs,
     selectedNodeLabel,
   };
 };

@@ -33,7 +33,7 @@ describe("resource item", () => {
   it("renders the capacity", () => {
     render(
       <ResourceItem
-        capacity={50}
+        capacity={0.05}
         componentType="server"
         description="Handles incoming web requests"
         label="Small Server"
