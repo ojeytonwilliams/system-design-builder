@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.8.7] - 2026-06-01
+
+### Refactoring
+
+- **Encapsulate TIME_SCALE inside `sim-time-converter`**: `TIME_SCALE` is now a private constant — no module outside `sim-time-converter.ts` can depend on its value. `toRealRate` / `toRealDuration` (sim→real) and `convertRate` / `convertDuration` (real→sim) are exported for consumers that need to cross the sim boundary. This removes the footgun where a caller could accidentally use the raw `TIME_SCALE` multiplier directly.
+- **Pre-convert `COMPONENT_LIBRARY` and `CONNECTION_LIBRARY` at definition time**: Both libraries now store simulation-scale values. A private `convertComponent` helper applies the conversion uniformly, so each entry is written in readable real-world units (e.g. `latencyMs: 10`, `capacity: 0.05`) and scaled once at module load. Callers receive pre-converted values and no longer need to import or invoke conversion functions to use the libraries.
+- **Move `convertLevel` inline into `levels/index.ts`**: The separate `level-converter.ts` module was a thin wrapper used in exactly one place. Inlining it removes indirection without any loss of clarity; the test file was deleted as it only mirrored the implementation.
+
 ## [2.8.6] - 2026-06-01
 
 ### Refactoring

@@ -1,10 +1,5 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
-import {
-  COMPONENT_LIBRARY,
-  CONNECTION_LIBRARY,
-  convertConnectionLibrary,
-  convertSimComponentLibrary,
-} from "../domain/component-library.js";
+import { COMPONENT_LIBRARY, CONNECTION_LIBRARY } from "../domain/component-library.js";
 import type { ComponentType, ConnectionLibrary } from "../domain/component-library.js";
 import { getLinearTrafficRate } from "./engine.js";
 import { addBucket, computeDeliveryOpsPerMs, computeNodeMetrics } from "./metrics.js";
@@ -79,8 +74,8 @@ class SimulationEngine {
   private readonly listeners = new Set<() => void>();
 
   constructor(
-    componentLibrary: SimComponentLibrary = convertSimComponentLibrary(COMPONENT_LIBRARY),
-    connectionLibrary: ConnectionLibrary = convertConnectionLibrary(CONNECTION_LIBRARY),
+    componentLibrary: SimComponentLibrary = COMPONENT_LIBRARY,
+    connectionLibrary: ConnectionLibrary = CONNECTION_LIBRARY,
   ) {
     this.componentLibrary = componentLibrary;
     this.connectionLibrary = connectionLibrary;

@@ -1,5 +1,4 @@
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
-import { TIME_SCALE } from "../domain/component-library.js";
 import { getInspectorData } from "./node-analyser.js";
 import type { NodeMetricsSnapshot } from "../simulation/metrics.js";
 
@@ -31,7 +30,7 @@ describe(getInspectorData, () => {
 
     const result = getInspectorData("server-1", [serverNode], nodeMetrics);
 
-    expect(result.opsPerMs).toBe(0.15 * TIME_SCALE);
+    expect(result.opsPerMs).toBe(15);
   });
 
   it("opsPerMs is undefined when node has no metrics entry", () => {

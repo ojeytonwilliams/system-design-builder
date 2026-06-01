@@ -1,4 +1,5 @@
 import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
+import { toRealRate } from "../../domain/sim-time-converter.js";
 import type { ComponentType } from "../../domain/component-library.js";
 import { ResourceItem } from "./palette-item.js";
 
@@ -36,7 +37,7 @@ const Resources = ({
             return (
               <ResourceItem
                 accentColor={def.accentColor}
-                capacity={def.capacity}
+                capacity={toRealRate(def.capacity)}
                 componentType={componentType}
                 description={def.description}
                 icon={def.icon}
@@ -51,7 +52,7 @@ const Resources = ({
           return (
             <ResourceItem
               accentColor={def.accentColor}
-              capacity={def.capacity}
+              capacity={toRealRate(def.capacity)}
               componentType={componentType}
               description={def.description}
               icon={def.icon}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { SimulationEngine } from "../simulation/simulation-engine.js";
 import { computeTotalCost } from "../domain/budget.js";
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
+import { toRealRate } from "../domain/sim-time-converter.js";
 import type { ComponentType } from "../domain/component-library.js";
 import { CircularGauge } from "./components/circular-gauge.js";
 import { Coach } from "./components/coach.js";
@@ -131,7 +132,7 @@ const GameScene = ({
             const capacityOpsPerMs =
               node === undefined
                 ? Infinity
-                : (COMPONENT_LIBRARY[node.componentType].capacity ?? Infinity);
+                : toRealRate(COMPONENT_LIBRARY[node.componentType].capacity);
             return capacityOpsPerMs * 1000;
           }),
         )
@@ -338,8 +339,8 @@ const GameScene = ({
             <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr" }}>
               <CircularGauge
                 bottleneckOpsPerSec={bottleneckOpsPerSec}
-                currentReqPerSec={isSimulating ? deliveryOpsPerMs * 1000 : 0}
-                trafficTarget={levelConfig.trafficTarget * 1_000}
+                currentReqPerSec={isSimulating ? toRealRate(deliveryOpsPerMs) * 1000 : 0}
+                trafficTarget={toRealRate(levelConfig.trafficTarget) * 1_000}
               />
               <ProgressCard
                 monthlyBudget={levelConfig.monthlyBudget}
