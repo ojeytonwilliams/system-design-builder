@@ -5,7 +5,7 @@ const level4: LevelDefinition = {
   cacheHitRate: 0.6,
   coachMessages: [
     {
-      atSecond: 2,
+      atMs: 2_000,
       text: "Too many requests reach the database. Add a Cache between the servers and DB to intercept repeated reads.",
     },
   ],
@@ -52,11 +52,11 @@ const level4: LevelDefinition = {
       position: { x: 696, y: 192 },
     },
   ],
-  timeout: 60,
+  timeout: 60_000,
   title: "Read Overload",
-  trafficPeak: 160,
-  trafficStart: 160,
-  trafficTarget: 160,
+  trafficPeak: 0.16,
+  trafficStart: 0.16,
+  trafficTarget: 0.16,
   winSustainMs: 10_000,
 };
 

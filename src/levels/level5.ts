@@ -5,7 +5,7 @@ const level5: LevelDefinition = {
   cacheHitRate: 0.6,
   coachMessages: [
     {
-      atSecond: 2,
+      atMs: 2_000,
       text: "You're over budget. Replace the Large Servers with Small Servers — the Load Balancer will share the load.",
     },
   ],
@@ -65,11 +65,11 @@ const level5: LevelDefinition = {
       position: { x: 816, y: 264 },
     },
   ],
-  timeout: 60,
+  timeout: 60_000,
   title: "Right-Sizing",
-  trafficPeak: 120,
-  trafficStart: 120,
-  trafficTarget: 120,
+  trafficPeak: 0.12,
+  trafficStart: 0.12,
+  trafficTarget: 0.12,
   winSustainMs: 10_000,
 };
 

@@ -5,7 +5,7 @@ const level1: LevelDefinition = {
   cacheHitRate: 0,
   coachMessages: [
     {
-      atSecond: 2,
+      atMs: 2_000,
       text: "Your server is overloaded — 70 ops/s is more than its 50 ops/s limit. Swap it for a Large Server.",
     },
   ],
@@ -39,11 +39,11 @@ const level1: LevelDefinition = {
       position: { x: 480, y: 168 },
     },
   ],
-  timeout: 60,
+  timeout: 60_000,
   title: "First Request",
-  trafficPeak: 70,
-  trafficStart: 70,
-  trafficTarget: 70,
+  trafficPeak: 0.07,
+  trafficStart: 0.07,
+  trafficTarget: 0.07,
   winSustainMs: 10_000,
 };
 

@@ -51,32 +51,32 @@ describe(evaluateUnlockTrigger, () => {
       const overloadDurations = new Map([["server-1", 10_000]]);
       const input = { ...emptyInput, overloadDurations };
 
-      expect(
-        evaluateUnlockTrigger({ durationSeconds: 10, type: "OVERLOAD_SUSTAINED" }, input),
-      ).toBe(true);
+      expect(evaluateUnlockTrigger({ durationMs: 10_000, type: "OVERLOAD_SUSTAINED" }, input)).toBe(
+        true,
+      );
     });
 
     it("returns true when a node exceeds the required duration", () => {
       const overloadDurations = new Map([["server-1", 15_000]]);
       const input = { ...emptyInput, overloadDurations };
 
-      expect(
-        evaluateUnlockTrigger({ durationSeconds: 10, type: "OVERLOAD_SUSTAINED" }, input),
-      ).toBe(true);
+      expect(evaluateUnlockTrigger({ durationMs: 10_000, type: "OVERLOAD_SUSTAINED" }, input)).toBe(
+        true,
+      );
     });
 
     it("returns false when no node has reached the required duration", () => {
       const overloadDurations = new Map([["server-1", 5_000]]);
       const input = { ...emptyInput, overloadDurations };
 
-      expect(
-        evaluateUnlockTrigger({ durationSeconds: 10, type: "OVERLOAD_SUSTAINED" }, input),
-      ).toBe(false);
+      expect(evaluateUnlockTrigger({ durationMs: 10_000, type: "OVERLOAD_SUSTAINED" }, input)).toBe(
+        false,
+      );
     });
 
     it("returns false when overload durations map is empty", () => {
       expect(
-        evaluateUnlockTrigger({ durationSeconds: 10, type: "OVERLOAD_SUSTAINED" }, emptyInput),
+        evaluateUnlockTrigger({ durationMs: 10_000, type: "OVERLOAD_SUSTAINED" }, emptyInput),
       ).toBe(false);
     });
   });

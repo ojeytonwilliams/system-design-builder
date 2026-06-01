@@ -5,7 +5,7 @@ const level2: LevelDefinition = {
   cacheHitRate: 0,
   coachMessages: [
     {
-      atSecond: 2,
+      atMs: 2_000,
       text: "Both servers are receiving the full 80 ops/s — way over their 50 ops/s limit. Add a Load Balancer to split the traffic evenly.",
     },
   ],
@@ -46,11 +46,11 @@ const level2: LevelDefinition = {
       position: { x: 552, y: 192 },
     },
   ],
-  timeout: 60,
+  timeout: 60_000,
   title: "Over Capacity",
-  trafficPeak: 80,
-  trafficStart: 80,
-  trafficTarget: 80,
+  trafficPeak: 0.08,
+  trafficStart: 0.08,
+  trafficTarget: 0.08,
   winSustainMs: 10_000,
 };
 

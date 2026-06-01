@@ -18,16 +18,16 @@ const makeEngine = () => new SimulationEngine(testComponentLibrary, testConnecti
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 100,
-  timeout: 60000,
-  trafficPeak: 150,
-  trafficStart: 100,
-  trafficTarget: 100,
+  timeout: 60_000,
+  trafficPeak: 0.15,
+  trafficStart: 0.1,
+  trafficTarget: 0.1,
   winSustainMs: 3_000,
 };
 
 describe(SimulationEngine, () => {
   let engine: SimulationEngine;
-  const delta = (1 / baseConfig.timeout) * (baseConfig.trafficPeak - baseConfig.trafficStart);
+  const delta = (1_000 / baseConfig.timeout) * (baseConfig.trafficPeak - baseConfig.trafficStart);
 
   beforeEach(() => {
     engine = makeEngine();
@@ -68,14 +68,14 @@ describe(SimulationEngine, () => {
     engine.tick(1);
     const snap = engine.getSnapshot();
 
-    expect(snap.elapsedMs).toBe(0.001);
+    expect(snap.elapsedMs).toBe(1);
   });
 
   it("tick() updates the currentTrafficRate", () => {
     engine.tick(1000);
     const snap = engine.getSnapshot();
 
-    expect(snap.currentTrafficRate).toBe(100 + delta);
+    expect(snap.currentTrafficRate).toBe(baseConfig.trafficStart + delta);
   });
 
   it("tick() populates nodeMetrics for graph nodes", () => {
@@ -95,7 +95,7 @@ describe(SimulationEngine, () => {
     engine.tick(1);
     engine.tick(1);
 
-    expect(calls).toStrictEqual([0.001, 0.002]);
+    expect(calls).toStrictEqual([1, 2]);
   });
 
   it("subscribe() returns an unsubscribe function that stops notifications", () => {
@@ -221,7 +221,7 @@ describe("tick", () => {
     engine.setGraph([], []);
     engine.tick(1);
 
-    expect(engine.getSnapshot().elapsedMs).toBe(1 / 1000);
+    expect(engine.getSnapshot().elapsedMs).toBe(1);
   });
 
   it("notifies subscribers", () => {
@@ -250,7 +250,7 @@ describe("tick", () => {
 
 describe("transit and processing advancement", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = 1000 / TICK_MS;
+  const SPAWN_RATE = 1 / TICK_MS;
 
   const levelConfig: LevelConfig = {
     cacheHitRate: 0,
@@ -372,7 +372,7 @@ describe("transit and processing advancement", () => {
 
 describe("response creation", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = 1000 / TICK_MS;
+  const SPAWN_RATE = 1 / TICK_MS;
 
   const singleEdgeConfig: LevelConfig = {
     cacheHitRate: 0,
@@ -472,16 +472,16 @@ describe("response creation", () => {
       const overloadConfig: LevelConfig = {
         cacheHitRate: 0,
         monthlyBudget: 100,
-        timeout: 60000,
-        trafficPeak: 11000,
-        trafficStart: 11000,
-        trafficTarget: 11000,
+        timeout: 60_000,
+        trafficPeak: 11,
+        trafficStart: 11,
+        trafficTarget: 11,
         winSustainMs: 3_000,
       };
       const engine = makeEngine();
       engine.setConfig(overloadConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: 5500 requests spawn (11000 * 0.5s); tick 2: all transits complete → all enter processing (no drops)
+      // tick 1: 5500 requests spawn (11 req/ms * 500ms); tick 2: all transits complete → all enter processing (no drops)
       engine.tick(TICK_MS);
       engine.tick(TICK_MS);
 
@@ -496,7 +496,7 @@ describe("response creation", () => {
 
 describe("response transit advancement", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = 1000 / TICK_MS;
+  const SPAWN_RATE = 1 / TICK_MS;
 
   const config: LevelConfig = {
     cacheHitRate: 0,
@@ -624,7 +624,7 @@ describe("response transit advancement", () => {
 
 describe("rolling metrics", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = 1000 / TICK_MS;
+  const SPAWN_RATE = 1 / TICK_MS;
 
   const config: LevelConfig = {
     cacheHitRate: 0,
@@ -667,18 +667,18 @@ describe("rolling metrics", () => {
     const overloadConfig: LevelConfig = {
       cacheHitRate: 0,
       monthlyBudget: 100,
-      timeout: 60000,
-      // trafficRate 11000 → 5500 spawn per 500ms tick (11000 * 0.5s)
-      // ticks 2,3,4 each deliver 5500 arrivals → well above capacity(50)
-      trafficPeak: 11000,
-      trafficStart: 11000,
-      trafficTarget: 11000,
+      timeout: 60_000,
+      // trafficRate 11 req/ms → 5500 spawn per 500ms tick (11 * 500ms)
+      // each tick delivers 5500 arrivals → well above capacity(50)
+      trafficPeak: 11,
+      trafficStart: 11,
+      trafficTarget: 11,
       winSustainMs: 3_000,
     };
     const engine = makeEngine();
     engine.setConfig(overloadConfig);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
-    // 4 ticks: ticks 2,3,4 each deliver 55 arrivals → 165 arrivals / 3s = 55 > server capacity 50
+    // 4 ticks: 5500 arrivals/tick across 3 ticks = 5500 incomingOpsPerSec >> server capacity 50
     for (let i = 0; i < 4; i++) {
       engine.tick(TICK_MS);
     }

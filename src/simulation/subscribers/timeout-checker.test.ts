@@ -6,10 +6,10 @@ import type { LevelConfig } from "../types.js";
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 100,
-  timeout: 60,
-  trafficPeak: 100,
-  trafficStart: 100,
-  trafficTarget: 100,
+  timeout: 60_000,
+  trafficPeak: 0.1,
+  trafficStart: 0.1,
+  trafficTarget: 0.1,
   winSustainMs: 3_000,
 };
 
@@ -33,31 +33,31 @@ describe(TimeoutChecker, () => {
   };
 
   it("does not fire onTimeout before elapsed reaches the timeout", () => {
-    run(59);
+    run(59_000);
 
     expect(onTimeout).not.toHaveBeenCalled();
   });
 
   it("fires onTimeout when elapsed reaches the timeout", () => {
-    run(60);
+    run(60_000);
 
     expect(onTimeout).toHaveBeenCalledOnce();
   });
 
   it("fires onTimeout exactly once", () => {
-    run(60);
-    run(61);
+    run(60_000);
+    run(61_000);
 
     expect(onTimeout).toHaveBeenCalledOnce();
   });
 
   describe("reset", () => {
     it("allows onTimeout to fire again after reset", () => {
-      run(60);
+      run(60_000);
       checker.reset();
       onTimeout.mockClear();
 
-      run(60);
+      run(60_000);
 
       expect(onTimeout).toHaveBeenCalledOnce();
     });

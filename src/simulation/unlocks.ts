@@ -13,8 +13,6 @@ interface EvaluateUnlockInput {
   overloadDurations: OverloadDurations;
 }
 
-const MS_PER_SECOND = 1000;
-
 const updateOverloadDurations = (
   prev: OverloadDurations,
   nodeMetrics: NodeMetricsSnapshot,
@@ -37,9 +35,7 @@ const evaluateUnlockTrigger = (trigger: UnlockTrigger, input: EvaluateUnlockInpu
       return [...input.nodeMetrics.values()].some((m) => m.isOverloaded);
 
     case "OVERLOAD_SUSTAINED":
-      return [...input.overloadDurations.values()].some(
-        (ms) => ms >= trigger.durationSeconds * MS_PER_SECOND,
-      );
+      return [...input.overloadDurations.values()].some((ms) => ms >= trigger.durationMs);
 
     case "SERVERS_PLACED": {
       const count = input.graphNodes.filter((n) => SERVER_TYPES.has(n.componentType)).length;

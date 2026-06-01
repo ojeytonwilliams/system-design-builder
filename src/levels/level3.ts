@@ -5,7 +5,7 @@ const level3: LevelDefinition = {
   cacheHitRate: 0,
   coachMessages: [
     {
-      atSecond: 2,
+      atMs: 2_000,
       text: "Your database is the bottleneck — it can only handle 30 ops/s but receives 85. Upgrade to a Large DB.",
     },
   ],
@@ -52,11 +52,11 @@ const level3: LevelDefinition = {
       position: { x: 648, y: 192 },
     },
   ],
-  timeout: 60,
+  timeout: 60_000,
   title: "DB Bottleneck",
-  trafficPeak: 85,
-  trafficStart: 85,
-  trafficTarget: 85,
+  trafficPeak: 0.085,
+  trafficStart: 0.085,
+  trafficTarget: 0.085,
   winSustainMs: 10_000,
 };
 

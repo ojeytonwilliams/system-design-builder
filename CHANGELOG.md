@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.5] - 2026-06-01
+
+### Refactoring
+
+- **Centralise TIME_SCALE into conversion functions**: Component library latencies and transit times are now stored as real-world milliseconds (`latencyMs: 10`, `transitMs: 10`) with no `* TIME_SCALE` baked in. Two new conversion functions — `convertDuration(ms)` and `convertRate(rate)` — apply TIME_SCALE at the simulation boundary; `toRealRate` inverts the scaling for display. `convertSimComponentLibrary`, `convertConnectionLibrary`, and `convertLevel` apply these transforms so the engine always receives scaled values. `SimulationEngine` now defaults to converted libraries. Inspector metrics (`opsPerSec`, `loadPercent`) are converted back to real-world units via `toRealRate` before display.
+
 ## [2.8.4] - 2026-06-01
 
 ### Refactoring

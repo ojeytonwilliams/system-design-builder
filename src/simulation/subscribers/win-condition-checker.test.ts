@@ -7,10 +7,10 @@ import type { LevelConfig } from "../types.js";
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 100,
-  timeout: 60,
-  trafficPeak: 100,
-  trafficStart: 100,
-  trafficTarget: 100,
+  timeout: 60_000,
+  trafficPeak: 0.1,
+  trafficStart: 0.1,
+  trafficTarget: 0.1,
   winSustainMs: 3_000,
 };
 
@@ -42,44 +42,44 @@ describe(WinConditionChecker, () => {
   };
 
   it("fires onWin when sustained no-drop ticks reach the threshold", () => {
-    run(cleanMetrics, 100);
-    run(cleanMetrics, 100);
-    run(cleanMetrics, 100);
+    run(cleanMetrics, 0.1);
+    run(cleanMetrics, 0.1);
+    run(cleanMetrics, 0.1);
 
     expect(onWin).toHaveBeenCalledOnce();
   });
 
   it("does not fire onWin before the threshold is reached", () => {
-    run(cleanMetrics, 100);
-    run(cleanMetrics, 100);
+    run(cleanMetrics, 0.1);
+    run(cleanMetrics, 0.1);
 
     expect(onWin).not.toHaveBeenCalled();
   });
 
   it("fires onWin exactly once even after continued clean ticks", () => {
     for (let i = 0; i < 5; i++) {
-      run(cleanMetrics, 100);
+      run(cleanMetrics, 0.1);
     }
 
     expect(onWin).toHaveBeenCalledOnce();
   });
 
   it("resets the counter when overload occurs", () => {
-    run(cleanMetrics, 100);
-    run(cleanMetrics, 100);
-    run(overloadMetrics, 100);
-    run(cleanMetrics, 100);
-    run(cleanMetrics, 100);
+    run(cleanMetrics, 0.1);
+    run(cleanMetrics, 0.1);
+    run(overloadMetrics, 0.1);
+    run(cleanMetrics, 0.1);
+    run(cleanMetrics, 0.1);
 
     expect(onWin).not.toHaveBeenCalled();
   });
 
   it("resets the counter when rate falls below target", () => {
-    run(cleanMetrics, 100);
-    run(cleanMetrics, 100);
-    run(cleanMetrics, 50);
-    run(cleanMetrics, 100);
-    run(cleanMetrics, 100);
+    run(cleanMetrics, 0.1);
+    run(cleanMetrics, 0.1);
+    run(cleanMetrics, 0.05);
+    run(cleanMetrics, 0.1);
+    run(cleanMetrics, 0.1);
 
     expect(onWin).not.toHaveBeenCalled();
   });
@@ -87,13 +87,13 @@ describe(WinConditionChecker, () => {
   describe("reset", () => {
     it("allows onWin to fire again after reset", () => {
       for (let i = 0; i < 3; i++) {
-        run(cleanMetrics, 100);
+        run(cleanMetrics, 0.1);
       }
       checker.reset();
       onWin.mockClear();
 
       for (let i = 0; i < 3; i++) {
-        run(cleanMetrics, 100);
+        run(cleanMetrics, 0.1);
       }
 
       expect(onWin).toHaveBeenCalledOnce();

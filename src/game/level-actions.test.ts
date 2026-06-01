@@ -20,11 +20,11 @@ const stubLevel: LevelDefinition = {
   objectiveText: "Build a server",
   startingEdges: [],
   startingNodes: [],
-  timeout: 60,
+  timeout: 60_000,
   title: "Level 1",
-  trafficPeak: 100,
-  trafficStart: 50,
-  trafficTarget: 100,
+  trafficPeak: 0.1,
+  trafficStart: 0.05,
+  trafficTarget: 0.1,
   winSustainMs: 10_000,
 };
 

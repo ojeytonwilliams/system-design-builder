@@ -35,7 +35,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Caches frequent DB reads in memory",
     icon: CacheIcon,
     label: "Cache",
-    latencyMs: 5 * TIME_SCALE,
+    latencyMs: 5,
     monthlyCost: 25,
   },
   db: {
@@ -44,7 +44,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Stores and retrieves application data",
     icon: DbIcon,
     label: "Small DB",
-    latencyMs: 15 * TIME_SCALE,
+    latencyMs: 15,
     monthlyCost: 15,
   },
   "db-large": {
@@ -53,7 +53,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "High-capacity managed database",
     icon: DbIcon,
     label: "Large DB",
-    latencyMs: 10 * TIME_SCALE,
+    latencyMs: 10,
     monthlyCost: 50,
   },
   "load-balancer": {
@@ -62,7 +62,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Splits traffic evenly across servers",
     icon: LoadBalancerIcon,
     label: "Load Balancer",
-    latencyMs: 2 * TIME_SCALE,
+    latencyMs: 2,
     monthlyCost: 20,
   },
   server: {
@@ -71,7 +71,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "Handles incoming web requests",
     icon: ServerIcon,
     label: "Small Server",
-    latencyMs: 10 * TIME_SCALE,
+    latencyMs: 10,
     monthlyCost: 20,
   },
   "server-large": {
@@ -80,7 +80,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
     description: "High-capacity web server",
     icon: ServerIcon,
     label: "Large Server",
-    latencyMs: 8 * TIME_SCALE,
+    latencyMs: 8,
     monthlyCost: 80,
   },
   users: {
@@ -103,13 +103,56 @@ type ConnectionType = "standard";
 type ConnectionLibrary = Record<ConnectionType, ConnectionDefinition>;
 
 const CONNECTION_LIBRARY: ConnectionLibrary = {
-  standard: { transitMs: 10 * TIME_SCALE },
+  standard: { transitMs: 10 },
 };
+
+/** Scales a real-world duration (ms) to simulation animation time. */
+const convertDuration = (ms: number): number => ms * TIME_SCALE;
+
+/** Scales a real-world rate (req/ms) to simulation rate. */
+const convertRate = (rate: number): number => rate / TIME_SCALE;
+
+/** Converts a simulation rate back to real-world rate (req/ms). */
+const toRealRate = (simRate: number): number => simRate * TIME_SCALE;
+
+/** Returns a simulation-ready component library with scaled latencies and capacities. */
+const convertSimComponentLibrary = (
+  lib: Record<ComponentType, ComponentDefinition>,
+): Record<ComponentType, { capacity: number; latencyMs: number }> => {
+  const convert = (def: ComponentDefinition): { capacity: number; latencyMs: number } => ({
+    capacity: Number.isFinite(def.capacity) ? convertRate(def.capacity) : Infinity,
+    latencyMs: convertDuration(def.latencyMs),
+  });
+  return {
+    cache: convert(lib.cache),
+    db: convert(lib.db),
+    "db-large": convert(lib["db-large"]),
+    "load-balancer": convert(lib["load-balancer"]),
+    server: convert(lib.server),
+    "server-large": convert(lib["server-large"]),
+    users: convert(lib.users),
+  };
+};
+
+/** Returns a simulation-ready connection library with scaled transit times. */
+const convertConnectionLibrary = (lib: ConnectionLibrary): ConnectionLibrary => ({
+  standard: { transitMs: convertDuration(lib.standard.transitMs) },
+});
 
 const isComponentType = (value: string): value is ComponentType =>
   Object.hasOwn(COMPONENT_LIBRARY, value);
 
-export { COMPONENT_LIBRARY, CONNECTION_LIBRARY, isComponentType, TIME_SCALE };
+export {
+  COMPONENT_LIBRARY,
+  CONNECTION_LIBRARY,
+  convertConnectionLibrary,
+  convertDuration,
+  convertRate,
+  convertSimComponentLibrary,
+  isComponentType,
+  TIME_SCALE,
+  toRealRate,
+};
 export type {
   ComponentDefinition,
   ComponentType,

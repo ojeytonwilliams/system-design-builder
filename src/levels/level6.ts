@@ -5,7 +5,7 @@ const level6: LevelDefinition = {
   cacheHitRate: 0.7,
   coachMessages: [
     {
-      atSecond: 2,
+      atMs: 2_000,
       text: "Multiple nodes are overloaded. Upgrade the servers and add a Cache to protect the database.",
     },
   ],
@@ -52,11 +52,11 @@ const level6: LevelDefinition = {
       position: { x: 648, y: 192 },
     },
   ],
-  timeout: 90,
+  timeout: 90_000,
   title: "Full Scale",
-  trafficPeak: 220,
-  trafficStart: 220,
-  trafficTarget: 220,
+  trafficPeak: 0.22,
+  trafficStart: 0.22,
+  trafficTarget: 0.22,
   winSustainMs: 10_000,
 };
 

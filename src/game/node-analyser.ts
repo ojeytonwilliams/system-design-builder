@@ -1,4 +1,4 @@
-import { COMPONENT_LIBRARY, TIME_SCALE } from "../domain/component-library.js";
+import { COMPONENT_LIBRARY, toRealRate } from "../domain/component-library.js";
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import type { InspectorProps } from "../ui/components/inspector.js";
 import type { NodeMetricsSnapshot } from "../simulation/metrics.js";
@@ -22,12 +22,15 @@ const getInspectorData = (
 
   const isFiniteCapacity = Number.isFinite(maxCapacity);
 
-  const opsPerSec = metrics?.opsPerSec === undefined ? undefined : metrics.opsPerSec / TIME_SCALE;
+  const opsPerSec = metrics?.opsPerSec === undefined ? undefined : toRealRate(metrics.opsPerSec);
+
+  const incomingOpsPerSec =
+    metrics?.incomingOpsPerSec === undefined ? undefined : toRealRate(metrics.incomingOpsPerSec);
 
   const loadPercent =
-    metrics === undefined || !isFiniteCapacity
+    incomingOpsPerSec === undefined || !isFiniteCapacity
       ? undefined
-      : (metrics.incomingOpsPerSec / maxCapacity) * 100;
+      : (incomingOpsPerSec / maxCapacity) * 100;
 
   const isOverloaded = metrics?.isOverloaded ?? false;
 

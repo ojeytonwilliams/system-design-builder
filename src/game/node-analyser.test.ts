@@ -24,14 +24,14 @@ describe(getInspectorData, () => {
     expect(getInspectorData("missing-id", [serverNode], new Map())).toStrictEqual({});
   });
 
-  it("opsPerSec equals nodeMetrics opsPerSec divided by TIME_SCALE", () => {
+  it("opsPerSec converts simulation ops/s to real-world ops/s", () => {
     const nodeMetrics: NodeMetricsSnapshot = new Map([
-      ["server-1", { incomingOpsPerSec: 20, isOverloaded: false, opsPerSec: 15 }],
+      ["server-1", { incomingOpsPerSec: 0.2, isOverloaded: false, opsPerSec: 0.15 }],
     ]);
 
     const result = getInspectorData("server-1", [serverNode], nodeMetrics);
 
-    expect(result.opsPerSec).toBe(15 / TIME_SCALE);
+    expect(result.opsPerSec).toBe(0.15 * TIME_SCALE);
   });
 
   it("opsPerSec is undefined when node has no metrics entry", () => {
@@ -40,14 +40,14 @@ describe(getInspectorData, () => {
     expect(result.opsPerSec).toBeUndefined();
   });
 
-  it("loadPercent equals incomingOpsPerSec / capacity * 100", () => {
+  it("loadPercent converts simulation incomingOpsPerSec to real-world percentage of capacity", () => {
     const nodeMetrics: NodeMetricsSnapshot = new Map([
-      ["server-1", { incomingOpsPerSec: 25, isOverloaded: false, opsPerSec: 25 }],
+      // 0.25 sim ops/s = 25 real ops/s; server capacity = 50 real ops/s → 50%
+      ["server-1", { incomingOpsPerSec: 0.25, isOverloaded: false, opsPerSec: 0.25 }],
     ]);
 
     const result = getInspectorData("server-1", [serverNode], nodeMetrics);
 
-    // server capacity = 50, incomingOpsPerSec = 25 → 25/50*100 = 50%
     expect(result.loadPercent).toBe(50);
   });
 

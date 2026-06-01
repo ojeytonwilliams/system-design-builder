@@ -6,7 +6,7 @@ interface CapacityReachedTrigger {
 }
 
 interface OverloadSustainedTrigger {
-  durationSeconds: number;
+  durationMs: number;
   type: "OVERLOAD_SUSTAINED";
 }
 
@@ -18,7 +18,7 @@ interface ServersPlacedTrigger {
 type UnlockTrigger = CapacityReachedTrigger | OverloadSustainedTrigger | ServersPlacedTrigger;
 
 interface CoachMessage {
-  atSecond: number;
+  atMs: number;
   text: string;
 }
 

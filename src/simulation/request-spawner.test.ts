@@ -2,12 +2,12 @@ import { spawnRequests } from "./request-spawner.js";
 
 // A tick interval that gives exactly 1 spawn per tick at rate RATE_ONE_PER_TICK
 const DELTA_MS = 16;
-// trafficRate * (DELTA_MS / 1000) = 1  →  trafficRate = 1000 / DELTA_MS
-// = 62.5
-const RATE_ONE_PER_TICK = 1000 / DELTA_MS;
-// = 125
+// trafficRate * DELTA_MS = 1  →  trafficRate = 1 / DELTA_MS
+// = 0.0625
+const RATE_ONE_PER_TICK = 1 / DELTA_MS;
+// = 0.125
 const RATE_TWO_PER_TICK = RATE_ONE_PER_TICK * 2;
-// = 31.25
+// = 0.03125
 const RATE_HALF_PER_TICK = RATE_ONE_PER_TICK / 2;
 
 const baseParams = {

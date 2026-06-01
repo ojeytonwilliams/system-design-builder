@@ -254,7 +254,7 @@ const GameScene = ({
 
   useEffect(() => {
     currentLevel.coachMessages.forEach((message, index) => {
-      if (elapsedMs >= message.atSecond && !shownCoachMessageRef.current.has(index)) {
+      if (elapsedMs >= message.atMs && !shownCoachMessageRef.current.has(index)) {
         shownCoachMessageRef.current.add(index);
         setCoachMessage(message.text);
       }
@@ -337,7 +337,7 @@ const GameScene = ({
               <CircularGauge
                 bottleneckOpsPerSec={bottleneckOpsPerSec}
                 currentReqPerSec={isSimulating ? deliveryOpsPerSec : 0}
-                trafficTarget={levelConfig.trafficTarget}
+                trafficTarget={levelConfig.trafficTarget * 1_000}
               />
               <ProgressCard
                 monthlyBudget={levelConfig.monthlyBudget}

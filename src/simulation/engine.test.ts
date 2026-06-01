@@ -30,50 +30,60 @@ const edge = (source: string, target: string): ArchitectureEdge => ({
 describe("linear traffic rate", () => {
   it("returns the start rate at elapsed time 0", () => {
     expect(
-      getLinearTrafficRate({ elapsed: 0, timeout: 60, trafficPeak: 100, trafficStart: 20 }),
+      getLinearTrafficRate({ elapsed: 0, timeout: 60_000, trafficPeak: 100, trafficStart: 20 }),
     ).toBe(20);
   });
 
   it("returns the peak rate at elapsed time equal to timeout", () => {
     expect(
-      getLinearTrafficRate({ elapsed: 60, timeout: 60, trafficPeak: 100, trafficStart: 20 }),
+      getLinearTrafficRate({
+        elapsed: 60_000,
+        timeout: 60_000,
+        trafficPeak: 100,
+        trafficStart: 20,
+      }),
     ).toBe(100);
   });
 
   it("returns an interpolated rate at the midpoint", () => {
     expect(
-      getLinearTrafficRate({ elapsed: 30, timeout: 60, trafficPeak: 100, trafficStart: 0 }),
+      getLinearTrafficRate({ elapsed: 30_000, timeout: 60_000, trafficPeak: 100, trafficStart: 0 }),
     ).toBeCloseTo(50);
   });
 
   it("returns the peak rate when elapsed time exceeds timeout", () => {
     expect(
-      getLinearTrafficRate({ elapsed: 90, timeout: 60, trafficPeak: 100, trafficStart: 20 }),
+      getLinearTrafficRate({
+        elapsed: 90_000,
+        timeout: 60_000,
+        trafficPeak: 100,
+        trafficStart: 20,
+      }),
     ).toBe(100);
   });
 
   it("returns the start rate when start equals peak (constant traffic)", () => {
     expect(
-      getLinearTrafficRate({ elapsed: 30, timeout: 60, trafficPeak: 80, trafficStart: 80 }),
+      getLinearTrafficRate({ elapsed: 30_000, timeout: 60_000, trafficPeak: 80, trafficStart: 80 }),
     ).toBe(80);
   });
 
   it("increases monotonically over time", () => {
     const r1 = getLinearTrafficRate({
-      elapsed: 10,
-      timeout: 60,
+      elapsed: 10_000,
+      timeout: 60_000,
       trafficPeak: 100,
       trafficStart: 0,
     });
     const r2 = getLinearTrafficRate({
-      elapsed: 20,
-      timeout: 60,
+      elapsed: 20_000,
+      timeout: 60_000,
       trafficPeak: 100,
       trafficStart: 0,
     });
     const r3 = getLinearTrafficRate({
-      elapsed: 30,
-      timeout: 60,
+      elapsed: 30_000,
+      timeout: 60_000,
       trafficPeak: 100,
       trafficStart: 0,
     });

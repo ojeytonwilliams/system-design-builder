@@ -1,5 +1,10 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
-import { COMPONENT_LIBRARY, CONNECTION_LIBRARY } from "../domain/component-library.js";
+import {
+  COMPONENT_LIBRARY,
+  CONNECTION_LIBRARY,
+  convertConnectionLibrary,
+  convertSimComponentLibrary,
+} from "../domain/component-library.js";
 import type { ComponentType, ConnectionLibrary } from "../domain/component-library.js";
 import { getLinearTrafficRate } from "./engine.js";
 import { addBucket, computeDeliveryOpsPerSec, computeNodeMetrics } from "./metrics.js";
@@ -74,8 +79,8 @@ class SimulationEngine {
   private readonly listeners = new Set<() => void>();
 
   constructor(
-    componentLibrary: SimComponentLibrary = COMPONENT_LIBRARY,
-    connectionLibrary: ConnectionLibrary = CONNECTION_LIBRARY,
+    componentLibrary: SimComponentLibrary = convertSimComponentLibrary(COMPONENT_LIBRARY),
+    connectionLibrary: ConnectionLibrary = convertConnectionLibrary(CONNECTION_LIBRARY),
   ) {
     this.componentLibrary = componentLibrary;
     this.connectionLibrary = connectionLibrary;
@@ -126,7 +131,7 @@ class SimulationEngine {
 
     this.wallClockElapsedMs += deltaMs;
 
-    const elapsed = this.state.elapsedMs + deltaMs / 1000;
+    const elapsed = this.state.elapsedMs + deltaMs;
     const rate = getLinearTrafficRate({
       elapsed,
       timeout: this.config.timeout,

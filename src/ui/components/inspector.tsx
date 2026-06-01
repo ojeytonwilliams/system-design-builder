@@ -80,6 +80,7 @@ const Inspector = ({
 
   return (
     <div
+      data-testid="inspector"
       style={{
         background: "rgba(27, 27, 50, 0.85)",
         border: "1px solid rgba(59, 59, 79, 0.4)",

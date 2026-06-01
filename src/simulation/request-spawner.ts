@@ -1,7 +1,5 @@
 import type { SimRequest, Transit } from "./request-types.js";
 
-const MS_PER_SECOND = 1000;
-
 interface SpawnParams {
   deltaMs: number;
   edgeTransitMs: number;
@@ -29,7 +27,7 @@ const spawnRequests = ({
   usersNodeId,
   wallClockElapsedMs,
 }: SpawnParams): SpawnResult => {
-  const accumulated = pendingSpawns + trafficRate * (deltaMs / MS_PER_SECOND);
+  const accumulated = pendingSpawns + trafficRate * deltaMs;
   const count = Math.floor(accumulated);
   const remaining = accumulated - count;
 
