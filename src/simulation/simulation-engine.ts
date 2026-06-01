@@ -1,5 +1,6 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
-import { COMPONENT_LIBRARY, EDGE_TRANSIT_MS } from "../domain/component-library.js";
+import { COMPONENT_LIBRARY, CONNECTION_LIBRARY } from "../domain/component-library.js";
+import type { ComponentType, ConnectionLibrary } from "../domain/component-library.js";
 import { getLinearTrafficRate } from "./engine.js";
 import { addBucket, computeDeliveryOpsPerSec, computeNodeMetrics } from "./metrics.js";
 import type { MetricsWindow, NodeEventCounts, NodeMetricsSnapshot } from "./metrics.js";
@@ -16,6 +17,8 @@ import type {
 import { transitionRequest } from "./transition-request.js";
 import type { RequestMaps } from "./transition-request.js";
 import type { LevelConfig } from "./types.js";
+
+type SimComponentLibrary = Record<ComponentType, { capacity: number; latencyMs: number }>;
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -65,8 +68,18 @@ const getInitialSnapshot = (): SimulationSnapshot => ({
 });
 
 class SimulationEngine {
+  private readonly componentLibrary: SimComponentLibrary;
+  private readonly connectionLibrary: ConnectionLibrary;
   private state: SimulationSnapshot = getInitialSnapshot();
   private readonly listeners = new Set<() => void>();
+
+  constructor(
+    componentLibrary: SimComponentLibrary = COMPONENT_LIBRARY,
+    connectionLibrary: ConnectionLibrary = CONNECTION_LIBRARY,
+  ) {
+    this.componentLibrary = componentLibrary;
+    this.connectionLibrary = connectionLibrary;
+  }
   private graphNodes: ArchitectureNode[] = [];
   private graphEdges: ArchitectureEdge[] = [];
   private config: LevelConfig | null = null;
@@ -128,6 +141,7 @@ class SimulationEngine {
     if (usersNode !== undefined && outgoingEdge !== undefined) {
       const result = spawnRequests({
         deltaMs,
+        edgeTransitMs: this.connectionLibrary.standard.transitMs,
         outgoingEdgeId: outgoingEdge.id,
         pendingSpawns: this.pendingSpawns,
         trafficRate: rate,
@@ -170,7 +184,7 @@ class SimulationEngine {
           isOverloaded: false,
           opsPerSec: 0,
         };
-        const { capacity } = COMPONENT_LIBRARY[n.componentType];
+        const { capacity } = this.componentLibrary[n.componentType];
         return [n.id, { ...m, isOverloaded: isFinite(capacity) && m.incomingOpsPerSec > capacity }];
       }),
     );
@@ -222,7 +236,7 @@ class SimulationEngine {
         if (targetNode === undefined) {
           transitionRequest(requestId, { status: "FULFILLED" }, maps);
         } else {
-          const { latencyMs } = COMPONENT_LIBRARY[targetNode.componentType];
+          const { latencyMs } = this.componentLibrary[targetNode.componentType];
 
           transitionRequest(
             requestId,
@@ -287,7 +301,7 @@ class SimulationEngine {
             {
               status: "IN_TRANSIT",
               transit: {
-                durationMs: EDGE_TRANSIT_MS,
+                durationMs: this.connectionLibrary.standard.transitMs,
                 edgeId: result.edgeId,
                 elapsedMs: 0,
                 progress: 0,
@@ -332,7 +346,7 @@ class SimulationEngine {
           } else {
             response.remainingEdgeIds = remaining;
             this.responseTransits.set(responseId, {
-              durationMs: EDGE_TRANSIT_MS,
+              durationMs: this.connectionLibrary.standard.transitMs,
               edgeId: nextEdgeId,
               elapsedMs: 0,
               progress: 0,
@@ -379,7 +393,7 @@ class SimulationEngine {
       status: "IN_TRANSIT",
     });
     this.responseTransits.set(responseId, {
-      durationMs: EDGE_TRANSIT_MS,
+      durationMs: this.connectionLibrary.standard.transitMs,
       edgeId: firstEdgeId,
       elapsedMs: 0,
       progress: 0,

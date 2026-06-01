@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.4] - 2026-06-01
+
+### Refactoring
+
+- **Decouple simulation tests from component library values**: Edge transit duration is now modelled as a `ConnectionLibrary` (a typed record of `ConnectionDefinition`, parallel to `COMPONENT_LIBRARY`) rather than a bare `EDGE_TRANSIT_MS` constant. `SimulationEngine` accepts both libraries as optional constructor arguments, defaulting to the production libraries so no call site changes. Tests pass a minimal fixture with round-number values (1000 ms transit, 1000 ms server, 1500 ms DB), so future game-balance changes to `TIME_SCALE` or component latencies cannot silently break simulation tests.
+
 ## [2.8.3] - 2026-05-29
 
 ### Refactoring

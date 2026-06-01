@@ -9,9 +9,6 @@ import { UsersIcon } from "../assets/icons/users-icon.js";
  * real-world latency of 10ms will animate for 10 * TIME_SCALE = 1000ms. */
 const TIME_SCALE = 100;
 
-/** Visual duration of a request travelling along a graph edge. */
-const EDGE_TRANSIT_MS = 10 * TIME_SCALE;
-
 interface ComponentDefinition {
   accentColor: string;
   capacity: number;
@@ -97,8 +94,26 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   },
 };
 
+interface ConnectionDefinition {
+  transitMs: number;
+}
+
+type ConnectionType = "standard";
+
+type ConnectionLibrary = Record<ConnectionType, ConnectionDefinition>;
+
+const CONNECTION_LIBRARY: ConnectionLibrary = {
+  standard: { transitMs: 10 * TIME_SCALE },
+};
+
 const isComponentType = (value: string): value is ComponentType =>
   Object.hasOwn(COMPONENT_LIBRARY, value);
 
-export { COMPONENT_LIBRARY, EDGE_TRANSIT_MS, isComponentType, TIME_SCALE };
-export type { ComponentDefinition, ComponentType };
+export { COMPONENT_LIBRARY, CONNECTION_LIBRARY, isComponentType, TIME_SCALE };
+export type {
+  ComponentDefinition,
+  ComponentType,
+  ConnectionDefinition,
+  ConnectionLibrary,
+  ConnectionType,
+};

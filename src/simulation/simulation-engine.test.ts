@@ -1,7 +1,19 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
-import { EDGE_TRANSIT_MS } from "../domain/component-library.js";
 import type { LevelConfig } from "./types.js";
+
+const testComponentLibrary = {
+  cache: { capacity: 200, latencyMs: 1000 },
+  db: { capacity: 30, latencyMs: 1500 },
+  "db-large": { capacity: 90, latencyMs: 1000 },
+  "load-balancer": { capacity: Infinity, latencyMs: 1000 },
+  server: { capacity: 50, latencyMs: 1000 },
+  "server-large": { capacity: 150, latencyMs: 1000 },
+  users: { capacity: Infinity, latencyMs: 0 },
+};
+const testConnectionLibrary = { standard: { transitMs: 1000 } };
+
+const makeEngine = () => new SimulationEngine(testComponentLibrary, testConnectionLibrary);
 
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
@@ -18,7 +30,7 @@ describe(SimulationEngine, () => {
   const delta = (1 / baseConfig.timeout) * (baseConfig.trafficPeak - baseConfig.trafficStart);
 
   beforeEach(() => {
-    engine = new SimulationEngine();
+    engine = makeEngine();
     engine.setConfig(baseConfig);
   });
 
@@ -157,7 +169,7 @@ describe(SimulationEngine, () => {
 
 describe("request spawning", () => {
   it("populates the requests map when users node has an outgoing edge", () => {
-    const engine = new SimulationEngine();
+    const engine = makeEngine();
     engine.setConfig(baseConfig);
     engine.setGraph(
       [
@@ -172,7 +184,7 @@ describe("request spawning", () => {
   });
 
   it("does not spawn requests when users node has no outgoing edge", () => {
-    const engine = new SimulationEngine();
+    const engine = makeEngine();
     engine.setConfig(baseConfig);
     engine.setGraph([{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }], []);
     engine.tick(16000);
@@ -181,7 +193,7 @@ describe("request spawning", () => {
   });
 
   it("sets tickDeltaMs in the snapshot after tick", () => {
-    const engine = new SimulationEngine();
+    const engine = makeEngine();
     engine.setConfig(baseConfig);
     engine.setGraph([], []);
     engine.tick(16);
@@ -194,7 +206,7 @@ describe("tick", () => {
   let engine: SimulationEngine;
 
   beforeEach(() => {
-    engine = new SimulationEngine();
+    engine = makeEngine();
   });
 
   it("is a no-op when config has not been set", () => {
@@ -267,7 +279,7 @@ describe("transit and processing advancement", () => {
   let engine: SimulationEngine;
 
   beforeEach(() => {
-    engine = new SimulationEngine();
+    engine = makeEngine();
     engine.setConfig(levelConfig);
     engine.setGraph([usersNode, serverNode], [edge]);
   });
@@ -285,7 +297,7 @@ describe("transit and processing advancement", () => {
     const snap = engine.getSnapshot();
     const [transit] = [...snap.transits.values()];
 
-    expect(transit?.progress).toBe(TICK_MS / 1000);
+    expect(transit?.progress).toBe(TICK_MS / testConnectionLibrary.standard.transitMs);
   });
 
   it("prevTransitProgresses captures each transit's progress before the tick", () => {
@@ -390,7 +402,7 @@ describe("response creation", () => {
     let engine: SimulationEngine;
 
     beforeEach(() => {
-      engine = new SimulationEngine();
+      engine = makeEngine();
       engine.setConfig(singleEdgeConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
       // tick 1: transit starts; tick 2: transit completes, processing starts;
@@ -430,7 +442,7 @@ describe("response creation", () => {
     let engine: SimulationEngine;
 
     beforeEach(() => {
-      engine = new SimulationEngine();
+      engine = makeEngine();
       engine.setConfig(singleEdgeConfig);
       engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
       // transit e1 (2 ticks) + process server (2) + transit e2 (2) + process db (3, latency=1500ms) = 7 ticks
@@ -466,10 +478,10 @@ describe("response creation", () => {
         trafficTarget: 11000,
         winSustainMs: 3_000,
       };
-      const engine = new SimulationEngine();
+      const engine = makeEngine();
       engine.setConfig(overloadConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: 55 requests spawn; tick 2: all transits complete → all enter processing (no drops)
+      // tick 1: 5500 requests spawn (11000 * 0.5s); tick 2: all transits complete → all enter processing (no drops)
       engine.tick(TICK_MS);
       engine.tick(TICK_MS);
 
@@ -515,7 +527,7 @@ describe("response transit advancement", () => {
     let responseId: string;
 
     beforeEach(() => {
-      engine = new SimulationEngine();
+      engine = makeEngine();
       engine.setConfig(config);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
       // tick 1: transit starts; tick 2: transit completes, processing starts;
@@ -541,7 +553,7 @@ describe("response transit advancement", () => {
         (t) => t.responseId === responseId,
       );
 
-      expect(transit?.progress).toBe(TICK_MS / EDGE_TRANSIT_MS);
+      expect(transit?.progress).toBe(TICK_MS / testConnectionLibrary.standard.transitMs);
     });
 
     it("removes the response when the transit completes", () => {
@@ -567,7 +579,7 @@ describe("response transit advancement", () => {
     let responseId: string;
 
     beforeEach(() => {
-      engine = new SimulationEngine();
+      engine = makeEngine();
       engine.setConfig(config);
       engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
       // 7 ticks to fulfil r1; response is created and e2 transit advanced to 500ms in tick 7
@@ -637,7 +649,7 @@ describe("rolling metrics", () => {
   const edgeE1: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
 
   it("deliveryOpsPerSec becomes > 0 after enough ticks for a response to complete a round trip", () => {
-    const engine = new SimulationEngine();
+    const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
     // tick 1: transit starts; tick 2: transit completes, processing starts;
@@ -656,14 +668,14 @@ describe("rolling metrics", () => {
       cacheHitRate: 0,
       monthlyBudget: 100,
       timeout: 60000,
-      // trafficRate 11000 → scaledRate 110 req/s → 55 per 500ms tick → 55 arrive per tick
-      // 55/3 ≈ 18 arr/s initially, grows: after 4 ticks arrivals=165, 165/3=55 > capacity(50)
+      // trafficRate 11000 → 5500 spawn per 500ms tick (11000 * 0.5s)
+      // ticks 2,3,4 each deliver 5500 arrivals → well above capacity(50)
       trafficPeak: 11000,
       trafficStart: 11000,
       trafficTarget: 11000,
       winSustainMs: 3_000,
     };
-    const engine = new SimulationEngine();
+    const engine = makeEngine();
     engine.setConfig(overloadConfig);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
     // 4 ticks: ticks 2,3,4 each deliver 55 arrivals → 165 arrivals / 3s = 55 > server capacity 50
@@ -675,7 +687,7 @@ describe("rolling metrics", () => {
   });
 
   it("reset() clears the metrics window so deliveryOpsPerSec returns to 0", () => {
-    const engine = new SimulationEngine();
+    const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
     for (let i = 0; i < 4; i++) {
@@ -687,7 +699,7 @@ describe("rolling metrics", () => {
   });
 
   it("reset() clears the metrics window so nodeMetrics returns to empty Map", () => {
-    const engine = new SimulationEngine();
+    const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
     engine.tick(TICK_MS);

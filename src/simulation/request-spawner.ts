@@ -1,10 +1,10 @@
-import { EDGE_TRANSIT_MS } from "../domain/component-library.js";
 import type { SimRequest, Transit } from "./request-types.js";
 
 const MS_PER_SECOND = 1000;
 
 interface SpawnParams {
   deltaMs: number;
+  edgeTransitMs: number;
   idGenerator?: () => string;
   outgoingEdgeId: string;
   pendingSpawns: number;
@@ -21,6 +21,7 @@ interface SpawnResult {
 
 const spawnRequests = ({
   deltaMs,
+  edgeTransitMs,
   idGenerator = () => crypto.randomUUID(),
   outgoingEdgeId,
   pendingSpawns,
@@ -38,7 +39,7 @@ const spawnRequests = ({
   for (let i = 0; i < count; i++) {
     const id = idGenerator();
     const elapsedMs = (i / count) * deltaMs;
-    const progress = elapsedMs / EDGE_TRANSIT_MS;
+    const progress = elapsedMs / edgeTransitMs;
 
     requests.push({
       id,
@@ -50,7 +51,7 @@ const spawnRequests = ({
     });
 
     transits.push({
-      durationMs: EDGE_TRANSIT_MS,
+      durationMs: edgeTransitMs,
       edgeId: outgoingEdgeId,
       elapsedMs,
       progress,
