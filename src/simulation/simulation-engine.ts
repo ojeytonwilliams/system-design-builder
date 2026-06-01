@@ -185,7 +185,13 @@ class SimulationEngine {
           opsPerSec: 0,
         };
         const { capacity } = this.componentLibrary[n.componentType];
-        return [n.id, { ...m, isOverloaded: isFinite(capacity) && m.incomingOpsPerSec > capacity }];
+        return [
+          n.id,
+          {
+            ...m,
+            isOverloaded: isFinite(capacity) && m.incomingOpsPerSec > capacity,
+          },
+        ];
       }),
     );
     const deliveryOpsPerSec = computeDeliveryOpsPerSec(this.metricsWindow, usersNodeId);
@@ -228,7 +234,9 @@ class SimulationEngine {
     for (const [requestId, transit] of [...this.transits]) {
       const newElapsed = transit.elapsedMs + deltaMs;
 
-      if (newElapsed >= transit.durationMs) {
+      const excessTime = newElapsed - transit.durationMs;
+
+      if (excessTime >= 0) {
         const edge = this.graphEdges.find((e) => e.id === transit.edgeId);
         const targetNode =
           edge === undefined ? undefined : this.graphNodes.find((n) => n.id === edge.target);
@@ -243,9 +251,9 @@ class SimulationEngine {
             {
               processing: {
                 durationMs: latencyMs,
-                elapsedMs: 0,
+                elapsedMs: excessTime,
                 nodeId: targetNode.id,
-                progress: 0,
+                progress: excessTime / latencyMs,
               },
               status: "PROCESSING",
             },
@@ -257,7 +265,10 @@ class SimulationEngine {
             completedCount: 0,
             deliveryCount: 0,
           };
-          tickEvents.set(targetNode.id, { ...existing, arrivalCount: existing.arrivalCount + 1 });
+          tickEvents.set(targetNode.id, {
+            ...existing,
+            arrivalCount: existing.arrivalCount + 1,
+          });
         }
       } else {
         transit.elapsedMs = newElapsed;
@@ -275,7 +286,9 @@ class SimulationEngine {
     for (const [requestId, proc] of [...this.processing]) {
       const newElapsed = proc.elapsedMs + deltaMs;
 
-      if (newElapsed >= proc.durationMs) {
+      const excessTime = newElapsed - proc.durationMs;
+
+      if (excessTime >= 0) {
         const result = requestRouter(proc.nodeId, {
           cacheHitRate,
           edges: this.graphEdges,
@@ -303,8 +316,8 @@ class SimulationEngine {
               transit: {
                 durationMs: this.connectionLibrary.standard.transitMs,
                 edgeId: result.edgeId,
-                elapsedMs: 0,
-                progress: 0,
+                elapsedMs: excessTime,
+                progress: excessTime / this.connectionLibrary.standard.transitMs,
               },
             },
             maps,
@@ -370,7 +383,10 @@ class SimulationEngine {
       completedCount: 0,
       deliveryCount: 0,
     };
-    tickEvents.set(usersNodeId, { ...existing, deliveryCount: existing.deliveryCount + 1 });
+    tickEvents.set(usersNodeId, {
+      ...existing,
+      deliveryCount: existing.deliveryCount + 1,
+    });
   }
 
   private spawnResponse(requestId: string, maps: RequestMaps): void {

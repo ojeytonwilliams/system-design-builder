@@ -330,7 +330,7 @@ describe("transit and processing advancement", () => {
     expect(processing?.nodeId).toBe("server-1");
   });
 
-  it("sets processing durationMs to latencyMs × TIME_SCALE for the target component", () => {
+  it("sets processing durationMs to latencyMs for the target component", () => {
     engine.tick(TICK_MS);
     engine.tick(TICK_MS);
     const snap = engine.getSnapshot();
