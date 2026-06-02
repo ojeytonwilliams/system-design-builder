@@ -1,7 +1,8 @@
+import { convertLevel } from "./level-converter.js";
 import type { LevelDefinition } from "./types.js";
 
 const testLevels: LevelDefinition[] = [
-  {
+  convertLevel({
     availableComponents: ["server"],
     cacheHitRate: 0,
     coachMessages: [],
@@ -11,16 +12,17 @@ const testLevels: LevelDefinition[] = [
     lockedNodeIds: [],
     monthlyBudget: 100,
     objectiveText: "Objective A",
+    solution: { edges: [], nodes: [] },
     startingEdges: [],
     startingNodes: [{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }],
-    timeout: 60_000,
+    timeout: 60000,
     title: "Level A",
     trafficPeak: 0.01,
     trafficStart: 0.01,
     trafficTarget: 0.01,
-    winSustainMs: 3_000,
-  },
-  {
+    winSustainMs: 3000,
+  }),
+  convertLevel({
     availableComponents: ["server", "server-large"],
     cacheHitRate: 0,
     coachMessages: [],
@@ -30,6 +32,7 @@ const testLevels: LevelDefinition[] = [
     lockedNodeIds: [],
     monthlyBudget: 200,
     objectiveText: "Objective B",
+    solution: { edges: [], nodes: [] },
     startingEdges: [],
     startingNodes: [{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }],
     timeout: 60_000,
@@ -38,8 +41,8 @@ const testLevels: LevelDefinition[] = [
     trafficStart: 0.02,
     trafficTarget: 0.02,
     winSustainMs: 3_000,
-  },
-  {
+  }),
+  convertLevel({
     availableComponents: ["server", "server-large", "db"],
     cacheHitRate: 0,
     coachMessages: [],
@@ -49,6 +52,7 @@ const testLevels: LevelDefinition[] = [
     lockedNodeIds: [],
     monthlyBudget: 300,
     objectiveText: "Objective C",
+    solution: { edges: [], nodes: [] },
     startingEdges: [],
     startingNodes: [{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }],
     timeout: 60_000,
@@ -57,7 +61,7 @@ const testLevels: LevelDefinition[] = [
     trafficStart: 0.03,
     trafficTarget: 0.03,
     winSustainMs: 3_000,
-  },
+  }),
 ];
 
 export { testLevels };

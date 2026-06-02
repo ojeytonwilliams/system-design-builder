@@ -1,4 +1,4 @@
-import { convertRate } from "../domain/sim-time-converter.js";
+import { convertLevel } from "./level-converter.js";
 import { level1 } from "./level1.js";
 import { level2 } from "./level2.js";
 import { level3 } from "./level3.js";
@@ -6,13 +6,6 @@ import { level4 } from "./level4.js";
 import { level5 } from "./level5.js";
 import { level6 } from "./level6.js";
 import type { LevelDefinition } from "./types.js";
-
-const convertLevel = (def: LevelDefinition): LevelDefinition => ({
-  ...def,
-  trafficPeak: convertRate(def.trafficPeak),
-  trafficStart: convertRate(def.trafficStart),
-  trafficTarget: convertRate(def.trafficTarget),
-});
 
 const LEVELS: LevelDefinition[] = [level1, level2, level3, level4, level5, level6].map(
   convertLevel,
@@ -50,5 +43,5 @@ class LevelRegistry {
 
 const levelRegistry = new LevelRegistry(LEVELS);
 
-export { LevelRegistry, levelRegistry };
+export { LevelRegistry, convertLevel, levelRegistry };
 export type { LevelDefinition };

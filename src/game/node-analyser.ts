@@ -1,5 +1,8 @@
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
-import { toRealDuration, toRealRate } from "../domain/sim-time-converter.js";
+import {
+  toRealDuration as defaultToRealDuration,
+  toRealRate as defaultToRealRate,
+} from "../domain/sim-time-converter.js";
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import type { InspectorProps } from "../ui/components/inspector.js";
 import type { NodeMetricsSnapshot } from "../simulation/metrics.js";
@@ -8,6 +11,13 @@ const getInspectorData = (
   selectedNodeId: string | null,
   nodes: ArchitectureNode[],
   nodeMetrics: NodeMetricsSnapshot,
+  {
+    toRealDuration = defaultToRealDuration,
+    toRealRate = defaultToRealRate,
+  }: {
+    toRealDuration?: (simMs: number) => number;
+    toRealRate?: (simRate: number) => number;
+  } = {},
 ): InspectorProps => {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
 

@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ArchitectureEdge, ArchitectureNode } from "./components/game-canvas.js";
 import { useLevel } from "./hooks/use-level.js";
 import { GameLayout, GameScene } from "./game-layout.js";
+import { convertRate } from "../domain/sim-time-converter.js";
 import { levelRegistry } from "../levels/index.js";
 import { level1 } from "../levels/level1.js";
 import { level3 } from "../levels/level3.js";
@@ -14,9 +15,9 @@ const winLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
   timeout: 60_000,
-  trafficPeak: 0.0004,
-  trafficStart: 0.0004,
-  trafficTarget: 0.0004,
+  trafficPeak: convertRate(0.04),
+  trafficStart: convertRate(0.04),
+  trafficTarget: convertRate(0.04),
   winSustainMs: 3_000,
 };
 
@@ -24,9 +25,9 @@ const testLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
   timeout: 10_000,
-  trafficPeak: 0.001,
-  trafficStart: 0.001,
-  trafficTarget: 0.001,
+  trafficPeak: convertRate(0.1),
+  trafficStart: convertRate(0.1),
+  trafficTarget: convertRate(0.1),
   winSustainMs: 10_000,
 };
 
@@ -35,9 +36,9 @@ const overloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
   timeout: 60_000,
-  trafficPeak: 0.0015,
-  trafficStart: 0.0015,
-  trafficTarget: 0.0015,
+  trafficPeak: convertRate(0.15),
+  trafficStart: convertRate(0.15),
+  trafficTarget: convertRate(0.15),
   winSustainMs: 10_000,
 };
 
@@ -46,9 +47,9 @@ const normalLoadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
   timeout: 60_000,
-  trafficPeak: 0.00025,
-  trafficStart: 0.00025,
-  trafficTarget: 0.00025,
+  trafficPeak: convertRate(0.025),
+  trafficStart: convertRate(0.025),
+  trafficTarget: convertRate(0.025),
   winSustainMs: 10_000,
 };
 
@@ -61,8 +62,8 @@ const resolvingOverloadLevelConfig: LevelConfig = {
   monthlyBudget: 99999,
   timeout: 4_000,
   trafficPeak: 0,
-  trafficStart: 0.001,
-  trafficTarget: 0.0004,
+  trafficStart: convertRate(0.1),
+  trafficTarget: convertRate(0.04),
   winSustainMs: 10_000,
 };
 
@@ -73,8 +74,8 @@ const overloadResolvingConfig: LevelConfig = {
   monthlyBudget: 99999,
   timeout: 6_000,
   trafficPeak: 0,
-  trafficStart: 0.001,
-  trafficTarget: 0.0005,
+  trafficStart: convertRate(0.1),
+  trafficTarget: convertRate(0.05),
   winSustainMs: 99_000,
 };
 

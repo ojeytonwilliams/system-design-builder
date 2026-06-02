@@ -1,5 +1,6 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import type { ComponentType } from "../domain/component-library.js";
+import { convertLevel } from "../levels/index.js";
 import type { LevelDefinition } from "../levels/types.js";
 import type { GraphAction } from "./graph-reducer.js";
 import type { PhaseAction } from "./phase-machine.js";
@@ -8,7 +9,7 @@ import { continueLevel, loadLevel, replayLevel, selectLevel } from "./level-acti
 const nodeA: ArchitectureNode = { componentType: "users", id: "users-1", position: { x: 0, y: 0 } };
 const edgeAB: ArchitectureEdge = { id: "edge-1", source: "users-1", target: "server-1" };
 
-const stubLevel: LevelDefinition = {
+const stubLevel = convertLevel({
   availableComponents: ["server"],
   cacheHitRate: 0,
   coachMessages: [],
@@ -18,6 +19,7 @@ const stubLevel: LevelDefinition = {
   lockedNodeIds: [],
   monthlyBudget: 500,
   objectiveText: "Build a server",
+  solution: { edges: [], nodes: [] },
   startingEdges: [],
   startingNodes: [],
   timeout: 60_000,
@@ -26,7 +28,7 @@ const stubLevel: LevelDefinition = {
   trafficStart: 0.05,
   trafficTarget: 0.1,
   winSustainMs: 10_000,
-};
+});
 
 const stubLevel2: LevelDefinition = { ...stubLevel, id: "level-2", title: "Level 2" };
 

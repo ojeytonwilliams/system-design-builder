@@ -1,28 +1,19 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
+import { COMPONENT_LIBRARY_FIXTURE, CONNECTION_LIBRARY_FIXTURE } from "../domain/test-fixtures.js";
+import { convertRate, toRealRate } from "../domain/sim-time-converter.js";
 import { ROLLING_WINDOW_MS } from "./metrics.js";
 import { shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
 import type { LevelConfig } from "./types.js";
 
-const testComponentLibrary = {
-  cache: { capacity: 0.2, latencyMs: 1000 },
-  db: { capacity: 0.03, latencyMs: 1500 },
-  "db-large": { capacity: 0.09, latencyMs: 1000 },
-  "load-balancer": { capacity: Infinity, latencyMs: 1000 },
-  server: { capacity: 0.05, latencyMs: 1000 },
-  "server-large": { capacity: 0.15, latencyMs: 1000 },
-  users: { capacity: Infinity, latencyMs: 0 },
-};
-const testConnectionLibrary = { standard: { transitMs: 1000 } };
-
-const makeEngine = () => new SimulationEngine(testComponentLibrary, testConnectionLibrary);
+const makeEngine = () => new SimulationEngine(COMPONENT_LIBRARY_FIXTURE);
 
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 100,
   timeout: 60_000,
-  trafficPeak: 0.15,
-  trafficStart: 0.1,
-  trafficTarget: 0.1,
+  trafficPeak: convertRate(0.15),
+  trafficStart: convertRate(0.1),
+  trafficTarget: convertRate(0.1),
   winSustainMs: 3_000,
 };
 
@@ -255,15 +246,15 @@ describe("tick", () => {
 
 describe("transit and processing advancement", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = 1 / TICK_MS;
+  const SPAWN_RATE = toRealRate(1 / TICK_MS);
 
   const levelConfig: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
     timeout: 60000,
-    trafficPeak: SPAWN_RATE,
-    trafficStart: SPAWN_RATE,
-    trafficTarget: SPAWN_RATE,
+    trafficPeak: convertRate(SPAWN_RATE),
+    trafficStart: convertRate(SPAWN_RATE),
+    trafficTarget: convertRate(SPAWN_RATE),
     winSustainMs: 3_000,
   };
 
@@ -306,7 +297,7 @@ describe("transit and processing advancement", () => {
     const snap = engine.getSnapshot();
     const [transit] = [...snap.transits.values()];
 
-    expect(transit?.progress).toBe(TICK_MS / testConnectionLibrary.standard.transitMs);
+    expect(transit?.progress).toBe(TICK_MS / CONNECTION_LIBRARY_FIXTURE.standard.transitMs);
   });
 
   it("prevTransitProgresses captures each transit's progress before the tick", () => {
@@ -381,15 +372,15 @@ describe("transit and processing advancement", () => {
 
 describe("response creation", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = 1 / TICK_MS;
+  const SPAWN_RATE = toRealRate(1 / TICK_MS);
 
   const singleEdgeConfig: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
     timeout: 60000,
-    trafficPeak: SPAWN_RATE,
-    trafficStart: SPAWN_RATE,
-    trafficTarget: SPAWN_RATE,
+    trafficPeak: convertRate(SPAWN_RATE),
+    trafficStart: convertRate(SPAWN_RATE),
+    trafficTarget: convertRate(SPAWN_RATE),
     winSustainMs: 3_000,
   };
 
@@ -494,15 +485,15 @@ describe("response creation", () => {
         cacheHitRate: 0,
         monthlyBudget: 100,
         timeout: 60_000,
-        trafficPeak: 11,
-        trafficStart: 11,
-        trafficTarget: 11,
+        trafficPeak: convertRate(1100),
+        trafficStart: convertRate(1100),
+        trafficTarget: convertRate(1100),
         winSustainMs: 3_000,
       };
       const engine = makeEngine();
       engine.setConfig(overloadConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: 5500 requests spawn (11 req/ms * 500ms); tick 2: first transit completes;
+      // tick 1: 5500 requests spawn (1100 real req/ms → 11 sim req/ms × 500ms); tick 2: first transit completes;
       // tick 3: all remaining transits complete → all enter processing (no drops)
       engine.tick(TICK_MS);
       engine.tick(TICK_MS);
@@ -519,15 +510,15 @@ describe("response creation", () => {
 
 describe("response transit advancement", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = 1 / TICK_MS;
+  const SPAWN_RATE = toRealRate(1 / TICK_MS);
 
   const config: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
     timeout: 60000,
-    trafficPeak: SPAWN_RATE,
-    trafficStart: SPAWN_RATE,
-    trafficTarget: SPAWN_RATE,
+    trafficPeak: convertRate(SPAWN_RATE),
+    trafficStart: convertRate(SPAWN_RATE),
+    trafficTarget: convertRate(SPAWN_RATE),
     winSustainMs: 3_000,
   };
 
@@ -588,7 +579,7 @@ describe("response transit advancement", () => {
         (t) => t.responseId === responseId,
       );
 
-      expect(transit?.progress).toBe(TICK_MS / testConnectionLibrary.standard.transitMs);
+      expect(transit?.progress).toBe(TICK_MS / CONNECTION_LIBRARY_FIXTURE.standard.transitMs);
     });
 
     it("removes the response when the transit completes", () => {
@@ -659,15 +650,15 @@ describe("response transit advancement", () => {
 
 describe("rolling metrics", () => {
   const TICK_MS = 500;
-  const SPAWN_RATE = 1 / TICK_MS;
+  const SPAWN_RATE = toRealRate(1 / TICK_MS);
 
   const config: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
     timeout: 60000,
-    trafficPeak: SPAWN_RATE,
-    trafficStart: SPAWN_RATE,
-    trafficTarget: SPAWN_RATE,
+    trafficPeak: convertRate(SPAWN_RATE),
+    trafficStart: convertRate(SPAWN_RATE),
+    trafficTarget: convertRate(SPAWN_RATE),
     winSustainMs: 3_000,
   };
 
@@ -756,17 +747,17 @@ describe("rolling metrics", () => {
 });
 
 describe("server receives all requests emitted by the users node", () => {
-  // One request per tick: SPAWN_RATE * TICK_MS = 1, giving exactly one arrival per tick.
+  // One request per tick: convertRate(SPAWN_RATE) * TICK_MS = 1, giving exactly one arrival per tick.
   const TICK_MS = 500;
-  const SPAWN_RATE = 1 / TICK_MS;
+  const SPAWN_RATE = toRealRate(1 / TICK_MS);
 
   const config: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
     timeout: 60_000,
-    trafficPeak: SPAWN_RATE,
-    trafficStart: SPAWN_RATE,
-    trafficTarget: SPAWN_RATE,
+    trafficPeak: convertRate(SPAWN_RATE),
+    trafficStart: convertRate(SPAWN_RATE),
+    trafficTarget: convertRate(SPAWN_RATE),
     winSustainMs: 3_000,
   };
 
@@ -804,8 +795,8 @@ describe("server receives all requests emitted by the users node", () => {
     // With exactly 1 arrival per tick, the window holds 7 arrivals total.
     // incomingOpsPerMs = totalArrivals / ROLLING_WINDOW_MS  (from metrics.ts)
     // 7 buckets in window, 1 arrival per tick
-    const bucketsInWindow = ROLLING_WINDOW_MS * SPAWN_RATE + 1;
-    const arrivalsPerTick = SPAWN_RATE * TICK_MS;
+    const bucketsInWindow = ROLLING_WINDOW_MS / TICK_MS + 1;
+    const arrivalsPerTick = 1;
     const expectedIncomingOpsPerMs = (bucketsInWindow * arrivalsPerTick) / ROLLING_WINDOW_MS;
 
     expect(serverMetrics.incomingOpsPerMs).toBe(expectedIncomingOpsPerMs);

@@ -1,31 +1,13 @@
-import type { FC, SVGProps } from "react";
-import { CacheIcon } from "../assets/icons/cache-icon.js";
-import { DbIcon } from "../assets/icons/db-icon.js";
-import { LoadBalancerIcon } from "../assets/icons/load-balancer-icon.js";
-import { ServerIcon } from "../assets/icons/server-icon.js";
-import { UsersIcon } from "../assets/icons/users-icon.js";
-import { convertComponent, convertConnection } from "./component-converter.js";
+import { CacheIcon } from "../assets/icons/cache-icon";
+import { DbIcon } from "../assets/icons/db-icon";
+import { LoadBalancerIcon } from "../assets/icons/load-balancer-icon";
+import { ServerIcon } from "../assets/icons/server-icon";
+import { UsersIcon } from "../assets/icons/users-icon";
+import type { ComponentDefinition, ComponentType } from "./component-library";
+import { convertConnection } from "./component-converter";
+import { convertComponent } from "./component-library";
 
-interface ComponentDefinition {
-  accentColor: string;
-  capacity: number;
-  description: string;
-  icon: FC<SVGProps<SVGSVGElement>>;
-  label: string;
-  latencyMs: number;
-  monthlyCost: number;
-}
-
-type ComponentType =
-  | "cache"
-  | "db"
-  | "db-large"
-  | "load-balancer"
-  | "server"
-  | "server-large"
-  | "users";
-
-const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
+const COMPONENT_LIBRARY_FIXTURE: Record<ComponentType, ComponentDefinition> = {
   cache: convertComponent({
     accentColor: "#facc15",
     capacity: 0.2,
@@ -91,26 +73,8 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   }),
 };
 
-interface ConnectionDefinition {
-  transitMs: number;
-}
-
-type ConnectionType = "standard";
-
-type ConnectionLibrary = Record<ConnectionType, ConnectionDefinition>;
-
-const CONNECTION_LIBRARY: ConnectionLibrary = {
+const CONNECTION_LIBRARY_FIXTURE = {
   standard: convertConnection({ transitMs: 10 }),
 };
 
-const isComponentType = (value: string): value is ComponentType =>
-  Object.hasOwn(COMPONENT_LIBRARY, value);
-
-export { COMPONENT_LIBRARY, CONNECTION_LIBRARY, convertComponent, isComponentType };
-export type {
-  ComponentDefinition,
-  ComponentType,
-  ConnectionDefinition,
-  ConnectionLibrary,
-  ConnectionType,
-};
+export { COMPONENT_LIBRARY_FIXTURE, CONNECTION_LIBRARY_FIXTURE };

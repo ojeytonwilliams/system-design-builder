@@ -1,4 +1,5 @@
 import type { Mock } from "vitest";
+import { convertRate } from "../../domain/sim-time-converter.js";
 import { SimulationEngine } from "../simulation-engine.js";
 import { TimeoutChecker } from "./timeout-checker.js";
 import type { LevelConfig } from "../types.js";
@@ -7,9 +8,9 @@ const baseConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 100,
   timeout: 60_000,
-  trafficPeak: 0.1,
-  trafficStart: 0.1,
-  trafficTarget: 0.1,
+  trafficPeak: convertRate(0.1),
+  trafficStart: convertRate(0.1),
+  trafficTarget: convertRate(0.1),
   winSustainMs: 3_000,
 };
 

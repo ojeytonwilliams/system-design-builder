@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.8.10] - 2026-06-02
+
+### Refactoring
+
+- **Extract converter functions into dedicated modules**: `convertComponent` and `convertConnection` are moved from `component-library.ts` into `src/domain/component-converter.ts`; `convertLevel` is extracted back out of `levels/index.ts` into `src/levels/level-converter.ts`. Isolating the converters lets test fixtures import the scaling logic without depending on the module that owns the full production library (with icons and all entries).
+- **Add domain and level test fixtures**: `src/domain/test-fixtures.ts` supplies `COMPONENT_LIBRARY_FIXTURE` and `CONNECTION_LIBRARY_FIXTURE` with controlled, round-number real-world values passed through the real converters. `src/levels/test-fixtures.ts` uses `convertLevel` from the new module. Tests in `simulation-engine`, `timeout-checker`, `win-condition-checker`, `node-analyser`, and `game-layout` are updated to use these fixtures rather than production library values, so game-balance changes to component latencies or capacities no longer silently break unrelated tests.
+- **Add NOTE to `sim-time-converter`**: A module-level comment discourages direct use of `convertDuration`/`convertRate` in favour of the higher-level `convertComponent` and `convertLevel` helpers.
+
 ## [2.8.9] - 2026-06-02
 
 ### Added
