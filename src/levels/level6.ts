@@ -17,7 +17,7 @@ const level6: LevelDefinition = {
   id: "_quYqGvc5gWDbxLiwocDx",
   lockedNodeIds: ["users-1", "lb-1"],
   monthlyBudget: 300,
-  objectiveText: "The whole system is struggling under high traffic. Scale it to handle 220 ops/s.",
+  objectiveText: "The whole system is struggling under high traffic. Scale it to handle 180 ops/s.",
   solution: {
     edges: [
       { id: "edge-u-lb", source: "users-1", target: "lb-1" },
@@ -74,9 +74,9 @@ const level6: LevelDefinition = {
   ],
   timeout: 90_000,
   title: "Full Scale",
-  trafficPeak: 0.22,
-  trafficStart: 0.22,
-  trafficTarget: 0.22,
+  trafficPeak: 0.18,
+  trafficStart: 0.18,
+  trafficTarget: 0.18,
   winSustainMs: 10_000,
 };
 

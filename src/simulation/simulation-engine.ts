@@ -4,7 +4,8 @@ import type { ComponentType, ConnectionLibrary } from "../domain/component-libra
 import { getLinearTrafficRate } from "./engine.js";
 import { addBucket, computeDeliveryOpsPerMs, computeNodeMetrics } from "./metrics.js";
 import type { MetricsWindow, NodeEventCounts, NodeMetricsSnapshot } from "./metrics.js";
-import { requestRouter } from "./request-router.js";
+import { NodeRouter } from "./node-router.js";
+import { getRoutingOptions } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
 import type {
   Processing,
@@ -91,6 +92,7 @@ class SimulationEngine {
   private nextSpawn = 0;
   private wallClockElapsedMs = 0;
   private metricsWindow: MetricsWindow = [];
+  private readonly nodeRouters = new Map<string, NodeRouter>();
 
   getSnapshot = (): SimulationSnapshot => this.state;
 
@@ -104,6 +106,7 @@ class SimulationEngine {
   setGraph(nodes: ArchitectureNode[], edges: ArchitectureEdge[]): void {
     this.graphNodes = nodes;
     this.graphEdges = edges;
+    this.nodeRouters.clear();
   }
 
   setConfig(config: LevelConfig): void {
@@ -214,6 +217,7 @@ class SimulationEngine {
     this.nextSpawn = 0;
     this.wallClockElapsedMs = 0;
     this.metricsWindow = [];
+    this.nodeRouters.clear();
     this.state = getInitialSnapshot();
     this.notify();
   }
@@ -281,11 +285,18 @@ class SimulationEngine {
       const excessTime = newElapsed - proc.durationMs;
 
       if (excessTime >= 0) {
-        const result = requestRouter(proc.nodeId, {
-          cacheHitRate,
-          edges: this.graphEdges,
-          nodes: this.graphNodes,
-        });
+        const node = this.graphNodes.find((n) => n.id === proc.nodeId);
+        const outgoingEdges = this.graphEdges.filter((e) => e.source === proc.nodeId);
+        const options =
+          node === undefined
+            ? []
+            : getRoutingOptions(node.componentType, outgoingEdges, cacheHitRate);
+        let router = this.nodeRouters.get(proc.nodeId);
+        if (router === undefined) {
+          router = new NodeRouter();
+          this.nodeRouters.set(proc.nodeId, router);
+        }
+        const result = router.route(options);
 
         const existing = tickEvents.get(proc.nodeId) ?? {
           arrivalCount: 0,

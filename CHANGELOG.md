@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.9.0] - 2026-06-02
+
+### Added
+
+- **Deterministic weighted round-robin routing (`NodeRouter`)**: Replaces `Math.random()` routing in `SimulationEngine` with a deterministic WRR scheduler. Each node gets its own `NodeRouter` instance that selects the option most "owed" a call (`owed(i) = totalCalls × wᵢ − selectionsᵢ`), guaranteeing that in any M consecutive calls each option receives between `floor(M × w)` and `ceil(M × w)` selections. This makes simulation outcomes reproducible and ensures level solutions that pass static validation are guaranteed to win in simulation.
+- **Static level validator (`level-validator.ts`)**: `validateLevelSolution` checks every finite-capacity node against worst-case WRR arrival bounds (`computeNodeMaxArrivals`). Uses integer propagation — `maxArrivals(edge) = ceil(M_source × weight)`, capped by `M_users` at convergent nodes — so diamond topologies (two independent routers feeding the same downstream node) are correctly bounded rather than under-estimated. `computeNodeRates` is retained for the `incomingRatePerMs` field in violation reports.
+- **Level solution capacity validation tests**: Integration tests now include a `"level solution capacity validation"` suite that runs `validateLevelSolution` against every registered level, in addition to the simulation win tests.
+
+### Fixed
+
+- **Validator under-estimate for convergent topologies**: The previous formula `(floor(W × r) + 1) / W` applied a single `+1` to the already-summed rate at a shared downstream node. With two independent `NodeRouter` instances each producing `ceil(M × w)` arrivals in the same window, the correct bound is the sum of per-edge ceilings, not a single increment of the combined float rate. This caused level 6 to pass static validation while failing in simulation.
+- **Level 6 traffic target reduced from 220 to 180 ops/s**: Under the corrected validator bounds, `trafficTarget: 0.22` overloads `db-large` in the worst case (`ceil(4×0.3)+ceil(4×0.3) = 4` arrivals, `4/3000 > 0.0009`). Reducing to `0.18` brings the worst case to `ceil(3×0.3)+ceil(3×0.3) = 2` arrivals (`2/3000 < 0.0009`).
+
 ## [2.8.10] - 2026-06-02
 
 ### Refactoring

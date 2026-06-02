@@ -1,3 +1,5 @@
+import { COMPONENT_LIBRARY } from "../domain/component-library.js";
+import { validateLevelSolution } from "../levels/level-validator.js";
 import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition, LevelSolution } from "../levels/types.js";
 import { SimulationEngine, TICK_INTERVAL_MS } from "../simulation/simulation-engine.js";
@@ -27,13 +29,22 @@ const runLevelSolution = (level: LevelDefinition, solution: LevelSolution): bool
   return won;
 };
 
-// oxlint-disable-next-line vitest/no-disabled-tests
-describe.skip("level solutions", () => {
+describe("level solution capacity validation", () => {
+  it.each(levelRegistry.levels)(
+    "level $title solution passes static capacity validation",
+    (level) => {
+      expect(validateLevelSolution(level, level.solution, COMPONENT_LIBRARY).valid).toBe(true);
+    },
+  );
+});
+
+describe("level solutions", () => {
   it.each(levelRegistry.levels)("level $title solution wins within the timeout", (level) => {
     expect(runLevelSolution(level, level.solution)).toBe(true);
   });
 
-  it.each(levelRegistry.levels)("level $title fails for the initial conditions", (level) => {
+  // oxlint-disable-next-line vitest/no-disabled-tests
+  it.skip.each(levelRegistry.levels)("level $title fails for the initial conditions", (level) => {
     expect(
       runLevelSolution(level, {
         edges: level.startingEdges,

@@ -480,7 +480,7 @@ describe("level context UI", () => {
     render(<GameLayout />);
 
     expect(
-      screen.getByText("Your server is overloaded. Fix the architecture to handle 70 ops/s."),
+      screen.getByText("Your server is overloaded. Fix the architecture to handle 60 ops/s."),
     ).toBeInTheDocument();
   });
 });

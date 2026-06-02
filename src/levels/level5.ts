@@ -17,7 +17,7 @@ const level5: LevelDefinition = {
   id: "L3yW5XZioYZiysSFXxpID",
   lockedNodeIds: ["users-1", "lb-1", "cache-1", "db-1"],
   monthlyBudget: 220,
-  objectiveText: "Redesign within the $220/mo budget to handle 120 ops/s.",
+  objectiveText: "Redesign within the $220/mo budget to handle 90 ops/s.",
   solution: {
     edges: [
       { id: "edge-u-lb", source: "users-1", target: "lb-1" },
@@ -88,9 +88,9 @@ const level5: LevelDefinition = {
   ],
   timeout: 60_000,
   title: "Right-Sizing",
-  trafficPeak: 0.12,
-  trafficStart: 0.12,
-  trafficTarget: 0.12,
+  trafficPeak: 0.09,
+  trafficStart: 0.09,
+  trafficTarget: 0.09,
   winSustainMs: 10_000,
 };
 
