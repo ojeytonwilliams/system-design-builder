@@ -5,14 +5,14 @@ interface SpawnParams {
   edgeTransitMs: number;
   idGenerator?: () => string;
   outgoingEdgeId: string;
-  pendingSpawns: number;
+  firstSpawnTime: number;
   trafficRate: number;
   usersNodeId: string;
   wallClockElapsedMs: number;
 }
 
 interface SpawnResult {
-  pendingSpawns: number;
+  nextSpawn: number;
   requests: SimRequest[];
   transits: Transit[];
 }
@@ -22,27 +22,28 @@ const spawnRequests = ({
   edgeTransitMs,
   idGenerator = () => crypto.randomUUID(),
   outgoingEdgeId,
-  pendingSpawns,
+  firstSpawnTime,
   trafficRate,
   usersNodeId,
   wallClockElapsedMs,
 }: SpawnParams): SpawnResult => {
-  const accumulated = pendingSpawns + trafficRate * deltaMs;
-  const count = Math.floor(accumulated);
-  const remaining = accumulated - count;
+  const intervalPerRequest = 1 / trafficRate;
 
   const requests: SimRequest[] = [];
   const transits: Transit[] = [];
 
-  for (let i = 0; i < count; i++) {
+  let elapsedMs = deltaMs - firstSpawnTime;
+
+  while (elapsedMs > 0) {
     const id = idGenerator();
-    const elapsedMs = (i / count) * deltaMs;
+
+    const spawnTime = wallClockElapsedMs + deltaMs - elapsedMs;
     const progress = elapsedMs / edgeTransitMs;
 
     requests.push({
       id,
       originNodeId: usersNodeId,
-      spawnedAtSimMs: wallClockElapsedMs,
+      spawnedAtSimMs: spawnTime,
       status: "IN_TRANSIT",
       visitedEdgeIds: [],
       visitedNodeIds: [],
@@ -55,9 +56,10 @@ const spawnRequests = ({
       progress,
       requestId: id,
     });
+    elapsedMs -= intervalPerRequest;
   }
 
-  return { pendingSpawns: remaining, requests, transits };
+  return { nextSpawn: -elapsedMs, requests, transits };
 };
 
 export { spawnRequests };

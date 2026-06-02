@@ -481,7 +481,9 @@ describe("response creation", () => {
       const engine = makeEngine();
       engine.setConfig(overloadConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: 5500 requests spawn (11 req/ms * 500ms); tick 2: all transits complete → all enter processing (no drops)
+      // tick 1: 5500 requests spawn (11 req/ms * 500ms); tick 2: first transit completes;
+      // tick 3: all remaining transits complete → all enter processing (no drops)
+      engine.tick(TICK_MS);
       engine.tick(TICK_MS);
       engine.tick(TICK_MS);
 

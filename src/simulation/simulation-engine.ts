@@ -88,7 +88,7 @@ class SimulationEngine {
   private readonly processing = new Map<string, Processing>();
   private readonly responses = new Map<string, SimResponse>();
   private readonly responseTransits = new Map<string, ResponseTransit>();
-  private pendingSpawns = 0;
+  private nextSpawn = 0;
   private wallClockElapsedMs = 0;
   private metricsWindow: MetricsWindow = [];
 
@@ -138,25 +138,6 @@ class SimulationEngine {
     const outgoingEdge =
       usersNode === undefined ? undefined : this.graphEdges.find((e) => e.source === usersNode.id);
 
-    if (usersNode !== undefined && outgoingEdge !== undefined) {
-      const result = spawnRequests({
-        deltaMs,
-        edgeTransitMs: this.connectionLibrary.standard.transitMs,
-        outgoingEdgeId: outgoingEdge.id,
-        pendingSpawns: this.pendingSpawns,
-        trafficRate: rate,
-        usersNodeId: usersNode.id,
-        wallClockElapsedMs: this.wallClockElapsedMs,
-      });
-      this.pendingSpawns = result.pendingSpawns;
-      for (const req of result.requests) {
-        this.requests.set(req.id, req);
-      }
-      for (const transit of result.transits) {
-        this.transits.set(transit.requestId, transit);
-      }
-    }
-
     const maps: RequestMaps = {
       processing: this.processing,
       requests: this.requests,
@@ -170,6 +151,25 @@ class SimulationEngine {
     this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate, tickEvents);
     this.advanceResponseTransits(deltaMs, tickEvents, usersNodeId);
     this.timeoutRequests(maps);
+
+    if (usersNode !== undefined && outgoingEdge !== undefined) {
+      const result = spawnRequests({
+        deltaMs,
+        edgeTransitMs: this.connectionLibrary.standard.transitMs,
+        firstSpawnTime: this.nextSpawn,
+        outgoingEdgeId: outgoingEdge.id,
+        trafficRate: rate,
+        usersNodeId: usersNode.id,
+        wallClockElapsedMs: this.wallClockElapsedMs,
+      });
+      this.nextSpawn = result.nextSpawn;
+      for (const req of result.requests) {
+        this.requests.set(req.id, req);
+      }
+      for (const transit of result.transits) {
+        this.transits.set(transit.requestId, transit);
+      }
+    }
 
     this.metricsWindow = addBucket(this.metricsWindow, {
       nodeEvents: tickEvents,
@@ -219,7 +219,7 @@ class SimulationEngine {
     this.processing.clear();
     this.responses.clear();
     this.responseTransits.clear();
-    this.pendingSpawns = 0;
+    this.nextSpawn = 0;
     this.wallClockElapsedMs = 0;
     this.metricsWindow = [];
     this.state = getInitialSnapshot();

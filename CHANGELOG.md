@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.8] - 2026-06-02
+
+### Refactoring
+
+- **Switch request spawner from fractional accumulation to interval scheduling**: `pendingSpawns` (a fractional count) is replaced by `firstSpawnTime` / `nextSpawn` (time in ms until the next spawn is due). The old model counted fractional spawns and rounded down each tick; the new model divides the tick into evenly-spaced spawn instants and tracks how far into the next interval we already are. This fixes two things: newly-spawned requests now enter their first transit with `elapsedMs` reflecting how much of the tick they have already been travelling (rather than always starting at zero), and the spawner's per-tick math is easier to reason about and test. `SimulationEngine.tick` also now advances existing transits and processing entries *before* spawning new requests for the current tick, so a request spawned in tick N cannot complete within the same tick.
+
 ## [2.8.7] - 2026-06-01
 
 ### Refactoring

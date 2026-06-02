@@ -643,13 +643,17 @@ describe("event log", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
     act(() => {
-      for (let t = 0; t < 6000; t += 16) {
+      // This is slightly brittle, so if it fails the may simply need
+      // increasing.
+      for (let t = 0; t < 7000; t += 16) {
         engine.tick(16);
       }
     });
 
-    expect(screen.getByText(/overload started/iv)).toBeInTheDocument();
-    expect(screen.getByText(/overload resolved/iv)).toBeInTheDocument();
+    const eventLog = screen.getByTestId("event-log-list");
+
+    expect(eventLog).toHaveTextContent(/overload started/iv);
+    expect(eventLog).toHaveTextContent(/overload resolved/iv);
   });
 });
 
