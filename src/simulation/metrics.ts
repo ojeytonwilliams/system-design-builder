@@ -21,12 +21,16 @@ interface NodeMetrics {
 
 type NodeMetricsSnapshot = Map<string, NodeMetrics>;
 
+// Evicts old buckets and adds the new bucket to the window
 const addBucket = (window: MetricsWindow, bucket: MetricsBucket): MetricsWindow => {
   const cutoff = bucket.wallClockMs - ROLLING_WINDOW_MS;
   return [...window.filter((b) => b.wallClockMs >= cutoff), bucket];
 };
 
-const computeNodeMetrics = (window: MetricsWindow): NodeMetricsSnapshot => {
+const computeNodeMetrics = (
+  window: MetricsWindow,
+  nodeCapacities: Map<string, number>,
+): NodeMetricsSnapshot => {
   const totals = new Map<string, { arrivals: number; completions: number }>();
 
   for (const bucket of window) {
@@ -41,9 +45,11 @@ const computeNodeMetrics = (window: MetricsWindow): NodeMetricsSnapshot => {
 
   const snapshot: NodeMetricsSnapshot = new Map();
   for (const [nodeId, { arrivals, completions }] of totals) {
+    const incomingOpsPerMs = arrivals / ROLLING_WINDOW_MS;
+    const capacity = nodeCapacities.get(nodeId) ?? Infinity;
     snapshot.set(nodeId, {
-      incomingOpsPerMs: arrivals / ROLLING_WINDOW_MS,
-      isOverloaded: false,
+      incomingOpsPerMs,
+      isOverloaded: isFinite(capacity) && incomingOpsPerMs > capacity,
       opsPerMs: completions / ROLLING_WINDOW_MS,
     });
   }

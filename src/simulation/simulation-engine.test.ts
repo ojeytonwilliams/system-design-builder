@@ -1,4 +1,5 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
+import { ROLLING_WINDOW_MS } from "./metrics.js";
 import { shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
 import type { LevelConfig } from "./types.js";
 
@@ -135,7 +136,11 @@ describe(SimulationEngine, () => {
       id: "server-1",
       position: { x: 0, y: 0 },
     };
-    const edge: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
+    const edge: ArchitectureEdge = {
+      id: "e1",
+      source: "users-1",
+      target: "server-1",
+    };
     engine.setGraph([usersNode, serverNode], [edge]);
     engine.tick(16000);
     engine.reset();
@@ -274,7 +279,11 @@ describe("transit and processing advancement", () => {
     position: { x: 0, y: 0 },
   };
 
-  const edge: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
+  const edge: ArchitectureEdge = {
+    id: "e1",
+    source: "users-1",
+    target: "server-1",
+  };
 
   let engine: SimulationEngine;
 
@@ -394,9 +403,21 @@ describe("response creation", () => {
     id: "server-1",
     position: { x: 0, y: 0 },
   };
-  const dbNode: ArchitectureNode = { componentType: "db", id: "db-1", position: { x: 0, y: 0 } };
-  const edgeE1: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
-  const edgeE2: ArchitectureEdge = { id: "e2", source: "server-1", target: "db-1" };
+  const dbNode: ArchitectureNode = {
+    componentType: "db",
+    id: "db-1",
+    position: { x: 0, y: 0 },
+  };
+  const edgeE1: ArchitectureEdge = {
+    id: "e1",
+    source: "users-1",
+    target: "server-1",
+  };
+  const edgeE2: ArchitectureEdge = {
+    id: "e2",
+    source: "server-1",
+    target: "db-1",
+  };
 
   describe("single-edge path (users → server)", () => {
     let engine: SimulationEngine;
@@ -520,9 +541,21 @@ describe("response transit advancement", () => {
     id: "server-1",
     position: { x: 0, y: 0 },
   };
-  const dbNode: ArchitectureNode = { componentType: "db", id: "db-1", position: { x: 0, y: 0 } };
-  const edgeE1: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
-  const edgeE2: ArchitectureEdge = { id: "e2", source: "server-1", target: "db-1" };
+  const dbNode: ArchitectureNode = {
+    componentType: "db",
+    id: "db-1",
+    position: { x: 0, y: 0 },
+  };
+  const edgeE1: ArchitectureEdge = {
+    id: "e1",
+    source: "users-1",
+    target: "server-1",
+  };
+  const edgeE2: ArchitectureEdge = {
+    id: "e2",
+    source: "server-1",
+    target: "db-1",
+  };
 
   describe("single-edge path", () => {
     let engine: SimulationEngine;
@@ -648,7 +681,21 @@ describe("rolling metrics", () => {
     id: "server-1",
     position: { x: 0, y: 0 },
   };
-  const edgeE1: ArchitectureEdge = { id: "e1", source: "users-1", target: "server-1" };
+  const dbNode: ArchitectureNode = {
+    componentType: "db",
+    id: "db-1",
+    position: { x: 0, y: 0 },
+  };
+  const edgeE1: ArchitectureEdge = {
+    id: "e1",
+    source: "users-1",
+    target: "server-1",
+  };
+  const edgeE2: ArchitectureEdge = {
+    id: "e2",
+    source: "server-1",
+    target: "db-1",
+  };
 
   it("deliveryOpsPerMs becomes > 0 after enough ticks for a response to complete a round trip", () => {
     const engine = makeEngine();
@@ -665,27 +712,24 @@ describe("rolling metrics", () => {
     expect(engine.getSnapshot().deliveryOpsPerMs).toBeGreaterThan(0);
   });
 
-  it("nodeMetrics shows isOverloaded: true for a node when incomingOpsPerMs > capacity", () => {
-    const overloadConfig: LevelConfig = {
-      cacheHitRate: 0,
-      monthlyBudget: 100,
-      timeout: 60_000,
-      // trafficRate 11 req/ms → 5500 spawn per 500ms tick (11 * 500ms)
-      // each tick delivers 5500 arrivals → incomingOpsPerMs ≈ 7.33 >> server capacity 0.05
-      trafficPeak: 11,
-      trafficStart: 11,
-      trafficTarget: 11,
-      winSustainMs: 3_000,
-    };
+  it("incomingOpsPerMs at the db connected (via a server) to users equals the expected rolling average of all spawned requests", () => {
     const engine = makeEngine();
-    engine.setConfig(overloadConfig);
-    engine.setGraph([usersNode, serverNode], [edgeE1]);
-    // 4 ticks: arrivals / 3000ms window → incomingOpsPerMs >> server capacity 0.05
-    for (let i = 0; i < 4; i++) {
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
+
+    // Run 12 ticks (6000ms) to ensure the rolling window is fully saturated with arrivals.
+    for (let i = 0; i < 12; i++) {
       engine.tick(TICK_MS);
     }
 
-    expect(engine.getSnapshot().nodeMetrics.get("server-1")?.isOverloaded).toBe(true);
+    const { nodeMetrics } = engine.getSnapshot();
+    const dbMetrics = nodeMetrics.get("db-1")!;
+
+    const bucketsInWindow = 7;
+    const arrivalsPerTick = 1;
+    const expectedIncomingOpsPerMs = (bucketsInWindow * arrivalsPerTick) / ROLLING_WINDOW_MS;
+
+    expect(dbMetrics.incomingOpsPerMs).toBe(expectedIncomingOpsPerMs);
   });
 
   it("reset() clears the metrics window so deliveryOpsPerMs returns to 0", () => {
@@ -708,6 +752,63 @@ describe("rolling metrics", () => {
     engine.reset();
 
     expect(engine.getSnapshot().nodeMetrics).toStrictEqual(new Map());
+  });
+});
+
+describe("server receives all requests emitted by the users node", () => {
+  // One request per tick: SPAWN_RATE * TICK_MS = 1, giving exactly one arrival per tick.
+  const TICK_MS = 500;
+  const SPAWN_RATE = 1 / TICK_MS;
+
+  const config: LevelConfig = {
+    cacheHitRate: 0,
+    monthlyBudget: 100,
+    timeout: 60_000,
+    trafficPeak: SPAWN_RATE,
+    trafficStart: SPAWN_RATE,
+    trafficTarget: SPAWN_RATE,
+    winSustainMs: 3_000,
+  };
+
+  const usersNode: ArchitectureNode = {
+    componentType: "users",
+    id: "users-1",
+    position: { x: 0, y: 0 },
+  };
+  const serverNode: ArchitectureNode = {
+    componentType: "server",
+    id: "server-1",
+    position: { x: 0, y: 0 },
+  };
+  const edge: ArchitectureEdge = {
+    id: "e1",
+    source: "users-1",
+    target: "server-1",
+  };
+
+  it("incomingOpsPerMs at the server equals the expected rolling average of all spawned requests", () => {
+    const engine = makeEngine();
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode], [edge]);
+
+    // Run 12 ticks (6000ms) to ensure the rolling window is fully saturated with arrivals.
+    for (let i = 0; i < 12; i++) {
+      engine.tick(TICK_MS);
+    }
+
+    const { nodeMetrics } = engine.getSnapshot();
+    const serverMetrics = nodeMetrics.get("server-1")!;
+
+    // addBucket keeps buckets with wallClockMs >= cutoff (inclusive), so the window
+    // spans ROLLING_WINDOW_MS / TICK_MS + 1 = 7 buckets at steady state.
+    // With exactly 1 arrival per tick, the window holds 7 arrivals total.
+    // incomingOpsPerMs = totalArrivals / ROLLING_WINDOW_MS  (from metrics.ts)
+    // 7 buckets in window, 1 arrival per tick
+    const bucketsInWindow = ROLLING_WINDOW_MS * SPAWN_RATE + 1;
+    const arrivalsPerTick = SPAWN_RATE * TICK_MS;
+    const expectedIncomingOpsPerMs = (bucketsInWindow * arrivalsPerTick) / ROLLING_WINDOW_MS;
+
+    expect(serverMetrics.incomingOpsPerMs).toBe(expectedIncomingOpsPerMs);
   });
 });
 

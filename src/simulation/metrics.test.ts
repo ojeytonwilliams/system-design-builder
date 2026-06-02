@@ -53,16 +53,22 @@ describe(addBucket, () => {
 
 describe(computeNodeMetrics, () => {
   it("returns an empty map for an empty window", () => {
-    expect(computeNodeMetrics([])).toStrictEqual(new Map());
+    expect(computeNodeMetrics([], new Map())).toStrictEqual(new Map());
   });
 
   it("returns opsPerMs = completedCount / 3000 for a single bucket", () => {
-    const result = computeNodeMetrics([makeBucket(1000, { "node-1": { completedCount: 30 } })]);
+    const result = computeNodeMetrics(
+      [makeBucket(1000, { "node-1": { completedCount: 30 } })],
+      new Map(),
+    );
     expect(result.get("node-1")?.opsPerMs).toBe(30 / 3000);
   });
 
   it("returns incomingOpsPerMs = arrivalCount / 3000 for a single bucket", () => {
-    const result = computeNodeMetrics([makeBucket(1000, { "node-1": { arrivalCount: 60 } })]);
+    const result = computeNodeMetrics(
+      [makeBucket(1000, { "node-1": { arrivalCount: 60 } })],
+      new Map(),
+    );
     expect(result.get("node-1")?.incomingOpsPerMs).toBe(60 / 3000);
   });
 
@@ -71,9 +77,46 @@ describe(computeNodeMetrics, () => {
       makeBucket(1000, { "node-1": { arrivalCount: 18, completedCount: 15 } }),
       makeBucket(2000, { "node-1": { arrivalCount: 12, completedCount: 15 } }),
     ];
-    const result = computeNodeMetrics(buckets);
+    const result = computeNodeMetrics(buckets, new Map());
     expect(result.get("node-1")?.opsPerMs).toBe(30 / 3000);
     expect(result.get("node-1")?.incomingOpsPerMs).toBe(30 / 3000);
+  });
+
+  it("sets isOverloaded to true when incomingOpsPerMs exceeds node capacity", () => {
+    const capacities = new Map([["node-1", 0.005]]);
+    // arrivalCount: 30 → incomingOpsPerMs = 30/3000 = 0.01 > 0.005
+    const result = computeNodeMetrics(
+      [makeBucket(1000, { "node-1": { arrivalCount: 30 } })],
+      capacities,
+    );
+    expect(result.get("node-1")?.isOverloaded).toBe(true);
+  });
+
+  it("sets isOverloaded to false when incomingOpsPerMs is within node capacity", () => {
+    const capacities = new Map([["node-1", 0.1]]);
+    // arrivalCount: 30 → incomingOpsPerMs = 30/3000 = 0.01 < 0.1
+    const result = computeNodeMetrics(
+      [makeBucket(1000, { "node-1": { arrivalCount: 30 } })],
+      capacities,
+    );
+    expect(result.get("node-1")?.isOverloaded).toBe(false);
+  });
+
+  it("sets isOverloaded to false when capacity is Infinity", () => {
+    const capacities = new Map<string, number>([["node-1", Infinity]]);
+    const result = computeNodeMetrics(
+      [makeBucket(1000, { "node-1": { arrivalCount: 30000 } })],
+      capacities,
+    );
+    expect(result.get("node-1")?.isOverloaded).toBe(false);
+  });
+
+  it("sets isOverloaded to false when node is not in the capacity map", () => {
+    const result = computeNodeMetrics(
+      [makeBucket(1000, { "node-1": { arrivalCount: 30000 } })],
+      new Map(),
+    );
+    expect(result.get("node-1")?.isOverloaded).toBe(false);
   });
 });
 

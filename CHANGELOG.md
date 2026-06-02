@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.8.9] - 2026-06-02
+
+### Added
+
+- **Level solutions and integration tests**: Each `LevelDefinition` now carries a `solution` field (`LevelSolution` — nodes + edges). Integration tests in `src/integration-tests/level-solutions.test.ts` verify that every solution wins within the level timeout and that the starting conditions do not win, guaranteeing every level is completable.
+
+### Refactoring
+
+- **Move `isOverloaded` computation into `computeNodeMetrics`**: The capacity-vs-arrival check that previously lived in `SimulationEngine.tick` is now performed inside `computeNodeMetrics` in `metrics.ts`. The function accepts a `nodeCapacities: Map<string, number>` argument; the engine builds this map from the graph nodes and component library before the call. Tests for `isOverloaded` behaviour migrated from `simulation-engine.test.ts` to `metrics.test.ts`; the temporary `describe.only` guard removed.
+
 ## [2.8.8] - 2026-06-02
 
 ### Refactoring

@@ -18,6 +18,17 @@ const level1: LevelDefinition = {
   lockedNodeIds: ["users-1", "db-1"],
   monthlyBudget: 150,
   objectiveText: "Your server is overloaded. Fix the architecture to handle 70 ops/s.",
+  solution: {
+    edges: [
+      { id: "edge-u-s", source: "users-1", target: "server-1" },
+      { id: "edge-s-d", source: "server-1", target: "db-1" },
+    ],
+    nodes: [
+      { componentType: "users", id: "users-1", position: { x: 72, y: 168 } },
+      { componentType: "server-large", id: "server-1", position: { x: 288, y: 168 } },
+      { componentType: "db-large", id: "db-1", position: { x: 480, y: 168 } },
+    ],
+  },
   startingEdges: [
     { id: "edge-u-s", source: "users-1", target: "server-1" },
     { id: "edge-s-d", source: "server-1", target: "db-1" },

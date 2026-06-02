@@ -176,23 +176,15 @@ class SimulationEngine {
       wallClockMs: this.wallClockElapsedMs,
     });
 
-    const rawMetrics = computeNodeMetrics(this.metricsWindow);
+    const nodeCapacities = new Map(
+      this.graphNodes.map((n) => [n.id, this.componentLibrary[n.componentType].capacity]),
+    );
+    const rawMetrics = computeNodeMetrics(this.metricsWindow, nodeCapacities);
     const nodeMetrics: NodeMetricsSnapshot = new Map(
-      this.graphNodes.map((n) => {
-        const m = rawMetrics.get(n.id) ?? {
-          incomingOpsPerMs: 0,
-          isOverloaded: false,
-          opsPerMs: 0,
-        };
-        const { capacity } = this.componentLibrary[n.componentType];
-        return [
-          n.id,
-          {
-            ...m,
-            isOverloaded: isFinite(capacity) && m.incomingOpsPerMs > capacity,
-          },
-        ];
-      }),
+      this.graphNodes.map((n) => [
+        n.id,
+        rawMetrics.get(n.id) ?? { incomingOpsPerMs: 0, isOverloaded: false, opsPerMs: 0 },
+      ]),
     );
     const deliveryOpsPerMs = computeDeliveryOpsPerMs(this.metricsWindow, usersNodeId);
 

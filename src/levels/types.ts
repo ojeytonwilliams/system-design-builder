@@ -1,6 +1,11 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import type { ComponentType } from "../domain/component-library.js";
 
+interface LevelSolution {
+  edges: ArchitectureEdge[];
+  nodes: ArchitectureNode[];
+}
+
 interface CapacityReachedTrigger {
   type: "CAPACITY_REACHED";
 }
@@ -37,6 +42,7 @@ interface LevelDefinition {
   lockedNodeIds: string[];
   monthlyBudget: number;
   objectiveText: string;
+  solution: LevelSolution;
   startingEdges: ArchitectureEdge[];
   startingNodes: ArchitectureNode[];
   timeout: number;
@@ -47,4 +53,4 @@ interface LevelDefinition {
   winSustainMs: number;
 }
 
-export type { ComponentUnlock, LevelDefinition, UnlockTrigger };
+export type { ComponentUnlock, LevelDefinition, LevelSolution, UnlockTrigger };
