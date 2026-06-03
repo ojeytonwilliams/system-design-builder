@@ -258,7 +258,15 @@ const GameScene = ({
     engine.reset();
     shownCoachMessageRef.current = new Set();
     hasSeenOverloadThisLevelRef.current = false;
-  }, [currentLevel.id, engine]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    currentLevel.id,
+    engine,
+    levelConfig,
+    markLevelComplete,
+    remainingBudget,
+    dispatchPhase,
+    appendEvent,
+  ]);
 
   useEffect(() => {
     currentLevel.coachMessages.forEach((message, index) => {
