@@ -38,10 +38,9 @@ const getRoutingOptions = (
       if (outgoingEdges.length === 0) {
         return [{ option: { status: "FULFILLED" }, weight: 1 }];
       }
-      const weight = 1 / outgoingEdges.length;
       return outgoingEdges.map((e) => ({
         option: { edgeId: e.id, status: "IN_TRANSIT" as const },
-        weight,
+        weight: 1,
       }));
     }
 
@@ -50,10 +49,21 @@ const getRoutingOptions = (
       if (edge === undefined) {
         return [{ option: { status: "FULFILLED" }, weight: 1 }];
       }
-      return [
-        { option: { status: "FULFILLED" }, weight: cacheHitRate },
-        { option: { edgeId: edge.id, status: "IN_TRANSIT" }, weight: 1 - cacheHitRate },
-      ];
+      const hitWeight = cacheHitRate * 10;
+      if (!Number.isInteger(hitWeight) || hitWeight < 0 || hitWeight > 10) {
+        throw Error(
+          `cacheHitRate must be between 0 and 1 with at most one decimal place, got: ${cacheHitRate}`,
+        );
+      }
+      const missWeight = 10 - hitWeight;
+      const options: WeightedOption[] = [];
+      if (hitWeight > 0) {
+        options.push({ option: { status: "FULFILLED" }, weight: hitWeight });
+      }
+      if (missWeight > 0) {
+        options.push({ option: { edgeId: edge.id, status: "IN_TRANSIT" }, weight: missWeight });
+      }
+      return options.length > 0 ? options : [{ option: { status: "FULFILLED" }, weight: 1 }];
     }
   }
 };

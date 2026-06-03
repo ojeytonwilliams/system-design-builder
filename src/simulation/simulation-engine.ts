@@ -293,10 +293,10 @@ class SimulationEngine {
             : getRoutingOptions(node.componentType, outgoingEdges, cacheHitRate);
         let router = this.nodeRouters.get(proc.nodeId);
         if (router === undefined) {
-          router = new NodeRouter();
+          router = new NodeRouter(options);
           this.nodeRouters.set(proc.nodeId, router);
         }
-        const result = router.route(options);
+        const result = router.route();
 
         const existing = tickEvents.get(proc.nodeId) ?? {
           arrivalCount: 0,

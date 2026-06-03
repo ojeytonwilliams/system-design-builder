@@ -5,25 +5,33 @@ const transit = (edgeId: string): WeightedOption["option"] => ({ edgeId, status:
 const fulfilled: WeightedOption["option"] = { status: "FULFILLED" };
 
 describe(NodeRouter, () => {
-  describe("two equal-weight options", () => {
-    it("routes to the first option on the first call", () => {
-      const router = new NodeRouter();
+  describe("construction", () => {
+    it("throws when given non-integer weights", () => {
       const options: WeightedOption[] = [
         { option: transit("e1"), weight: 0.5 },
         { option: transit("e2"), weight: 0.5 },
       ];
 
-      expect(router.route(options)).toStrictEqual(transit("e1"));
+      expect(() => new NodeRouter(options)).toThrow("positive integer weights");
+    });
+  });
+
+  describe("two equal-weight options", () => {
+    const options: WeightedOption[] = [
+      { option: transit("e1"), weight: 1 },
+      { option: transit("e2"), weight: 1 },
+    ];
+
+    it("routes to the first option on the first call", () => {
+      const router = new NodeRouter(options);
+
+      expect(router.route()).toStrictEqual(transit("e1"));
     });
 
     it("alternates strictly between the two options", () => {
-      const router = new NodeRouter();
-      const options: WeightedOption[] = [
-        { option: transit("e1"), weight: 0.5 },
-        { option: transit("e2"), weight: 0.5 },
-      ];
+      const router = new NodeRouter(options);
 
-      const results = Array.from({ length: 6 }, () => router.route(options));
+      const results = Array.from({ length: 6 }, () => router.route());
 
       expect(results).toStrictEqual([
         transit("e1"),
@@ -36,14 +44,10 @@ describe(NodeRouter, () => {
     });
 
     it("continues to alternate correctly over 20 calls", () => {
-      const router = new NodeRouter();
-      const options: WeightedOption[] = [
-        { option: transit("e1"), weight: 0.5 },
-        { option: transit("e2"), weight: 0.5 },
-      ];
+      const router = new NodeRouter(options);
       const e1 = transit("e1");
       const e2 = transit("e2");
-      const results = Array.from({ length: 20 }, () => router.route(options));
+      const results = Array.from({ length: 20 }, () => router.route());
       expect(results).toStrictEqual([
         e1,
         e2,
@@ -70,15 +74,16 @@ describe(NodeRouter, () => {
   });
 
   describe("three equal-weight options", () => {
-    it("cycles through all three options in order", () => {
-      const router = new NodeRouter();
-      const options: WeightedOption[] = [
-        { option: transit("e1"), weight: 1 / 3 },
-        { option: transit("e2"), weight: 1 / 3 },
-        { option: transit("e3"), weight: 1 / 3 },
-      ];
+    const options: WeightedOption[] = [
+      { option: transit("e1"), weight: 1 },
+      { option: transit("e2"), weight: 1 },
+      { option: transit("e3"), weight: 1 },
+    ];
 
-      const results = Array.from({ length: 6 }, () => router.route(options));
+    it("cycles through all three options in order", () => {
+      const router = new NodeRouter(options);
+
+      const results = Array.from({ length: 6 }, () => router.route());
 
       expect(results).toStrictEqual([
         transit("e1"),
@@ -91,17 +96,12 @@ describe(NodeRouter, () => {
     });
 
     it("continues to cycle correctly over 30 calls", () => {
-      const router = new NodeRouter();
-      const options: WeightedOption[] = [
-        { option: transit("e1"), weight: 1 / 3 },
-        { option: transit("e2"), weight: 1 / 3 },
-        { option: transit("e3"), weight: 1 / 3 },
-      ];
+      const router = new NodeRouter(options);
       const e1 = transit("e1");
       const e2 = transit("e2");
       const e3 = transit("e3");
       const cycle = [e1, e2, e3];
-      const results = Array.from({ length: 30 }, () => router.route(options));
+      const results = Array.from({ length: 30 }, () => router.route());
       expect(results).toStrictEqual([
         ...cycle,
         ...cycle,
@@ -117,15 +117,16 @@ describe(NodeRouter, () => {
     });
   });
 
-  describe("0.6 / 0.4 weighted options (cache hit rate)", () => {
-    it("produces the correct sequence over one period of 5", () => {
-      const router = new NodeRouter();
-      const options: WeightedOption[] = [
-        { option: fulfilled, weight: 0.6 },
-        { option: transit("db"), weight: 0.4 },
-      ];
+  describe("6 / 4 weighted options (cache hit rate)", () => {
+    const options: WeightedOption[] = [
+      { option: fulfilled, weight: 6 },
+      { option: transit("db"), weight: 4 },
+    ];
 
-      const results = Array.from({ length: 5 }, () => router.route(options));
+    it("produces the correct sequence over one period of 5", () => {
+      const router = new NodeRouter(options);
+
+      const results = Array.from({ length: 5 }, () => router.route());
 
       expect(results).toStrictEqual([
         fulfilled,
@@ -137,12 +138,8 @@ describe(NodeRouter, () => {
     });
 
     it("delivers exactly 2 db-bound requests in every period of 5", () => {
-      const router = new NodeRouter();
-      const options: WeightedOption[] = [
-        { option: fulfilled, weight: 0.6 },
-        { option: transit("db"), weight: 0.4 },
-      ];
-      const results = Array.from({ length: 20 }, () => router.route(options));
+      const router = new NodeRouter(options);
+      const results = Array.from({ length: 20 }, () => router.route());
 
       for (let i = 0; i < results.length; i += 5) {
         const period = results.slice(i, i + 5);
@@ -154,10 +151,9 @@ describe(NodeRouter, () => {
 
   describe("single option", () => {
     it("always returns the only option", () => {
-      const router = new NodeRouter();
-      const options: WeightedOption[] = [{ option: fulfilled, weight: 1 }];
+      const router = new NodeRouter([{ option: fulfilled, weight: 1 }]);
 
-      const results = Array.from({ length: 5 }, () => router.route(options));
+      const results = Array.from({ length: 5 }, () => router.route());
 
       expect(results).toStrictEqual([fulfilled, fulfilled, fulfilled, fulfilled, fulfilled]);
     });
@@ -165,9 +161,9 @@ describe(NodeRouter, () => {
 
   describe("empty options", () => {
     it("returns FULFILLED when no options are provided", () => {
-      const router = new NodeRouter();
+      const router = new NodeRouter([]);
 
-      expect(router.route([])).toStrictEqual(fulfilled);
+      expect(router.route()).toStrictEqual(fulfilled);
     });
   });
 });

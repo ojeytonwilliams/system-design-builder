@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.10.2] - 2026-06-03
+
+### Fixed
+
+- **`NodeRouter` floating-point drift with equal-weight options**: Fractional weights (e.g. `1/3` for a three-way load-balancer) accumulated rounding error over successive rounds, causing the routing cycle to fall out of order after the first full period. Switching to integer weights (`1` per edge for load-balancers, `cacheHitRate × 10` for caches) and the smooth WRR algorithm eliminates accumulation entirely, since all arithmetic is exact integer addition and subtraction.
+
+### Refactoring
+
+- **`NodeRouter` now takes options at construction time**: Previously options were passed on every `route()` call, allowing the per-node topology to silently change mid-simulation and making integer weight validation impossible. Options are now fixed at construction and validated immediately (non-positive or non-integer weights throw), so bugs surface at setup rather than mid-run.
+- **`getRoutingOptions` produces integer weights**: Load-balancer edges each receive weight `1`; cache weights are scaled by 10. The level validator normalises by `totalWeight` when computing propagated rates, so its results are unchanged.
+
 ## [2.10.1] - 2026-06-03
 
 ### Refactoring

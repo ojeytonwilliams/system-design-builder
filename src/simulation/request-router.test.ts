@@ -47,11 +47,11 @@ describe(getRoutingOptions, () => {
     ]);
   });
 
-  it("load-balancer with 2 outgoing edges returns each IN_TRANSIT with weight 0.5", () => {
+  it("load-balancer with 2 outgoing edges returns each IN_TRANSIT with weight 1", () => {
     const edges = [makeEdge("e1", "lb", "s1"), makeEdge("e2", "lb", "s2")];
     expect(getRoutingOptions("load-balancer", edges, 0)).toStrictEqual([
-      { option: { edgeId: "e1", status: "IN_TRANSIT" }, weight: 0.5 },
-      { option: { edgeId: "e2", status: "IN_TRANSIT" }, weight: 0.5 },
+      { option: { edgeId: "e1", status: "IN_TRANSIT" }, weight: 1 },
+      { option: { edgeId: "e2", status: "IN_TRANSIT" }, weight: 1 },
     ]);
   });
 
@@ -61,11 +61,11 @@ describe(getRoutingOptions, () => {
     ]);
   });
 
-  it("cache returns FULFILLED at cacheHitRate weight and IN_TRANSIT at (1 - cacheHitRate) weight", () => {
+  it("cache returns FULFILLED and IN_TRANSIT with integer weights", () => {
     const e = makeEdge("e1", "cache-1", "db-1");
     expect(getRoutingOptions("cache", [e], 0.4)).toStrictEqual([
-      { option: { status: "FULFILLED" }, weight: 0.4 },
-      { option: { edgeId: "e1", status: "IN_TRANSIT" }, weight: 0.6 },
+      { option: { status: "FULFILLED" }, weight: 4 },
+      { option: { edgeId: "e1", status: "IN_TRANSIT" }, weight: 6 },
     ]);
   });
 
@@ -73,5 +73,21 @@ describe(getRoutingOptions, () => {
     expect(getRoutingOptions("cache", [], 0.5)).toStrictEqual([
       { option: { status: "FULFILLED" }, weight: 1 },
     ]);
+  });
+
+  it("load-balancer with 3 outgoing edges returns integer weights", () => {
+    const edges = [
+      makeEdge("e1", "lb", "s1"),
+      makeEdge("e2", "lb", "s2"),
+      makeEdge("e3", "lb", "s3"),
+    ];
+    const options = getRoutingOptions("load-balancer", edges, 0);
+    expect(options.every((o) => Number.isInteger(o.weight))).toBe(true);
+  });
+
+  it("cache with non-integer cacheHitRate returns integer weights", () => {
+    const e = makeEdge("e1", "cache-1", "db-1");
+    const options = getRoutingOptions("cache", [e], 0.6);
+    expect(options.every((o) => Number.isInteger(o.weight))).toBe(true);
   });
 });

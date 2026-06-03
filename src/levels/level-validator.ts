@@ -63,10 +63,11 @@ const computeNodeRates = (
 
     const edges = outEdges.get(nodeId) ?? [];
     const options = getRoutingOptions(node.componentType, edges, cacheHitRate);
+    const totalWeight = options.reduce((sum, o) => sum + o.weight, 0);
 
     for (const { option, weight } of options) {
       if (option.status === "IN_TRANSIT") {
-        edgeRate.set(option.edgeId, inRate * weight);
+        edgeRate.set(option.edgeId, inRate * (weight / totalWeight));
       }
     }
 
@@ -137,10 +138,11 @@ const computeNodeMaxArrivals = (
 
     const edges = outEdges.get(nodeId) ?? [];
     const options = getRoutingOptions(node.componentType, edges, cacheHitRate);
+    const totalWeight = options.reduce((sum, o) => sum + o.weight, 0);
 
     for (const { option, weight } of options) {
       if (option.status === "IN_TRANSIT") {
-        edgeMaxArrivals.set(option.edgeId, Math.ceil(maxArrivals * weight));
+        edgeMaxArrivals.set(option.edgeId, Math.ceil(maxArrivals * (weight / totalWeight)));
       }
     }
 
