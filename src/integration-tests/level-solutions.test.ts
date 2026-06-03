@@ -4,8 +4,14 @@ import { levelRegistry } from "../levels/index.js";
 import type { LevelDefinition, LevelSolution } from "../levels/types.js";
 import { SimulationEngine, TICK_INTERVAL_MS } from "../simulation/simulation-engine.js";
 import { WinConditionChecker } from "../simulation/subscribers/win-condition-checker.js";
+import { computeTotalCost } from "../domain/budget.js";
 
 const runLevelSolution = (level: LevelDefinition, solution: LevelSolution): boolean => {
+  const inBudget = computeTotalCost(solution.nodes) <= level.monthlyBudget;
+  if (!inBudget) {
+    return false;
+  }
+
   let won = false;
   const engine = new SimulationEngine();
   const checker = new WinConditionChecker(engine, level, {
@@ -43,8 +49,7 @@ describe("level solutions", () => {
     expect(runLevelSolution(level, level.solution)).toBe(true);
   });
 
-  // oxlint-disable-next-line vitest/no-disabled-tests
-  it.skip.each(levelRegistry.levels)("level $title fails for the initial conditions", (level) => {
+  it.each(levelRegistry.levels)("level $title fails for the initial conditions", (level) => {
     expect(
       runLevelSolution(level, {
         edges: level.startingEdges,

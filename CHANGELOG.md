@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.0] - 2026-06-03
+
+### Added
+
+- **Budget enforcement as a win condition**: Reaching the performance target is no longer sufficient to win a level — the solution must also stay within the monthly budget. Exceeding the budget now shows a coach message ("You met the performance target, but exceeded the budget. Try optimizing your architecture to reduce costs.") rather than triggering a win. This makes cost awareness a first-class constraint alongside performance.
+- **Budget validation in integration tests**: `runLevelSolution` now checks `computeTotalCost(solution.nodes) <= level.monthlyBudget` before simulating, ensuring registered solutions are both performant and cost-efficient. The previously-skipped "fails for initial conditions" test suite is re-enabled, confirming that no level's starting state is accidentally already a valid solution.
+
 ## [2.9.0] - 2026-06-02
 
 ### Added

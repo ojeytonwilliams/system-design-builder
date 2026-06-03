@@ -243,7 +243,12 @@ const GameScene = ({
     });
 
     winCheckerRef.current = new WinConditionChecker(engine, levelConfig, {
-      onWin: () => winLevel(currentLevel.id, dispatchPhase, markLevelComplete),
+      onWin: () =>
+        remainingBudget >= 0
+          ? winLevel(currentLevel.id, dispatchPhase, markLevelComplete)
+          : setCoachMessage(
+              "You met the performance target, but exceeded the budget. Try optimizing your architecture to reduce costs.",
+            ),
     });
 
     timeoutCheckerRef.current = new TimeoutChecker(engine, levelConfig, {
