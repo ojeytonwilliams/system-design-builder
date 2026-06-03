@@ -42,27 +42,29 @@ describe(WinConditionChecker, () => {
     checker.run({ currentTrafficRate: rate, nodeMetrics, tickDeltaMs }, { onWin });
   };
 
-  it("fires onWin when sustained no-drop ticks reach the threshold", () => {
-    run(cleanMetrics, convertRate(0.1));
-    run(cleanMetrics, convertRate(0.1));
-    run(cleanMetrics, convertRate(0.1));
-
-    expect(onWin).toHaveBeenCalledOnce();
-  });
-
-  it("does not fire onWin before the threshold is reached", () => {
-    run(cleanMetrics, convertRate(0.1));
-    run(cleanMetrics, convertRate(0.1));
-
-    expect(onWin).not.toHaveBeenCalled();
-  });
-
-  it("fires onWin exactly once even after continued clean ticks", () => {
-    for (let i = 0; i < 5; i++) {
+  describe("win condition checking", () => {
+    it("fires onWin when sustained no-drop ticks reach the threshold", () => {
       run(cleanMetrics, convertRate(0.1));
-    }
+      run(cleanMetrics, convertRate(0.1));
+      run(cleanMetrics, convertRate(0.1));
 
-    expect(onWin).toHaveBeenCalledOnce();
+      expect(onWin).toHaveBeenCalledOnce();
+    });
+
+    it("does not fire onWin before the threshold is reached", () => {
+      run(cleanMetrics, convertRate(0.1));
+      run(cleanMetrics, convertRate(0.1));
+
+      expect(onWin).not.toHaveBeenCalled();
+    });
+
+    it("fires onWin exactly once even after continued clean ticks", () => {
+      for (let i = 0; i < 5; i++) {
+        run(cleanMetrics, convertRate(0.1));
+      }
+
+      expect(onWin).toHaveBeenCalledOnce();
+    });
   });
 
   it("resets the counter when overload occurs", () => {

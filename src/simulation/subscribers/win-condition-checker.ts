@@ -1,6 +1,5 @@
 import type { SimulationEngine } from "../simulation-engine.js";
 import type { NodeMetricsSnapshot } from "../metrics.js";
-import type { LevelConfig } from "../types.js";
 
 interface WinCallbacks {
   onWin: () => void;
@@ -12,14 +11,23 @@ interface WinSnapshot {
   tickDeltaMs: number;
 }
 
+interface WinConditionCheckerConfig {
+  trafficTarget: number;
+  winSustainMs: number;
+}
+
 class WinConditionChecker {
   private readonly unsubscribe: () => void;
-  private readonly levelConfig: LevelConfig;
+  private readonly config: WinConditionCheckerConfig;
   private sustainedNoDropTicks = 0;
   private won = false;
 
-  constructor(engine: SimulationEngine, levelConfig: LevelConfig, callbacks: WinCallbacks) {
-    this.levelConfig = levelConfig;
+  constructor(
+    engine: SimulationEngine,
+    levelConfig: WinConditionCheckerConfig,
+    callbacks: WinCallbacks,
+  ) {
+    this.config = levelConfig;
     this.unsubscribe = engine.subscribe(() => {
       this.run(engine.getSnapshot(), callbacks);
     });
@@ -31,7 +39,7 @@ class WinConditionChecker {
     }
 
     const hasOverload = [...snapshot.nodeMetrics.values()].some((m) => m.isOverloaded);
-    const atOrAboveTarget = snapshot.currentTrafficRate >= this.levelConfig.trafficTarget;
+    const atOrAboveTarget = snapshot.currentTrafficRate >= this.config.trafficTarget;
 
     if (atOrAboveTarget && !hasOverload) {
       this.sustainedNoDropTicks += snapshot.tickDeltaMs;
@@ -39,7 +47,7 @@ class WinConditionChecker {
       this.sustainedNoDropTicks = 0;
     }
 
-    if (this.sustainedNoDropTicks >= this.levelConfig.winSustainMs) {
+    if (this.sustainedNoDropTicks >= this.config.winSustainMs) {
       this.won = true;
       callbacks.onWin();
     }
