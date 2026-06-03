@@ -1,5 +1,6 @@
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import { COMPONENT_LIBRARY_FIXTURE } from "../domain/test-fixtures.js";
+import { convertRate } from "../domain/sim-time-converter.js";
 import { getInspectorData } from "./node-analyser.js";
 import type { NodeMetricsSnapshot } from "../simulation/metrics.js";
 
@@ -26,7 +27,7 @@ describe(getInspectorData, () => {
 
   it("opsPerMs converts simulation ops/ms to real-world ops/ms", () => {
     const nodeMetrics: NodeMetricsSnapshot = new Map([
-      ["server-1", { incomingOpsPerMs: 0.2, isOverloaded: false, opsPerMs: 0.15 }],
+      ["server-1", { incomingOpsPerMs: 0.2, isOverloaded: false, opsPerMs: convertRate(15) }],
     ]);
 
     const result = getInspectorData("server-1", [serverNode], nodeMetrics);
@@ -41,9 +42,12 @@ describe(getInspectorData, () => {
   });
 
   it("loadPercent converts simulation incomingOpsPerMs to real-world percentage of capacity", () => {
+    const serverCapacity = COMPONENT_LIBRARY_FIXTURE.server.capacity;
     const nodeMetrics: NodeMetricsSnapshot = new Map([
-      // 0.00025 sim ops/ms = 0.025 real ops/ms = 25 real ops/s; fixture server capacity = 0.05 ops/ms = 50 ops/s → 50%
-      ["server-1", { incomingOpsPerMs: 0.00025, isOverloaded: false, opsPerMs: 0.00025 }],
+      [
+        "server-1",
+        { incomingOpsPerMs: serverCapacity / 2, isOverloaded: false, opsPerMs: serverCapacity / 2 },
+      ],
     ]);
 
     const result = getInspectorData("server-1", [serverNode], nodeMetrics, {

@@ -245,7 +245,7 @@ describe("tick", () => {
 });
 
 describe("transit and processing advancement", () => {
-  const TICK_MS = 500;
+  const TICK_MS = CONNECTION_LIBRARY_FIXTURE.standard.transitMs / 2;
   const SPAWN_RATE = toRealRate(1 / TICK_MS);
 
   const levelConfig: LevelConfig = {
@@ -336,7 +336,7 @@ describe("transit and processing advancement", () => {
     const snap = engine.getSnapshot();
     const [processing] = [...snap.processing.values()];
 
-    expect(processing?.durationMs).toBe(1000);
+    expect(processing?.durationMs).toBe(COMPONENT_LIBRARY_FIXTURE.server.latencyMs);
   });
 
   it("advances processing elapsedMs each tick (processing created and immediately advanced in same tick as transit completion)", () => {
@@ -371,7 +371,7 @@ describe("transit and processing advancement", () => {
 });
 
 describe("response creation", () => {
-  const TICK_MS = 500;
+  const TICK_MS = CONNECTION_LIBRARY_FIXTURE.standard.transitMs / 2;
   const SPAWN_RATE = toRealRate(1 / TICK_MS);
 
   const singleEdgeConfig: LevelConfig = {
@@ -457,7 +457,7 @@ describe("response creation", () => {
       engine = makeEngine();
       engine.setConfig(singleEdgeConfig);
       engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
-      // transit e1 (2 ticks) + process server (2) + transit e2 (2) + process db (3, latency=1500ms) = 7 ticks
+      // transit e1 (2 ticks) + process server (2) + transit e2 (2) + process db (3) = 7 ticks
       for (let i = 0; i < 7; i++) {
         engine.tick(TICK_MS);
       }
@@ -493,7 +493,7 @@ describe("response creation", () => {
       const engine = makeEngine();
       engine.setConfig(overloadConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: 5500 requests spawn (1100 real req/ms → 11 sim req/ms × 500ms); tick 2: first transit completes;
+      // tick 1: many requests spawn; tick 2: first transit completes;
       // tick 3: all remaining transits complete → all enter processing (no drops)
       engine.tick(TICK_MS);
       engine.tick(TICK_MS);
@@ -509,7 +509,7 @@ describe("response creation", () => {
 });
 
 describe("response transit advancement", () => {
-  const TICK_MS = 500;
+  const TICK_MS = CONNECTION_LIBRARY_FIXTURE.standard.transitMs / 2;
   const SPAWN_RATE = toRealRate(1 / TICK_MS);
 
   const config: LevelConfig = {
@@ -583,7 +583,7 @@ describe("response transit advancement", () => {
     });
 
     it("removes the response when the transit completes", () => {
-      // tick 4: transit 500 → 1000, completes → delivered
+      // tick 4: transit completes → delivered
       engine.tick(TICK_MS);
 
       expect(engine.getSnapshot().responses.has(responseId)).toBe(false);
@@ -608,7 +608,7 @@ describe("response transit advancement", () => {
       engine = makeEngine();
       engine.setConfig(config);
       engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
-      // 7 ticks to fulfil r1; response is created and e2 transit advanced to 500ms in tick 7
+      // 7 ticks to fulfil r1; response is created and e2 transit advanced by TICK_MS in tick 7
       for (let i = 0; i < 7; i++) {
         engine.tick(TICK_MS);
       }
@@ -618,7 +618,7 @@ describe("response transit advancement", () => {
     });
 
     it("creates a new transit for the next edge when the first completes", () => {
-      // tick 8: e2 transit 500 → 1000 completes, e1 transit created
+      // tick 8: e2 transit completes, e1 transit created
       engine.tick(TICK_MS);
 
       const transit = [...engine.getSnapshot().responseTransits.values()].find(
@@ -638,9 +638,9 @@ describe("response transit advancement", () => {
     it("removes the response after all transits complete", () => {
       // tick 8: e2 completes → e1 created (elapsedMs=0)
       engine.tick(TICK_MS);
-      // tick 9: e1 0 → 500
+      // tick 9: e1 advances
       engine.tick(TICK_MS);
-      // tick 10: e1 500 → 1000 completes → delivered
+      // tick 10: e1 completes → delivered
       engine.tick(TICK_MS);
 
       expect(engine.getSnapshot().responses.has(responseId)).toBe(false);

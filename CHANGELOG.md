@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.10.6] - 2026-06-03
+
+### Fixed
+
+- **Tests decoupled from `TIME_SCALE`**: Several tests in `simulation-engine.test.ts` and `node-analyser.test.ts` embedded hardcoded numeric values derived by hand from `TIME_SCALE = 100`, so halving it to 50 caused 20 failures even though the underlying logic was correct. The simulation engine tests now derive `TICK_MS` from `transitMs / 2` (preserving the same tick-count semantics at any scale) and reference `COMPONENT_LIBRARY_FIXTURE.server.latencyMs` instead of the literal `1000`. The node-analyser tests now build their mock sim values via `convertRate` / fixture capacity ratios so that `toRealRate` round-trips cancel the scale factor.
+
 ## [2.10.5] - 2026-06-03
 
 ### Changed
