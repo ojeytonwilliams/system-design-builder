@@ -29,6 +29,7 @@ const REQUEST_DOT_COLOR = 0xa8c4e8;
 const RESPONSE_DOT_COLOR = 0x4fd47f;
 const HANDLE_RADIUS = PORT_HIT_SIZE / 2;
 const HANDLE_DOT_RADIUS = 4;
+const EDGE_HIT_WIDTH = 16;
 
 const hexToPixi = (hex: string): number => parseInt(hex.replace("#", ""), 16);
 
@@ -353,6 +354,9 @@ const PixiEdgeInner = ({
   const draw = useCallback(
     (g: Graphics) => {
       g.clear();
+      g.moveTo(srcX, srcY);
+      g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
+      g.stroke({ alpha: 0, color: 0x000000, width: EDGE_HIT_WIDTH });
       g.moveTo(srcX, srcY);
       g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
       g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });

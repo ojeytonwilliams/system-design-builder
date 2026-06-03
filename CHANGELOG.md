@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.10.4] - 2026-06-03
+
+### Fixed
+
+- **Edge hit area widened**: Edges were difficult to click because Pixi.js used the 2–3 px visible stroke as the only hit target. A transparent 16 px stroke is now drawn along the same Bézier path, making edges much easier to select without changing their appearance.
+
 ## [2.10.3] - 2026-06-03
 
 ### Changed
