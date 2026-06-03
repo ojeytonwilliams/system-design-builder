@@ -72,9 +72,9 @@ const level4: LevelDefinition = {
   ],
   timeout: 60_000,
   title: "Read Overload",
-  trafficPeak: 0.16,
-  trafficStart: 0.16,
-  trafficTarget: 0.16,
+  trafficPeak: 0.32,
+  trafficStart: 0.32,
+  trafficTarget: 0.32,
   winSustainMs: 10_000,
 };
 

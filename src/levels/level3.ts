@@ -70,9 +70,9 @@ const level3: LevelDefinition = {
   ],
   timeout: 60_000,
   title: "DB Bottleneck",
-  trafficPeak: 0.06,
-  trafficStart: 0.06,
-  trafficTarget: 0.06,
+  trafficPeak: 0.12,
+  trafficStart: 0.12,
+  trafficTarget: 0.12,
   winSustainMs: 10_000,
 };
 

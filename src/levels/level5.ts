@@ -88,9 +88,9 @@ const level5: LevelDefinition = {
   ],
   timeout: 60_000,
   title: "Right-Sizing",
-  trafficPeak: 0.09,
-  trafficStart: 0.09,
-  trafficTarget: 0.09,
+  trafficPeak: 0.18,
+  trafficStart: 0.18,
+  trafficTarget: 0.18,
   winSustainMs: 10_000,
 };
 

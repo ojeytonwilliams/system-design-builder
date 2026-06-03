@@ -52,9 +52,9 @@ const level1: LevelDefinition = {
   ],
   timeout: 60_000,
   title: "First Request",
-  trafficPeak: 0.06,
-  trafficStart: 0.06,
-  trafficTarget: 0.06,
+  trafficPeak: 0.12,
+  trafficStart: 0.12,
+  trafficTarget: 0.12,
   winSustainMs: 10_000,
 };
 

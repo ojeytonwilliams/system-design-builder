@@ -28,7 +28,7 @@ type ComponentType =
 const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   cache: convertComponent({
     accentColor: "#facc15",
-    capacity: 0.2,
+    capacity: 0.4,
     description: "Caches frequent DB reads in memory",
     icon: CacheIcon,
     label: "Cache",
@@ -37,7 +37,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   }),
   db: convertComponent({
     accentColor: "#f472b6",
-    capacity: 0.03,
+    capacity: 0.06,
     description: "Stores and retrieves application data",
     icon: DbIcon,
     label: "Small DB",
@@ -46,7 +46,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   }),
   "db-large": convertComponent({
     accentColor: "#f472b6",
-    capacity: 0.09,
+    capacity: 0.18,
     description: "High-capacity managed database",
     icon: DbIcon,
     label: "Large DB",
@@ -64,7 +64,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   }),
   server: convertComponent({
     accentColor: "#22d3ee",
-    capacity: 0.05,
+    capacity: 0.1,
     description: "Handles incoming web requests",
     icon: ServerIcon,
     label: "Small Server",
@@ -73,7 +73,7 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   }),
   "server-large": convertComponent({
     accentColor: "#22d3ee",
-    capacity: 0.15,
+    capacity: 0.3,
     description: "High-capacity web server",
     icon: ServerIcon,
     label: "Large Server",

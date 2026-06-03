@@ -1,4 +1,5 @@
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
+import type { ComponentDefinition, ComponentType } from "../domain/component-library.js";
 import {
   toRealDuration as defaultToRealDuration,
   toRealRate as defaultToRealRate,
@@ -12,9 +13,11 @@ const getInspectorData = (
   nodes: ArchitectureNode[],
   nodeMetrics: NodeMetricsSnapshot,
   {
+    componentLibrary = COMPONENT_LIBRARY,
     toRealDuration = defaultToRealDuration,
     toRealRate = defaultToRealRate,
   }: {
+    componentLibrary?: Record<ComponentType, ComponentDefinition>;
     toRealDuration?: (simMs: number) => number;
     toRealRate?: (simRate: number) => number;
   } = {},
@@ -26,7 +29,7 @@ const getInspectorData = (
   }
 
   const { componentType } = selectedNode;
-  const def = COMPONENT_LIBRARY[componentType];
+  const def = componentLibrary[componentType];
   const selectedNodeLabel = def.label;
   const metrics = nodeMetrics.get(selectedNode.id);
   const { monthlyCost: cost } = def;

@@ -64,4 +64,25 @@ const testLevels: LevelDefinition[] = [
   }),
 ];
 
-export { testLevels };
+const levelWithTimedCoachMessage: LevelDefinition = convertLevel({
+  availableComponents: ["server"],
+  cacheHitRate: 0,
+  coachMessages: [{ atMs: 2_000, text: "Database is the bottleneck — upgrade it." }],
+  componentUnlocks: [],
+  feedbackText: [],
+  id: "test-level-coach",
+  lockedNodeIds: [],
+  monthlyBudget: 9_999,
+  objectiveText: "Objective Coach",
+  solution: { edges: [], nodes: [] },
+  startingEdges: [],
+  startingNodes: [{ componentType: "users", id: "users-1", position: { x: 0, y: 0 } }],
+  timeout: 60_000,
+  title: "Level Coach",
+  trafficPeak: 0.01,
+  trafficStart: 0.01,
+  trafficTarget: 0.01,
+  winSustainMs: 3_000,
+});
+
+export { levelWithTimedCoachMessage, testLevels };

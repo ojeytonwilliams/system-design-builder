@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.10.3] - 2026-06-03
+
+### Changed
+
+- **Component capacities and level traffic doubled**: All component capacities (server, large server, DB, large DB, cache) are doubled, and all level traffic targets are doubled to match. This increases the simulation's headroom, making it easier to observe performance cliffs during play.
+- **Tests decoupled from live component library values**: Tests that exercised specific capacity numbers now use fixture data so they remain stable when library values change. `getInspectorData` accepts an optional `componentLibrary` argument (defaulting to `COMPONENT_LIBRARY`) following the same injection pattern as `toRealRate`/`toRealDuration`. Integration tests in `game-layout.test.tsx` use level fixtures instead of real levels to avoid coupling to game content.
+
 ## [2.10.2] - 2026-06-03
 
 ### Fixed

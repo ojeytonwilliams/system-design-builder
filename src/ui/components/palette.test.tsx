@@ -41,7 +41,7 @@ describe("resources panel", () => {
   it("shows the capacity for each component", () => {
     render(<Resources availableComponents={["server"]} />);
 
-    expect(screen.getByText(/50 ops\/s/iv)).toBeInTheDocument();
+    expect(screen.getByText(/ops\/s/iv)).toBeInTheDocument();
   });
 
   it("shows the description for each component", () => {

@@ -4,8 +4,7 @@ import { useLevel } from "./hooks/use-level.js";
 import { GameLayout, GameScene } from "./game-layout.js";
 import { convertRate } from "../domain/sim-time-converter.js";
 import { levelRegistry } from "../levels/index.js";
-import { level1 } from "../levels/level1.js";
-import { level3 } from "../levels/level3.js";
+import { levelWithTimedCoachMessage, testLevels } from "../levels/test-fixtures.js";
 import { loadProgress } from "../persistence.js";
 import { SimulationEngine } from "../simulation/simulation-engine.js";
 import type { LevelConfig } from "../simulation/types.js";
@@ -67,14 +66,14 @@ const resolvingOverloadLevelConfig: LevelConfig = {
   winSustainMs: 10_000,
 };
 
-// Traffic drops from 100 to 50 real ops/s over 6s; rolling-window overload starts ~t=3.3s,
-// resolves ~t=4.5s — used to test overload start/resolution events
+// Traffic drops from 150 to 50 real ops/s over 6s; rolling-window overload starts early,
+// resolves once traffic drops below server capacity (100) — used to test overload start/resolution events
 const overloadResolvingConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
   timeout: 6_000,
   trafficPeak: 0,
-  trafficStart: convertRate(0.1),
+  trafficStart: convertRate(0.15),
   trafficTarget: convertRate(0.05),
   winSustainMs: 99_000,
 };
@@ -115,7 +114,7 @@ const overloadEdges: ArchitectureEdge[] = [{ id: "edge-1", source: "users-1", ta
 // Default props for GameScene in tests — override per-test as needed
 const defaultSceneProps = {
   completedLevels: [] as string[],
-  currentLevel: level1,
+  currentLevel: testLevels[0]!,
   engine: undefined as SimulationEngine | undefined,
   initLevel: (): { newEdges: ArchitectureEdge[]; newNodes: ArchitectureNode[] } => ({
     newEdges: [],
@@ -561,10 +560,9 @@ describe("coach panel", () => {
   });
 
   it("shows a timed coach message during simulation", () => {
-    // Level 3 has a coachMessage at atMs: 2_000 about the database bottleneck
     const engine = new SimulationEngine();
     renderScene({
-      currentLevel: level3,
+      currentLevel: levelWithTimedCoachMessage,
       engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,
@@ -584,7 +582,7 @@ describe("coach panel", () => {
   it("shows a coaching message the first time overload occurs in a level", () => {
     const engine = new SimulationEngine();
     renderScene({
-      currentLevel: { ...level1, coachMessages: [] },
+      currentLevel: testLevels[0]!,
       engine,
       initialEdges: overloadEdges,
       initialNodes: overloadNodes,

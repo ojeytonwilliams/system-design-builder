@@ -74,9 +74,9 @@ const level6: LevelDefinition = {
   ],
   timeout: 90_000,
   title: "Full Scale",
-  trafficPeak: 0.18,
-  trafficStart: 0.18,
-  trafficTarget: 0.18,
+  trafficPeak: 0.36,
+  trafficStart: 0.36,
+  trafficTarget: 0.36,
   winSustainMs: 10_000,
 };
 

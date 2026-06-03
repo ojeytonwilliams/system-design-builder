@@ -1,4 +1,5 @@
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
+import { COMPONENT_LIBRARY_FIXTURE } from "../domain/test-fixtures.js";
 import { getInspectorData } from "./node-analyser.js";
 import type { NodeMetricsSnapshot } from "../simulation/metrics.js";
 
@@ -41,11 +42,13 @@ describe(getInspectorData, () => {
 
   it("loadPercent converts simulation incomingOpsPerMs to real-world percentage of capacity", () => {
     const nodeMetrics: NodeMetricsSnapshot = new Map([
-      // 0.00025 sim ops/ms = 0.025 real ops/ms = 25 real ops/s; server capacity = 0.05 ops/ms = 50 ops/s → 50%
+      // 0.00025 sim ops/ms = 0.025 real ops/ms = 25 real ops/s; fixture server capacity = 0.05 ops/ms = 50 ops/s → 50%
       ["server-1", { incomingOpsPerMs: 0.00025, isOverloaded: false, opsPerMs: 0.00025 }],
     ]);
 
-    const result = getInspectorData("server-1", [serverNode], nodeMetrics);
+    const result = getInspectorData("server-1", [serverNode], nodeMetrics, {
+      componentLibrary: COMPONENT_LIBRARY_FIXTURE,
+    });
 
     expect(result.loadPercent).toBe(50);
   });
