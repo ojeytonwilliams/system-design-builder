@@ -1,11 +1,5 @@
-import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
+import type { ArchitectureEdge } from "../domain/canvas-logic.js";
 import type { ComponentType } from "../domain/component-library.js";
-
-interface RouterContext {
-  cacheHitRate: number;
-  edges: ArchitectureEdge[];
-  nodes: ArchitectureNode[];
-}
 
 type RouterResult = { status: "FULFILLED" } | { edgeId: string; status: "IN_TRANSIT" };
 
@@ -13,9 +7,6 @@ interface WeightedOption {
   option: RouterResult;
   weight: number;
 }
-
-const getOutgoingEdges = (nodeId: string, edges: ArchitectureEdge[]): ArchitectureEdge[] =>
-  edges.filter((e) => e.source === nodeId);
 
 /**
  * Returns all possible routing outcomes for a node, each paired with its
@@ -67,34 +58,5 @@ const getRoutingOptions = (
   }
 };
 
-const selectRoute = (options: WeightedOption[], random: () => number): RouterResult => {
-  const r = random();
-  let cumulative = 0;
-  for (const { option, weight } of options) {
-    cumulative += weight;
-    if (r < cumulative) {
-      return option;
-    }
-  }
-  return options.at(-1)?.option ?? { status: "FULFILLED" };
-};
-
-const requestRouter = (
-  nodeId: string,
-  context: RouterContext,
-  random: () => number = Math.random,
-): RouterResult => {
-  const node = context.nodes.find((n) => n.id === nodeId);
-  if (node === undefined) {
-    return { status: "FULFILLED" };
-  }
-  const options = getRoutingOptions(
-    node.componentType,
-    getOutgoingEdges(nodeId, context.edges),
-    context.cacheHitRate,
-  );
-  return selectRoute(options, random);
-};
-
-export { getRoutingOptions, requestRouter };
-export type { RouterContext, RouterResult, WeightedOption };
+export { getRoutingOptions };
+export type { RouterResult, WeightedOption };

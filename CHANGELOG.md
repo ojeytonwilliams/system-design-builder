@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.10.1] - 2026-06-03
+
+### Refactoring
+
+- **Remove `requestRouter` and its tests**: `requestRouter` was the original stochastic routing function, superseded by the deterministic `NodeRouter` (WRR) introduced in 2.9.0. Deleting it and its test suite removes a source of confusion — `getRoutingOptions` (the routing logic itself) is retained as the single source of truth for routing weights.
+
 ## [2.10.0] - 2026-06-03
 
 ### Added
