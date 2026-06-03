@@ -2,7 +2,13 @@ import { Application, extend, useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { drawArrowHead, drawDashedBezier, getBezierControlPoints } from "./bezier-utils.js";
+import {
+  drawArrowHead,
+  drawDashedBezier,
+  getBezierControlPoints,
+  getBezierLaneOffset,
+  LANE_OFFSET,
+} from "./bezier-utils.js";
 import { TICK_INTERVAL_MS } from "../../simulation/simulation-engine.js";
 import type { SimulationEngine, SimulationSnapshot } from "../../simulation/simulation-engine.js";
 import {
@@ -353,14 +359,36 @@ const PixiEdgeInner = ({
 
   const draw = useCallback(
     (g: Graphics) => {
+      const off = getBezierLaneOffset({ x: srcX, y: srcY }, { x: tgtX, y: tgtY }, LANE_OFFSET);
+      const ox = off.x,
+        oy = off.y;
+
       g.clear();
+
+      // Wide transparent stroke on the centre path for hit detection
       g.moveTo(srcX, srcY);
       g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
       g.stroke({ alpha: 0, color: 0x000000, width: EDGE_HIT_WIDTH });
-      g.moveTo(srcX, srcY);
-      g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
+
+      // Request lane (+offset): src → tgt, arrowhead at tgt
+      g.moveTo(srcX + ox, srcY + oy);
+      g.bezierCurveTo(cp1X + ox, cp1Y + oy, cp2X + ox, cp2Y + oy, tgtX + ox, tgtY + oy);
       g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });
-      drawArrowHead(g, { x: cp2X, y: cp2Y }, { color: strokeColor, to: { x: tgtX, y: tgtY } });
+      drawArrowHead(
+        g,
+        { x: cp2X + ox, y: cp2Y + oy },
+        { color: strokeColor, to: { x: tgtX + ox, y: tgtY + oy } },
+      );
+
+      // Response lane (-offset): tgt → src, arrowhead at src
+      g.moveTo(srcX - ox, srcY - oy);
+      g.bezierCurveTo(cp1X - ox, cp1Y - oy, cp2X - ox, cp2Y - oy, tgtX - ox, tgtY - oy);
+      g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });
+      drawArrowHead(
+        g,
+        { x: cp1X - ox, y: cp1Y - oy },
+        { color: strokeColor, to: { x: srcX - ox, y: srcY - oy } },
+      );
     },
     [srcX, srcY, cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY, strokeColor, strokeWidth],
   );
@@ -475,7 +503,12 @@ const TransitDotsLayer = ({ animRef, edges, isSimulating, nodes }: TransitDotsLa
     for (const [id, transit] of snapshot.transits) {
       const prev = snapshot.prevTransitProgresses.get(id) ?? transit.progress;
       const progress = prev + (transit.progress - prev) * alpha;
-      const pos = getTransitDotPosition({ edgeId: transit.edgeId, progress }, edges, nodes);
+      const pos = getTransitDotPosition(
+        { edgeId: transit.edgeId, progress },
+        edges,
+        nodes,
+        LANE_OFFSET,
+      );
       if (pos !== null) {
         g.circle(pos.x, pos.y, 4);
         g.fill({ alpha: 0.9, color: REQUEST_DOT_COLOR });
@@ -518,6 +551,7 @@ const ResponseTransitDotsLayer = ({
         { edgeId: transit.edgeId, progress: 1 - progress },
         edges,
         nodes,
+        -LANE_OFFSET,
       );
       if (pos !== null) {
         g.circle(pos.x, pos.y, 4);

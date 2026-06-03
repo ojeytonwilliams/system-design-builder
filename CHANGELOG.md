@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.10.5] - 2026-06-03
+
+### Changed
+
+- **Edges now show two parallel lanes**: Each edge renders a request lane (src → tgt) and a response lane (tgt → src) as separate offset Bézier curves, each with its own arrowhead. This makes the direction of traffic visually explicit. Animated request and response dots follow their respective lanes.
+
 ## [2.10.4] - 2026-06-03
 
 ### Fixed

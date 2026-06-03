@@ -30,6 +30,7 @@ interface Point {
 
 const BEZIER_STEPS = 80;
 const ARC_LENGTH_LUT_STEPS = 100;
+const LANE_OFFSET = 4;
 
 const sampleCubicBezier = (t: number, { cp1, cp2, p0, p3 }: BezierCurve): Point => {
   const mt = 1 - t;
@@ -145,6 +146,15 @@ const sampleCubicBezierByArcLength = (progress: number, curve: BezierCurve): Poi
   return sampleCubicBezier(t, curve);
 };
 
+const getBezierLaneOffset = (src: Point, tgt: Point, amount: number): Point => {
+  const dx = Math.abs(tgt.x - src.x);
+  const dy = Math.abs(tgt.y - src.y);
+  if (dx >= dy) {
+    return { x: 0, y: amount };
+  }
+  return { x: amount, y: 0 };
+};
+
 const getBezierControlPoints = (src: Point, tgt: Point) => {
   const dx = Math.abs(tgt.x - src.x);
   const dy = Math.abs(tgt.y - src.y);
@@ -181,6 +191,8 @@ export {
   drawArrowHead,
   drawDashedBezier,
   getBezierControlPoints,
+  getBezierLaneOffset,
+  LANE_OFFSET,
   sampleCubicBezier,
   sampleCubicBezierByArcLength,
 };

@@ -54,6 +54,17 @@ describe(getTransitDotPosition, () => {
     expect(pos!.x).toBeGreaterThan(88);
     expect(pos!.x).toBeLessThan(200);
   });
+
+  it("shifts returned position by positive laneOffset on a horizontal curve", () => {
+    // horizontal curve → offset is vertical: y += laneOffset
+    const pos = getTransitDotPosition({ edgeId: "e-1", progress: 0 }, edges, nodes, 4);
+    expect(pos).toStrictEqual({ x: 88, y: 52 });
+  });
+
+  it("shifts returned position by negative laneOffset on a horizontal curve", () => {
+    const pos = getTransitDotPosition({ edgeId: "e-1", progress: 0 }, edges, nodes, -4);
+    expect(pos).toStrictEqual({ x: 88, y: 44 });
+  });
 });
 
 describe(computeNodeFillRatio, () => {

@@ -3,6 +3,7 @@ import {
   drawArrowHead,
   drawDashedBezier,
   getBezierControlPoints,
+  getBezierLaneOffset,
   sampleCubicBezier,
   sampleCubicBezierByArcLength,
 } from "./bezier-utils.js";
@@ -36,6 +37,23 @@ describe(getBezierControlPoints, () => {
     const result = getBezierControlPoints({ x: 0, y: 0 }, { x: 1000, y: 0 });
     expect(result.cp1.x).toBe(120);
     expect(result.cp2.x).toBe(880);
+  });
+});
+
+describe(getBezierLaneOffset, () => {
+  it("returns a vertical offset for a horizontal curve", () => {
+    expect(getBezierLaneOffset({ x: 0, y: 0 }, { x: 200, y: 0 }, 4)).toStrictEqual({ x: 0, y: 4 });
+  });
+
+  it("returns a horizontal offset for a vertical curve", () => {
+    expect(getBezierLaneOffset({ x: 0, y: 0 }, { x: 0, y: 200 }, 4)).toStrictEqual({ x: 4, y: 0 });
+  });
+
+  it("negates correctly for a negative amount", () => {
+    expect(getBezierLaneOffset({ x: 0, y: 0 }, { x: 200, y: 0 }, -4)).toStrictEqual({
+      x: 0,
+      y: -4,
+    });
   });
 });
 

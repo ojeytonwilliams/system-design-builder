@@ -1,5 +1,9 @@
 import { chooseBestHandles, getHandlePosition } from "../../domain/canvas-logic";
-import { getBezierControlPoints, sampleCubicBezierByArcLength } from "./bezier-utils";
+import {
+  getBezierControlPoints,
+  getBezierLaneOffset,
+  sampleCubicBezierByArcLength,
+} from "./bezier-utils";
 
 const computeNodeFillRatio = (
   nodeId: string,
@@ -17,6 +21,7 @@ const getTransitDotPosition = (
   transit: { edgeId: string; progress: number },
   edges: { id: string; source: string; target: string }[],
   nodes: { id: string; position: { x: number; y: number } }[],
+  laneOffset = 0,
 ): { x: number; y: number } | null => {
   const edge = edges.find((e) => e.id === transit.edgeId);
   if (edge === undefined) {
@@ -30,8 +35,10 @@ const getTransitDotPosition = (
   const { sourceHandle, targetHandle } = chooseBestHandles(sourceNode, targetNode);
   const src = getHandlePosition(sourceNode, sourceHandle);
   const tgt = getHandlePosition(targetNode, targetHandle);
+  const off = getBezierLaneOffset(src, tgt, laneOffset);
   const { cp1, cp2 } = getBezierControlPoints(src, tgt);
-  return sampleCubicBezierByArcLength(transit.progress, { cp1, cp2, p0: src, p3: tgt });
+  const pos = sampleCubicBezierByArcLength(transit.progress, { cp1, cp2, p0: src, p3: tgt });
+  return { x: pos.x + off.x, y: pos.y + off.y };
 };
 
 export { computeNodeFillRatio, getTransitDotPosition };
