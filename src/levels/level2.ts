@@ -18,22 +18,24 @@ const level2: LevelDefinition = {
   lockedNodeIds: ["users-1", "server-1", "server-2", "db-1"],
   monthlyBudget: 150,
   objectiveText: "Both servers are overloaded. Add a Load Balancer to split the traffic.",
-  solution: {
-    edges: [
-      { id: "edge-u-lb", source: "users-1", target: "lb-1" },
-      { id: "edge-lb-s1", source: "lb-1", target: "server-1" },
-      { id: "edge-lb-s2", source: "lb-1", target: "server-2" },
-      { id: "edge-s1-d", source: "server-1", target: "db-1" },
-      { id: "edge-s2-d", source: "server-2", target: "db-1" },
-    ],
-    nodes: [
-      { componentType: "users", id: "users-1", position: { x: 72, y: 192 } },
-      { componentType: "load-balancer", id: "lb-1", position: { x: 192, y: 192 } },
-      { componentType: "server", id: "server-1", position: { x: 312, y: 72 } },
-      { componentType: "server", id: "server-2", position: { x: 312, y: 312 } },
-      { componentType: "db-large", id: "db-1", position: { x: 552, y: 192 } },
-    ],
-  },
+  solutions: [
+    {
+      edges: [
+        { id: "edge-u-lb", source: "users-1", target: "lb-1" },
+        { id: "edge-lb-s1", source: "lb-1", target: "server-1" },
+        { id: "edge-lb-s2", source: "lb-1", target: "server-2" },
+        { id: "edge-s1-d", source: "server-1", target: "db-1" },
+        { id: "edge-s2-d", source: "server-2", target: "db-1" },
+      ],
+      nodes: [
+        { componentType: "users", id: "users-1", position: { x: 72, y: 192 } },
+        { componentType: "load-balancer", id: "lb-1", position: { x: 192, y: 192 } },
+        { componentType: "server", id: "server-1", position: { x: 312, y: 72 } },
+        { componentType: "server", id: "server-2", position: { x: 312, y: 312 } },
+        { componentType: "db-large", id: "db-1", position: { x: 552, y: 192 } },
+      ],
+    },
+  ],
   startingEdges: [
     { id: "edge-u-s1", source: "users-1", target: "server-1" },
     { id: "edge-u-s2", source: "users-1", target: "server-2" },

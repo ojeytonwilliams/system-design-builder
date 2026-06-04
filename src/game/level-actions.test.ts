@@ -19,7 +19,7 @@ const stubLevel = convertLevel({
   lockedNodeIds: [],
   monthlyBudget: 500,
   objectiveText: "Build a server",
-  solution: { edges: [], nodes: [] },
+  solutions: [{ edges: [], nodes: [] }],
   startingEdges: [],
   startingNodes: [],
   timeout: 60_000,

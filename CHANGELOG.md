@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.10.7] - 2026-06-04
+
+### Changed
+
+- **Levels support multiple solutions**: `LevelDefinition.solution` is now `solutions: LevelSolution[]`, allowing levels to define alternative valid architectures. Integration tests now validate and simulate each solution individually, with per-level `describe` blocks and per-solution test cases that include the solution index in the title for easier failure diagnosis.
+
 ## [2.10.6] - 2026-06-03
 
 ### Fixed

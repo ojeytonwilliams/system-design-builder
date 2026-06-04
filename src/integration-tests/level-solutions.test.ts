@@ -35,21 +35,22 @@ const runLevelSolution = (level: LevelDefinition, solution: LevelSolution): bool
   return won;
 };
 
-describe("level solution capacity validation", () => {
-  it.each(levelRegistry.levels)(
-    "level $title solution passes static capacity validation",
-    (level) => {
-      expect(validateLevelSolution(level, level.solution, COMPONENT_LIBRARY).valid).toBe(true);
+describe.each(levelRegistry.levels)("$title", (level) => {
+  it.each(level.solutions.map((solution, index) => ({ index: String(index), solution })))(
+    "solution $index passes static capacity validation",
+    ({ solution }) => {
+      expect(validateLevelSolution(level, solution, COMPONENT_LIBRARY).valid).toBe(true);
     },
   );
-});
 
-describe("level solutions", () => {
-  it.each(levelRegistry.levels)("level $title solution wins within the timeout", (level) => {
-    expect(runLevelSolution(level, level.solution)).toBe(true);
-  });
+  it.each(level.solutions.map((solution, index) => ({ index: String(index), solution })))(
+    "solution $index wins within the timeout",
+    ({ solution }) => {
+      expect(runLevelSolution(level, solution)).toBe(true);
+    },
+  );
 
-  it.each(levelRegistry.levels)("level $title fails for the initial conditions", (level) => {
+  it("fails for the initial conditions", () => {
     expect(
       runLevelSolution(level, {
         edges: level.startingEdges,

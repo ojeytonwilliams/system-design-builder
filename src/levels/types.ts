@@ -42,7 +42,7 @@ interface LevelDefinition {
   lockedNodeIds: string[];
   monthlyBudget: number;
   objectiveText: string;
-  solution: LevelSolution;
+  solutions: LevelSolution[];
   startingEdges: ArchitectureEdge[];
   startingNodes: ArchitectureNode[];
   timeout: number;
