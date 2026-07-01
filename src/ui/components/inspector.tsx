@@ -4,6 +4,7 @@ import type { ComponentType } from "../../domain/component-library.js";
 interface InspectorProps {
   componentType?: ComponentType | undefined;
   cost?: number | undefined;
+  incomingOpsPerMs?: number | undefined;
   isOverloaded?: boolean | undefined;
   latencyMs?: number | undefined;
   loadPercent?: number | undefined;
@@ -49,6 +50,7 @@ const KvCell = ({ label, value }: { label: string; value: string }) => (
 const Inspector = ({
   componentType,
   cost,
+  incomingOpsPerMs,
   isOverloaded = false,
   latencyMs,
   loadPercent,
@@ -63,6 +65,8 @@ const Inspector = ({
     loadText = isOverloaded ? `${roundedLoad}% (Overloaded)` : `${roundedLoad}%`;
   }
 
+  const incomingOpsText =
+    incomingOpsPerMs === undefined ? "—" : `${Math.round(incomingOpsPerMs * 1000)} ops/s`;
   const opsText = opsPerMs === undefined ? "—" : `${Math.round(opsPerMs * 1000)} ops/s`;
 
   let capacityText: string | undefined = undefined;
@@ -143,7 +147,8 @@ const Inspector = ({
 
           <div style={{ display: "grid", gap: "8px", gridTemplateColumns: "1fr 1fr" }}>
             <KvCell label="Load" value={loadText} />
-            <KvCell label="Ops" value={opsText} />
+            <KvCell label="Ops In" value={incomingOpsText} />
+            <KvCell label="Ops Out" value={opsText} />
             {capacityText !== undefined && <KvCell label="Capacity" value={capacityText} />}
             {latencyText !== undefined && <KvCell label="Latency" value={latencyText} />}
             {costText !== undefined && <KvCell label="Cost" value={costText} />}

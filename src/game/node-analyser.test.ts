@@ -41,6 +41,22 @@ describe(getInspectorData, () => {
     expect(result.opsPerMs).toBeUndefined();
   });
 
+  it("incomingOpsPerMs converts simulation incoming ops/ms to real-world ops/ms", () => {
+    const nodeMetrics: NodeMetricsSnapshot = new Map([
+      ["server-1", { incomingOpsPerMs: convertRate(20), isOverloaded: false, opsPerMs: 0.1 }],
+    ]);
+
+    const result = getInspectorData("server-1", [serverNode], nodeMetrics);
+
+    expect(result.incomingOpsPerMs).toBe(20);
+  });
+
+  it("incomingOpsPerMs is undefined when node has no metrics entry", () => {
+    const result = getInspectorData("server-1", [serverNode], new Map());
+
+    expect(result.incomingOpsPerMs).toBeUndefined();
+  });
+
   it("loadPercent converts simulation incomingOpsPerMs to real-world percentage of capacity", () => {
     const serverCapacity = COMPONENT_LIBRARY_FIXTURE.server.capacity;
     const nodeMetrics: NodeMetricsSnapshot = new Map([

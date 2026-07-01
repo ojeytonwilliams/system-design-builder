@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.10.8] - 2026-07-01
+
+### Added
+
+- **Inspector shows incoming ops/s**: The Inspector panel now displays both incoming and outgoing ops/s (labelled "Ops In" and "Ops Out") so users can see traffic arriving at a component alongside its throughput.
+
 ## [2.10.7] - 2026-06-04
 
 ### Changed

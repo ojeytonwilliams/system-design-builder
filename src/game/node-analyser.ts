@@ -53,6 +53,7 @@ const getInspectorData = (
   return {
     componentType,
     cost,
+    incomingOpsPerMs,
     isOverloaded,
     latencyMs,
     loadPercent,

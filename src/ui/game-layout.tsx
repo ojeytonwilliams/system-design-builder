@@ -292,6 +292,7 @@ const GameScene = ({
         <Inspector
           componentType={inspectorData.componentType}
           cost={inspectorData.cost}
+          incomingOpsPerMs={inspectorData.incomingOpsPerMs}
           isOverloaded={inspectorData.isOverloaded}
           latencyMs={inspectorData.latencyMs}
           loadPercent={inspectorData.loadPercent}

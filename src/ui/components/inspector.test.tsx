@@ -38,10 +38,16 @@ describe("inspector", () => {
     expect(screen.getByText(/120%.*overloaded/iv)).toBeInTheDocument();
   });
 
-  it("shows ops/sec when simulation data is provided", () => {
+  it("shows outgoing ops/sec when simulation data is provided", () => {
     render(<Inspector opsPerMs={0.075} selectedNodeLabel="Server" />);
 
     expect(screen.getByText(/75\s*ops\/s/iv)).toBeInTheDocument();
+  });
+
+  it("shows incoming ops/sec when simulation data is provided", () => {
+    render(<Inspector incomingOpsPerMs={0.1} selectedNodeLabel="Server" />);
+
+    expect(screen.getByText(/100\s*ops\/s/iv)).toBeInTheDocument();
   });
 
   it("shows a dash for ops/sec when no simulation data", () => {
