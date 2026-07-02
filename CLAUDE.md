@@ -48,8 +48,6 @@ Once all the phase's todo items are checked, run `pnpm check`, `pnpm test` and `
 
 Once the checks are passing, increment the package.json version respecting semver. Then create a CHANGELOG.md entry with the new version and current date e.g. ## [1.2.3] - 2026-03-19. Populate the CHANGELOG.md entry by summarizing the features implemented in the phase.
 
-Commit the changes with a conventional commit including an even briefer summary in the commit body.
-
 ## Forbidden Behaviour
 
 Do NOT look inside node_modules. To verify a package is installed, run `pnpm list <package-name>`.
