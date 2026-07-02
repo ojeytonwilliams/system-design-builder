@@ -91,7 +91,7 @@ class SimulationEngine {
   private readonly responseTransits = new Map<string, ResponseTransit>();
   private nextSpawn = 0;
   private wallClockElapsedMs = 0;
-  private metricsWindow: MetricsWindow = [];
+  private metricsWindow: MetricsWindow = new Map();
   private readonly nodeRouters = new Map<string, NodeRouter>();
 
   getSnapshot = (): SimulationSnapshot => this.state;
@@ -216,7 +216,7 @@ class SimulationEngine {
     this.responseTransits.clear();
     this.nextSpawn = 0;
     this.wallClockElapsedMs = 0;
-    this.metricsWindow = [];
+    this.metricsWindow = new Map();
     this.nodeRouters.clear();
     this.state = getInitialSnapshot();
     this.notify();

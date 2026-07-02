@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.10.9] - 2026-07-02
+
+### Changed
+
+- **Metrics use inter-arrival rate instead of count-based averaging**: `computeNodeMetrics` now estimates throughput from the gaps between the most recent events rather than dividing total counts by the window size. This produces a stable, responsive rate that converges quickly at steady state and avoids the staircase artefacts of integer-count division. `MetricsWindow` is now a `Map<string, NodeEventLog>` of per-node timestamp arrays instead of a flat bucket list.
+- **Level validator reuses the runtime metrics function**: Replaced the hand-rolled `computeNodeMaxArrivals` (WRR integer upper-bound propagation) with `predictMeasuredRate`, which constructs synthetic steady-state timestamps and feeds them through the same `computeRate` used at runtime. This keeps the validator automatically in sync with the simulation and removes ~60 lines of parallel logic.
+- **Level 6 solution simplified**: Both servers now route through a single shared cache instead of two independent caches, matching the reduced component count needed under the new rate model.
+
 ## [2.10.8] - 2026-07-01
 
 ### Added

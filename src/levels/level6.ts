@@ -26,7 +26,7 @@ const level6: LevelDefinition = {
         { id: "edge-lb-s2", source: "lb-1", target: "server-2" },
         { id: "edge-s1-c1", source: "server-1", target: "cache-1" },
         { id: "edge-c1-d", source: "cache-1", target: "db-1" },
-        { id: "edge-s2-c2", source: "server-2", target: "cache-2" },
+        { id: "edge-s2-c1", source: "server-2", target: "cache-1" },
         { id: "edge-c2-d", source: "cache-2", target: "db-1" },
       ],
       nodes: [
@@ -35,7 +35,6 @@ const level6: LevelDefinition = {
         { componentType: "server-large", id: "server-1", position: { x: 432, y: 72 } },
         { componentType: "server-large", id: "server-2", position: { x: 432, y: 312 } },
         { componentType: "cache", id: "cache-1", position: { x: 540, y: 72 } },
-        { componentType: "cache", id: "cache-2", position: { x: 540, y: 312 } },
         { componentType: "db-large", id: "db-1", position: { x: 648, y: 192 } },
       ],
     },

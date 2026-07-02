@@ -26,9 +26,9 @@ const edge = (id: string, source: string, target: string) => ({
 });
 
 describe(validateLevelSolution, () => {
-  it("returns valid when max measured rate is below capacity", () => {
+  it("returns valid when predicted rate is below capacity", () => {
     // rate = 0.0007, server-large capacity = 0.0015
-    // maxMeasured = (floor(3000 * 0.0007) + 1) / 3000 = 3 / 3000 = 0.001 < 0.0015
+    // predicted rate = 0.0007 < 0.0015 → valid
     const solution: LevelSolution = {
       edges: [edge("e1", "u", "s")],
       nodes: [node("u", "users"), node("s", "server-large")],
@@ -42,15 +42,15 @@ describe(validateLevelSolution, () => {
     expect(result.violations).toHaveLength(0);
   });
 
-  it("returns invalid when max measured rate meets or exceeds capacity", () => {
-    // rate = 0.0007, db-large capacity = 0.0009
-    // maxMeasured = 3 / 3000 = 0.001 >= 0.0009 → violation
+  it("returns invalid when predicted rate exceeds capacity", () => {
+    // rate = 0.001, db-large capacity = 0.0009
+    // predicted rate = 0.001 > 0.0009 → violation
     const solution: LevelSolution = {
       edges: [edge("e1", "u", "d")],
       nodes: [node("u", "users"), node("d", "db-large")],
     };
     const result = validateLevelSolution(
-      { cacheHitRate: 0, trafficTarget: 0.0007 },
+      { cacheHitRate: 0, trafficTarget: 0.001 },
       solution,
       testCapacities,
     );
@@ -75,7 +75,7 @@ describe(validateLevelSolution, () => {
 
   it("splits traffic equally across load-balancer outgoing edges", () => {
     // trafficTarget = 0.0014; lb splits to 0.0007 per server-large
-    // maxMeasured per server = 3 / 3000 = 0.001 < 0.0015 → valid
+    // predicted rate per server = 0.0007 < 0.0015 → valid
     const solution: LevelSolution = {
       edges: [edge("e1", "u", "lb"), edge("e2", "lb", "s1"), edge("e3", "lb", "s2")],
       nodes: [
@@ -94,20 +94,20 @@ describe(validateLevelSolution, () => {
   });
 
   it("non-load-balancer nodes do not split traffic", () => {
-    // users → server-large → db-large at rate 0.0007
-    // db-large receives the full 0.0007 (not split)
+    // users → server-large → db-large at rate 0.001
+    // db-large receives the full 0.001 (not split), 0.001 > 0.0009 → violation
     const solution: LevelSolution = {
       edges: [edge("e1", "u", "s"), edge("e2", "s", "d")],
       nodes: [node("u", "users"), node("s", "server-large"), node("d", "db-large")],
     };
     const result = validateLevelSolution(
-      { cacheHitRate: 0, trafficTarget: 0.0007 },
+      { cacheHitRate: 0, trafficTarget: 0.001 },
       solution,
       testCapacities,
     );
     const dbViolation = result.violations.find((v) => v.nodeId === "d");
     expect(dbViolation).toBeDefined();
-    expect(dbViolation?.incomingRatePerMs).toBe(0.0007);
+    expect(dbViolation?.incomingRatePerMs).toBe(0.001);
   });
 
   it("accumulates traffic from multiple upstream paths into a shared downstream node", () => {
@@ -138,19 +138,20 @@ describe(validateLevelSolution, () => {
     expect(dbMetrics?.incomingRatePerMs).toBe(0.0014);
   });
 
-  it("sums per-edge WRR bounds when independent routing nodes both feed the same downstream", () => {
+  it("detects overload through convergent paths with cache", () => {
     // Topology: users → lb → s1 → cache1 → db
     //                       s2 → cache2 → db
     // cacheHitRate = 0.7 (miss rate = 0.3)
     //
-    // At trafficTarget = 0.0022 (M_lb = 7, split 4+3 by WRR):
-    //   cache1 max to db = ceil(4 * 0.3) = 2
-    //   cache2 max to db = ceil(3 * 0.3) = 1
-    //   db total = 3 → 3/3000 = 0.001 >= 0.0009 → invalid
+    // At trafficTarget = 0.0032:
+    //   lb splits evenly → 0.0016 per server
+    //   each cache miss to db = 0.0016 * 0.3 = 0.00048
+    //   db total = 0.00096 > 0.0009 → invalid
     //
-    // At trafficTarget = 0.0018 (M_lb = 6, split 3+3 by WRR):
-    //   each cache max to db = ceil(3 * 0.3) = 1
-    //   db total = 2 → 2/3000 ≈ 0.000667 < 0.0009 → valid
+    // At trafficTarget = 0.0028:
+    //   lb splits evenly → 0.0014 per server
+    //   each cache miss to db = 0.0014 * 0.3 = 0.00042
+    //   db total = 0.00084 < 0.0009 → valid
     const solution: LevelSolution = {
       edges: [
         edge("e-u-lb", "u", "lb"),
@@ -172,19 +173,19 @@ describe(validateLevelSolution, () => {
       ],
     };
     expect(
-      validateLevelSolution({ cacheHitRate: 0.7, trafficTarget: 0.0022 }, solution, testCapacities)
+      validateLevelSolution({ cacheHitRate: 0.7, trafficTarget: 0.0032 }, solution, testCapacities)
         .valid,
     ).toBe(false);
     expect(
-      validateLevelSolution({ cacheHitRate: 0.7, trafficTarget: 0.0018 }, solution, testCapacities)
+      validateLevelSolution({ cacheHitRate: 0.7, trafficTarget: 0.0028 }, solution, testCapacities)
         .valid,
     ).toBe(true);
   });
 
   it("reduces the rate reaching db when cache hit rate is non-zero", () => {
-    // users → server-large → cache → db-large, rate = 0.0007
-    // cacheHitRate 0 → db receives full 0.0007 → maxMeasured 3/3000 = 0.001 >= 0.0009 → invalid
-    // cacheHitRate 0.5 → db receives 0.00035 → maxMeasured 2/3000 ≈ 0.000667 < 0.0009 → valid
+    // users → server-large → cache → db-large, rate = 0.001
+    // cacheHitRate 0 → db receives full 0.001 > 0.0009 → invalid
+    // cacheHitRate 0.5 → db receives 0.0005 < 0.0009 → valid
     const solution: LevelSolution = {
       edges: [edge("e1", "u", "s"), edge("e2", "s", "c"), edge("e3", "c", "d")],
       nodes: [
@@ -195,11 +196,11 @@ describe(validateLevelSolution, () => {
       ],
     };
     expect(
-      validateLevelSolution({ cacheHitRate: 0, trafficTarget: 0.0007 }, solution, testCapacities)
+      validateLevelSolution({ cacheHitRate: 0, trafficTarget: 0.001 }, solution, testCapacities)
         .valid,
     ).toBe(false);
     expect(
-      validateLevelSolution({ cacheHitRate: 0.5, trafficTarget: 0.0007 }, solution, testCapacities)
+      validateLevelSolution({ cacheHitRate: 0.5, trafficTarget: 0.001 }, solution, testCapacities)
         .valid,
     ).toBe(true);
   });

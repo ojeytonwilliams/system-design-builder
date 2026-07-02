@@ -1,7 +1,6 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { COMPONENT_LIBRARY_FIXTURE, CONNECTION_LIBRARY_FIXTURE } from "../domain/test-fixtures.js";
 import { convertRate, toRealRate } from "../domain/sim-time-converter.js";
-import { ROLLING_WINDOW_MS } from "./metrics.js";
 import { shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
 import type { LevelConfig } from "./types.js";
 
@@ -703,7 +702,7 @@ describe("rolling metrics", () => {
     expect(engine.getSnapshot().deliveryOpsPerMs).toBeGreaterThan(0);
   });
 
-  it("incomingOpsPerMs at the db connected (via a server) to users equals the expected rolling average of all spawned requests", () => {
+  it("incomingOpsPerMs at the db connected (via a server) to users equals the inter-arrival rate at steady state", () => {
     const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
@@ -716,11 +715,9 @@ describe("rolling metrics", () => {
     const { nodeMetrics } = engine.getSnapshot();
     const dbMetrics = nodeMetrics.get("db-1")!;
 
-    const bucketsInWindow = 7;
-    const arrivalsPerTick = 1;
-    const expectedIncomingOpsPerMs = (bucketsInWindow * arrivalsPerTick) / ROLLING_WINDOW_MS;
-
-    expect(dbMetrics.incomingOpsPerMs).toBe(expectedIncomingOpsPerMs);
+    // At steady state with 1 arrival per tick, the inter-arrival gap is TICK_MS
+    // and the rate converges to 1/TICK_MS.
+    expect(dbMetrics.incomingOpsPerMs).toBe(1 / TICK_MS);
   });
 
   it("reset() clears the metrics window so deliveryOpsPerMs returns to 0", () => {
@@ -777,7 +774,7 @@ describe("server receives all requests emitted by the users node", () => {
     target: "server-1",
   };
 
-  it("incomingOpsPerMs at the server equals the expected rolling average of all spawned requests", () => {
+  it("incomingOpsPerMs at the server equals the inter-arrival rate at steady state", () => {
     const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode], [edge]);
@@ -790,16 +787,9 @@ describe("server receives all requests emitted by the users node", () => {
     const { nodeMetrics } = engine.getSnapshot();
     const serverMetrics = nodeMetrics.get("server-1")!;
 
-    // addBucket keeps buckets with wallClockMs >= cutoff (inclusive), so the window
-    // spans ROLLING_WINDOW_MS / TICK_MS + 1 = 7 buckets at steady state.
-    // With exactly 1 arrival per tick, the window holds 7 arrivals total.
-    // incomingOpsPerMs = totalArrivals / ROLLING_WINDOW_MS  (from metrics.ts)
-    // 7 buckets in window, 1 arrival per tick
-    const bucketsInWindow = ROLLING_WINDOW_MS / TICK_MS + 1;
-    const arrivalsPerTick = 1;
-    const expectedIncomingOpsPerMs = (bucketsInWindow * arrivalsPerTick) / ROLLING_WINDOW_MS;
-
-    expect(serverMetrics.incomingOpsPerMs).toBe(expectedIncomingOpsPerMs);
+    // At steady state with 1 arrival per tick, the inter-arrival gap is TICK_MS
+    // and the rate converges to 1/TICK_MS.
+    expect(serverMetrics.incomingOpsPerMs).toBe(1 / TICK_MS);
   });
 });
 
