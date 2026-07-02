@@ -2,8 +2,8 @@ import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.
 import { COMPONENT_LIBRARY, CONNECTION_LIBRARY } from "../domain/component-library.js";
 import type { ComponentType, ConnectionLibrary } from "../domain/component-library.js";
 import { getLinearTrafficRate } from "./engine.js";
-import { addBucket, computeDeliveryOpsPerMs, computeNodeMetrics } from "./metrics.js";
-import type { MetricsWindow, NodeEventCounts, NodeMetricsSnapshot } from "./metrics.js";
+import { computeDeliveryOpsPerMs, computeNodeMetrics, evictWindow, pushEvent } from "./metrics.js";
+import type { MetricsWindow, NodeMetricsSnapshot } from "./metrics.js";
 import { NodeRouter } from "./node-router.js";
 import { getRoutingOptions } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
@@ -128,6 +128,7 @@ class SimulationEngine {
     }
 
     this.wallClockElapsedMs += deltaMs;
+    evictWindow(this.metricsWindow, this.wallClockElapsedMs);
 
     const elapsed = this.state.elapsedMs + deltaMs;
     const rate = getLinearTrafficRate({
@@ -147,12 +148,11 @@ class SimulationEngine {
       transits: this.transits,
     };
 
-    const tickEvents = new Map<string, NodeEventCounts>();
     const usersNodeId = usersNode?.id ?? "";
 
-    this.advanceTransits(deltaMs, maps, tickEvents);
-    this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate, tickEvents);
-    this.advanceResponseTransits(deltaMs, tickEvents, usersNodeId);
+    this.advanceTransits(deltaMs, maps);
+    this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate);
+    this.advanceResponseTransits(deltaMs, usersNodeId);
     this.timeoutRequests(maps);
 
     if (usersNode !== undefined && outgoingEdge !== undefined) {
@@ -173,11 +173,6 @@ class SimulationEngine {
         this.transits.set(transit.requestId, transit);
       }
     }
-
-    this.metricsWindow = addBucket(this.metricsWindow, {
-      nodeEvents: tickEvents,
-      wallClockMs: this.wallClockElapsedMs,
-    });
 
     const nodeCapacities = new Map(
       this.graphNodes.map((n) => [n.id, this.componentLibrary[n.componentType].capacity]),
@@ -222,11 +217,7 @@ class SimulationEngine {
     this.notify();
   }
 
-  private advanceTransits(
-    deltaMs: number,
-    maps: RequestMaps,
-    tickEvents: Map<string, NodeEventCounts>,
-  ): void {
+  private advanceTransits(deltaMs: number, maps: RequestMaps): void {
     for (const [requestId, transit] of [...this.transits]) {
       const newElapsed = transit.elapsedMs + deltaMs;
 
@@ -256,15 +247,12 @@ class SimulationEngine {
             maps,
           );
 
-          const existing = tickEvents.get(targetNode.id) ?? {
-            arrivalCount: 0,
-            completedCount: 0,
-            deliveryCount: 0,
-          };
-          tickEvents.set(targetNode.id, {
-            ...existing,
-            arrivalCount: existing.arrivalCount + 1,
-          });
+          pushEvent(
+            this.metricsWindow,
+            targetNode.id,
+            "arrival",
+            this.wallClockElapsedMs - excessTime,
+          );
         }
       } else {
         transit.elapsedMs = newElapsed;
@@ -273,12 +261,7 @@ class SimulationEngine {
     }
   }
 
-  private advanceProcessing(
-    deltaMs: number,
-    maps: RequestMaps,
-    cacheHitRate: number,
-    tickEvents: Map<string, NodeEventCounts>,
-  ): void {
+  private advanceProcessing(deltaMs: number, maps: RequestMaps, cacheHitRate: number): void {
     for (const [requestId, proc] of [...this.processing]) {
       const newElapsed = proc.elapsedMs + deltaMs;
 
@@ -298,15 +281,12 @@ class SimulationEngine {
         }
         const result = router.route();
 
-        const existing = tickEvents.get(proc.nodeId) ?? {
-          arrivalCount: 0,
-          completedCount: 0,
-          deliveryCount: 0,
-        };
-        tickEvents.set(proc.nodeId, {
-          ...existing,
-          completedCount: existing.completedCount + 1,
-        });
+        pushEvent(
+          this.metricsWindow,
+          proc.nodeId,
+          "completion",
+          this.wallClockElapsedMs - excessTime,
+        );
 
         if (result.status === "FULFILLED") {
           transitionRequest(requestId, { status: "FULFILLED" }, maps);
@@ -341,35 +321,15 @@ class SimulationEngine {
     }
   }
 
-  private advanceResponseTransits(
-    deltaMs: number,
-    tickEvents: Map<string, NodeEventCounts>,
-    usersNodeId: string,
-  ): void {
+  private advanceResponseTransits(deltaMs: number, usersNodeId: string): void {
     for (const [responseId, transit] of [...this.responseTransits]) {
       const newElapsed = transit.elapsedMs + deltaMs;
 
-      if (newElapsed >= transit.durationMs) {
+      const excessTime = newElapsed - transit.durationMs;
+
+      if (excessTime >= 0) {
         this.responseTransits.delete(responseId);
-
-        const response = this.responses.get(responseId);
-        if (response !== undefined) {
-          const [nextEdgeId, ...remaining] = response.remainingEdgeIds;
-
-          if (nextEdgeId === undefined) {
-            this.responses.delete(responseId);
-            this.recordDelivery(tickEvents, usersNodeId);
-          } else {
-            response.remainingEdgeIds = remaining;
-            this.responseTransits.set(responseId, {
-              durationMs: this.connectionLibrary.standard.transitMs,
-              edgeId: nextEdgeId,
-              elapsedMs: 0,
-              progress: 0,
-              responseId,
-            });
-          }
-        }
+        this.completeResponseTransit(responseId, excessTime, usersNodeId);
       } else {
         transit.elapsedMs = newElapsed;
         transit.progress = newElapsed / transit.durationMs;
@@ -377,19 +337,38 @@ class SimulationEngine {
     }
   }
 
-  private recordDelivery(tickEvents: Map<string, NodeEventCounts>, usersNodeId: string): void {
-    if (usersNodeId === "") {
+  private completeResponseTransit(
+    responseId: string,
+    excessTime: number,
+    usersNodeId: string,
+  ): void {
+    const response = this.responses.get(responseId);
+    if (response === undefined) {
       return;
     }
-    const existing = tickEvents.get(usersNodeId) ?? {
-      arrivalCount: 0,
-      completedCount: 0,
-      deliveryCount: 0,
-    };
-    tickEvents.set(usersNodeId, {
-      ...existing,
-      deliveryCount: existing.deliveryCount + 1,
-    });
+
+    const [nextEdgeId, ...remaining] = response.remainingEdgeIds;
+
+    if (nextEdgeId === undefined) {
+      this.responses.delete(responseId);
+      if (usersNodeId !== "") {
+        pushEvent(
+          this.metricsWindow,
+          usersNodeId,
+          "delivery",
+          this.wallClockElapsedMs - excessTime,
+        );
+      }
+    } else {
+      response.remainingEdgeIds = remaining;
+      this.responseTransits.set(responseId, {
+        durationMs: this.connectionLibrary.standard.transitMs,
+        edgeId: nextEdgeId,
+        elapsedMs: 0,
+        progress: 0,
+        responseId,
+      });
+    }
   }
 
   private spawnResponse(requestId: string, maps: RequestMaps): void {
