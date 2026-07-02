@@ -2,6 +2,8 @@ import {
   addBucket,
   computeDeliveryOpsPerMs,
   computeNodeMetrics,
+  evictWindow,
+  pushEvent,
   ROLLING_WINDOW_MS,
 } from "./metrics.js";
 import type { MetricsBucket, MetricsWindow } from "./metrics.js";
@@ -54,6 +56,68 @@ describe(addBucket, () => {
     const window = buildWindow(makeBucket(0, { "node-1": { arrivalCount: 1 } }), makeBucket(3000));
     const metrics = computeNodeMetrics(window, new Map());
     expect(metrics.has("node-1")).toBe(true);
+  });
+});
+
+describe(pushEvent, () => {
+  it("appends an arrival entry to the node's arrivals array", () => {
+    const window: MetricsWindow = new Map();
+    pushEvent(window, "node-1", "arrival", 1000);
+    expect(window.get("node-1")?.arrivals).toStrictEqual([{ n: 1, t: 1000 }]);
+  });
+
+  it("appends a completion entry to the node's completions array", () => {
+    const window: MetricsWindow = new Map();
+    pushEvent(window, "node-1", "completion", 2000);
+    expect(window.get("node-1")?.completions).toStrictEqual([{ n: 1, t: 2000 }]);
+  });
+
+  it("appends a delivery entry to the node's deliveries array", () => {
+    const window: MetricsWindow = new Map();
+    pushEvent(window, "node-1", "delivery", 3000);
+    expect(window.get("node-1")?.deliveries).toStrictEqual([{ n: 1, t: 3000 }]);
+  });
+
+  it("creates a new log entry for a node not yet in the window", () => {
+    const window: MetricsWindow = new Map();
+    pushEvent(window, "node-1", "arrival", 1000);
+    expect(window.has("node-1")).toBe(true);
+    expect(window.get("node-1")?.completions).toStrictEqual([]);
+    expect(window.get("node-1")?.deliveries).toStrictEqual([]);
+  });
+
+  it("appends to the existing log for an existing node", () => {
+    const window: MetricsWindow = new Map();
+    pushEvent(window, "node-1", "arrival", 1000);
+    pushEvent(window, "node-1", "arrival", 2000);
+    expect(window.get("node-1")?.arrivals).toStrictEqual([
+      { n: 1, t: 1000 },
+      { n: 1, t: 2000 },
+    ]);
+  });
+});
+
+describe(evictWindow, () => {
+  it("removes entries older than ROLLING_WINDOW_MS", () => {
+    const window: MetricsWindow = new Map();
+    pushEvent(window, "node-1", "arrival", 0);
+    pushEvent(window, "node-1", "arrival", ROLLING_WINDOW_MS + 1);
+    evictWindow(window, ROLLING_WINDOW_MS + 1);
+    expect(window.get("node-1")?.arrivals).toStrictEqual([{ n: 1, t: ROLLING_WINDOW_MS + 1 }]);
+  });
+
+  it("retains entries exactly at the boundary", () => {
+    const window: MetricsWindow = new Map();
+    pushEvent(window, "node-1", "arrival", 0);
+    evictWindow(window, ROLLING_WINDOW_MS);
+    expect(window.get("node-1")?.arrivals).toStrictEqual([{ n: 1, t: 0 }]);
+  });
+
+  it("deletes node entries with all-empty arrays after eviction", () => {
+    const window: MetricsWindow = new Map();
+    pushEvent(window, "node-1", "arrival", 0);
+    evictWindow(window, ROLLING_WINDOW_MS + 1);
+    expect(window.has("node-1")).toBe(false);
   });
 });
 

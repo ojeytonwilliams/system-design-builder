@@ -60,11 +60,45 @@ const computeRate = (entries: TimestampedCount[], windowMs: number): number => {
 const evictOld = (entries: TimestampedCount[], cutoff: number): TimestampedCount[] =>
   entries.filter((e) => e.t >= cutoff);
 
+type EventType = "arrival" | "completion" | "delivery";
+
+const EVENT_TYPE_TO_KEY: Record<EventType, keyof NodeEventLog> = {
+  arrival: "arrivals",
+  completion: "completions",
+  delivery: "deliveries",
+};
+
 const emptyLog = (): NodeEventLog => ({
   arrivals: [],
   completions: [],
   deliveries: [],
 });
+
+const evictWindow = (window: MetricsWindow, currentTimeMs: number): void => {
+  const cutoff = currentTimeMs - ROLLING_WINDOW_MS;
+  for (const [nodeId, log] of window) {
+    log.arrivals = evictOld(log.arrivals, cutoff);
+    log.completions = evictOld(log.completions, cutoff);
+    log.deliveries = evictOld(log.deliveries, cutoff);
+    if (log.arrivals.length === 0 && log.completions.length === 0 && log.deliveries.length === 0) {
+      window.delete(nodeId);
+    }
+  }
+};
+
+const pushEvent = (
+  window: MetricsWindow,
+  nodeId: string,
+  eventType: EventType,
+  timestamp: number,
+): void => {
+  let log = window.get(nodeId);
+  if (log === undefined) {
+    log = emptyLog();
+    window.set(nodeId, log);
+  }
+  log[EVENT_TYPE_TO_KEY[eventType]].push({ n: 1, t: timestamp });
+};
 
 // Evicts old timestamps and adds new events from the bucket
 const addBucket = (window: MetricsWindow, bucket: MetricsBucket): MetricsWindow => {
@@ -130,7 +164,9 @@ export {
   computeDeliveryOpsPerMs,
   computeNodeMetrics,
   computeRate,
+  evictWindow,
   MAX_EVENTS,
+  pushEvent,
   ROLLING_WINDOW_MS,
 };
 export type { MetricsBucket, MetricsWindow, NodeEventCounts, NodeMetrics, NodeMetricsSnapshot };
