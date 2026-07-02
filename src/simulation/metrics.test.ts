@@ -74,27 +74,24 @@ describe(computeNodeMetrics, () => {
     expect(result.get("node-1")?.opsPerMs).toBe(1 / ROLLING_WINDOW_MS);
   });
 
-  it("uses 1/gap for two arrivals", () => {
+  it("uses the second arrival count if there are two arrivals", () => {
     const window = buildWindow(
       makeBucket(1000, { "node-1": { arrivalCount: 1 } }),
-      makeBucket(2000, { "node-1": { arrivalCount: 1 } }),
+      makeBucket(2000, { "node-1": { arrivalCount: 5 } }),
     );
     const result = computeNodeMetrics(window, new Map());
-    const expected = 1 / 1000;
-    expect(result.get("node-1")?.incomingOpsPerMs).toBe(expected);
+    expect(result.get("node-1")?.incomingOpsPerMs).toBe(5 / 1000);
   });
 
-  it("averages two rates for three arrivals", () => {
+  it("computes totalCount/span for three arrivals", () => {
     const window = buildWindow(
       makeBucket(500, { "node-1": { arrivalCount: 1 } }),
-      makeBucket(1000, { "node-1": { arrivalCount: 1 } }),
-      makeBucket(2000, { "node-1": { arrivalCount: 1 } }),
+      makeBucket(1000, { "node-1": { arrivalCount: 7 } }),
+      makeBucket(2000, { "node-1": { arrivalCount: 2 } }),
     );
     const result = computeNodeMetrics(window, new Map());
-    // rate1 = 1/500 (1 -> 2)
-    // rate2 = 1/1000 (2 -> 3)
-    const expected = (1 / 500 + 1 / 1000) / 2;
-    expect(result.get("node-1")?.incomingOpsPerMs).toBe(expected);
+    // totalCount = 9, span = 1500
+    expect(result.get("node-1")?.incomingOpsPerMs).toBe(9 / 1500);
   });
 
   it("uses only the most recent three arrivals when there are more than three", () => {
@@ -105,13 +102,36 @@ describe(computeNodeMetrics, () => {
       makeBucket(2000, { "node-1": { arrivalCount: 1 } }),
     );
     const result = computeNodeMetrics(window, new Map());
-    // Most recent 3: T=1000, T=1500, T=2000
-    // Predecessor of T=1000: T=500
-    // rate for T=1000: 1/(1000-500) = 1/500
-    // rate for T=1500: 1/(1500-1000) = 1/500
-    // rate for T=2000: 1/(2000-1500) = 1/500
-    // avg = 1/500
-    expect(result.get("node-1")?.incomingOpsPerMs).toBe(1 / 500);
+    // Most recent 3: [{t:1000,n:1}, {t:1500,n:1}, {t:2000,n:1}]
+    // counts after first = 2, span = 1000
+    expect(result.get("node-1")?.incomingOpsPerMs).toBe(2 / 1000);
+  });
+
+  it("scales incomingOpsPerMs by arrivalCount for a single bucket", () => {
+    const window = buildWindow(makeBucket(1000, { "node-1": { arrivalCount: 3 } }));
+    const result = computeNodeMetrics(window, new Map());
+    expect(result.get("node-1")?.incomingOpsPerMs).toBe(3 / ROLLING_WINDOW_MS);
+  });
+
+  it("sums counts after first entry for multi-count buckets", () => {
+    const window = buildWindow(
+      makeBucket(1000, { "node-1": { arrivalCount: 1 } }),
+      makeBucket(2000, { "node-1": { arrivalCount: 3 } }),
+    );
+    const result = computeNodeMetrics(window, new Map());
+    // counts after first = 3, span = 1000
+    expect(result.get("node-1")?.incomingOpsPerMs).toBe(3 / 1000);
+  });
+
+  it("computes counts-after-first/span for three arrivals with varying counts", () => {
+    const window = buildWindow(
+      makeBucket(500, { "node-1": { arrivalCount: 1 } }),
+      makeBucket(1000, { "node-1": { arrivalCount: 2 } }),
+      makeBucket(2000, { "node-1": { arrivalCount: 4 } }),
+    );
+    const result = computeNodeMetrics(window, new Map());
+    // counts after first = 6, span = 1500
+    expect(result.get("node-1")?.incomingOpsPerMs).toBe(6 / 1500);
   });
 
   it("sets isOverloaded to true when incomingOpsPerMs exceeds node capacity", () => {
@@ -119,7 +139,7 @@ describe(computeNodeMetrics, () => {
       makeBucket(1000, { "node-1": { arrivalCount: 1 } }),
       makeBucket(1100, { "node-1": { arrivalCount: 1 } }),
     );
-    // rate = avg(1/3000, 1/100) ≈ 0.00517
+    // rate = 1 / 100 = 0.01
     const capacities = new Map([["node-1", 0.001]]);
     const result = computeNodeMetrics(window, capacities);
     expect(result.get("node-1")?.isOverloaded).toBe(true);
@@ -158,6 +178,11 @@ describe(computeDeliveryOpsPerMs, () => {
   it("returns 1/ROLLING_WINDOW_MS for a single delivery", () => {
     const window = buildWindow(makeBucket(1000, { "users-1": { deliveryCount: 1 } }));
     expect(computeDeliveryOpsPerMs(window, "users-1")).toBe(1 / ROLLING_WINDOW_MS);
+  });
+
+  it("scales rate by deliveryCount for a single bucket", () => {
+    const window = buildWindow(makeBucket(1000, { "users-1": { deliveryCount: 3 } }));
+    expect(computeDeliveryOpsPerMs(window, "users-1")).toBe(3 / ROLLING_WINDOW_MS);
   });
 
   it("ignores delivery counts for other node ids", () => {

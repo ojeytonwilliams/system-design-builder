@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.10.10] - 2026-07-02
+
+### Changed
+
+- **Metrics track per-bucket counts to handle fan-in**: `computeRate` now stores `(timestamp, count)` pairs instead of bare timestamps, so multiple arrivals in the same tick (e.g. from two edges into one node) are reflected in the rate rather than collapsing to a single event. Uses a fence-post correction (counts after the first entry / span) to avoid systematic overestimation while remaining backward-compatible for single-arrival streams.
+
 ## [2.10.9] - 2026-07-02
 
 ### Changed

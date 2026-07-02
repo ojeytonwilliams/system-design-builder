@@ -94,8 +94,8 @@ const predictMeasuredRate = (ratePerMs: number): number => {
     return 0;
   }
   const gap = 1 / ratePerMs;
-  const timestamps = Array.from({ length: MAX_EVENTS }, (_, i) => i * gap);
-  return computeRate(timestamps, ROLLING_WINDOW_MS);
+  const entries = Array.from({ length: MAX_EVENTS }, (_, i) => ({ n: 1, t: i * gap }));
+  return computeRate(entries, ROLLING_WINDOW_MS);
 };
 
 /**
