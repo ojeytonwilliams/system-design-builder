@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.11.0] - 2026-07-02
+
+### Changed
+
+- **Metrics use exact sub-tick timestamps**: The simulation engine was discarding precise event timing by batching all events in a tick into a single timestamp. Arrivals, completions, and deliveries now record the exact sub-tick time (`wallClockElapsedMs - excessTime`), giving `computeRate` higher-fidelity data and reducing the rate wobble visible in the inspector panel.
+- **Replaced `addBucket` with `pushEvent`/`evictWindow`**: The old batch-oriented metrics API collapsed per-tick events into a single bucket. The new API pushes individual events as they occur and evicts stale entries once per tick, which is both simpler and preserves timing precision.
+
 ## [2.10.10] - 2026-07-02
 
 ### Changed
