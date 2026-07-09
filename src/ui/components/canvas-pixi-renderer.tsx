@@ -2,13 +2,7 @@ import { Application, extend, useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  drawArrowHead,
-  drawDashedBezier,
-  getBezierControlPoints,
-  getBezierLaneOffset,
-  LANE_OFFSET,
-} from "./bezier-utils.js";
+import { drawDashedBezier, getBezierControlPoints, LANE_OFFSET } from "./bezier-utils.js";
 import { TICK_INTERVAL_MS } from "../../simulation/simulation-engine.js";
 import type { SimulationEngine, SimulationSnapshot } from "../../simulation/simulation-engine.js";
 import {
@@ -20,22 +14,30 @@ import {
 } from "../../domain/canvas-logic.js";
 import type { ArchitectureEdge, ArchitectureNode, HandleSide } from "../../domain/canvas-logic.js";
 import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
-import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
+import { hasLoad } from "./node-gauge-utils.js";
+import { GAUGE_OUTER_RADIUS, NodeLoadGauge } from "./node-load-gauge.js";
+import { computeNodeLoadRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
 
 // oxlint-disable-next-line jest/require-hook
 extend({ Container, Graphics, Text });
 
 const BACKGROUND_GAP = 24;
-const ICON_SIZE = 24;
-const PILL_SIZE = 40;
-const PILL_MARGIN_TOP = 12;
+const ICON_SIZE = 32;
+const PILL_SIZE = 52;
+const PILL_MARGIN_TOP = 14;
+const GAUGE_CENTER_Y = 70;
+const GAUGE_HOLE_PADDING = 4;
+const LABEL_Y = 80;
 const CANVAS_BACKGROUND = 0x0a0a23;
 const PORT_HIT_SIZE = 44;
 const REQUEST_DOT_COLOR = 0xa8c4e8;
 const RESPONSE_DOT_COLOR = 0x4fd47f;
 const HANDLE_RADIUS = PORT_HIT_SIZE / 2;
 const HANDLE_DOT_RADIUS = 4;
-const EDGE_HIT_WIDTH = 16;
+const EDGE_HIT_WIDTH = 20;
+const EDGE_ROAD_WIDTH = 16;
+const EDGE_DIVIDER_WIDTH = 1.5;
+const EDGE_DIVIDER_DASH = 6;
 
 const hexToPixi = (hex: string): number => parseInt(hex.replace("#", ""), 16);
 
@@ -134,7 +136,7 @@ const HandleGraphic = ({
 };
 
 interface PixiNodeGraphicProps {
-  fillRatio: number;
+  loadRatio: number;
   isLocked: boolean;
   isOverloaded: boolean;
   isPendingConnection: boolean;
@@ -152,7 +154,7 @@ interface PixiNodeGraphicProps {
 
 const PixiNodeGraphic = ({
   node,
-  fillRatio,
+  loadRatio,
   isSelected,
   isOverloaded,
   isLocked,
@@ -167,22 +169,16 @@ const PixiNodeGraphic = ({
 
   const fillColor = isSelected ? 0x2a2a40 : 0x1b1b32;
   const borderColor = hexToPixi(accentColor);
-  const accentColorHex = hexToPixi(accentColor);
 
   const drawBackground = useCallback(
     (g: Graphics) => {
       g.clear();
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.fill({ color: fillColor });
-      if (fillRatio > 0) {
-        const fillHeight = NODE_MIN_HEIGHT * fillRatio;
-        g.roundRect(0, NODE_MIN_HEIGHT - fillHeight, NODE_WIDTH, fillHeight, 16);
-        g.fill({ alpha: 0.18, color: accentColorHex });
-      }
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.stroke({ color: borderColor, width: 2 });
     },
-    [fillColor, borderColor, fillRatio, accentColorHex],
+    [fillColor, borderColor],
   );
 
   const haloRef = useRef<Graphics>(null);
@@ -206,13 +202,23 @@ const PixiNodeGraphic = ({
     g.stroke({ alpha: t * 0.45, color: 0xf472b6, width: 8 });
   });
 
+  const showGauge = hasLoad(def.capacity);
+
   const drawPill = useCallback(
     (g: Graphics) => {
       g.clear();
-      g.roundRect(0, 0, 40, 40, 999);
+      g.roundRect(0, 0, PILL_SIZE, PILL_SIZE, 999);
       g.fill({ alpha: 0.22, color: accentColor });
+      if (showGauge) {
+        g.circle(
+          PILL_SIZE / 2,
+          GAUGE_CENTER_Y - PILL_MARGIN_TOP,
+          GAUGE_OUTER_RADIUS + GAUGE_HOLE_PADDING,
+        );
+        g.cut();
+      }
     },
-    [accentColor],
+    [accentColor, showGauge],
   );
 
   const isUsersNode = node.componentType === "users",
@@ -277,13 +283,14 @@ const PixiNodeGraphic = ({
     >
       <pixiGraphics ref={haloRef} draw={() => {}} />
       <pixiGraphics draw={drawBackground} />
-      <pixiGraphics draw={drawPill} x={(NODE_WIDTH - 40) / 2} y={12} />
+      <pixiGraphics draw={drawPill} x={(NODE_WIDTH - PILL_SIZE) / 2} y={PILL_MARGIN_TOP} />
+      {showGauge && <NodeLoadGauge loadRatio={loadRatio} x={NODE_WIDTH / 2} y={GAUGE_CENTER_Y} />}
       <pixiText
         anchor={{ x: 0.5, y: 0 }}
         style={labelStyle}
         text={def.label}
         x={NODE_WIDTH / 2}
-        y={60}
+        y={LABEL_Y}
       />
       <HandleGraphic
         isPendingConnection={isPendingConnection}
@@ -346,8 +353,7 @@ const PixiEdgeInner = ({
   const { cp1, cp2 } = getBezierControlPoints(src, tgt);
   const edgeId = edge.id,
     isSelected = edge.selected === true;
-  const strokeColor = isSelected ? 0x22d3ee : 0x3b3b4f,
-    strokeWidth = isSelected ? 3 : 2;
+  const strokeColor = isSelected ? 0x22d3ee : 0x3b3b4f;
   const cp1X = cp1.x,
     cp1Y = cp1.y,
     cp2X = cp2.x,
@@ -359,10 +365,6 @@ const PixiEdgeInner = ({
 
   const draw = useCallback(
     (g: Graphics) => {
-      const off = getBezierLaneOffset({ x: srcX, y: srcY }, { x: tgtX, y: tgtY }, LANE_OFFSET);
-      const ox = off.x,
-        oy = off.y;
-
       g.clear();
 
       // Wide transparent stroke on the centre path for hit detection
@@ -370,27 +372,31 @@ const PixiEdgeInner = ({
       g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
       g.stroke({ alpha: 0, color: 0x000000, width: EDGE_HIT_WIDTH });
 
-      // Request lane (+offset): src → tgt, arrowhead at tgt
-      g.moveTo(srcX + ox, srcY + oy);
-      g.bezierCurveTo(cp1X + ox, cp1Y + oy, cp2X + ox, cp2Y + oy, tgtX + ox, tgtY + oy);
-      g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });
-      drawArrowHead(
-        g,
-        { x: cp2X + ox, y: cp2Y + oy },
-        { color: strokeColor, to: { x: tgtX + ox, y: tgtY + oy } },
-      );
+      // Thick two-lane road: requests travel the lower lane, responses the upper lane
+      g.moveTo(srcX, srcY);
+      g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
+      g.stroke({ alpha: 0.9, cap: "round", color: strokeColor, width: EDGE_ROAD_WIDTH });
 
-      // Response lane (-offset): tgt → src, arrowhead at src
-      g.moveTo(srcX - ox, srcY - oy);
-      g.bezierCurveTo(cp1X - ox, cp1Y - oy, cp2X - ox, cp2Y - oy, tgtX - ox, tgtY - oy);
-      g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });
-      drawArrowHead(
+      // Dashed centre divider separating the two lanes
+      drawDashedBezier(
         g,
-        { x: cp1X - ox, y: cp1Y - oy },
-        { color: strokeColor, to: { x: srcX - ox, y: srcY - oy } },
+        {
+          cp1: { x: cp1X, y: cp1Y },
+          cp2: { x: cp2X, y: cp2Y },
+          p0: { x: srcX, y: srcY },
+          p3: { x: tgtX, y: tgtY },
+        },
+        {
+          alpha: 0.7,
+          color: CANVAS_BACKGROUND,
+          dashLen: EDGE_DIVIDER_DASH,
+          gapLen: EDGE_DIVIDER_DASH,
+          offset: 0,
+          width: EDGE_DIVIDER_WIDTH,
+        },
       );
     },
-    [srcX, srcY, cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY, strokeColor, strokeWidth],
+    [srcX, srcY, cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY, strokeColor],
   );
 
   return (
@@ -664,7 +670,7 @@ const PixiContent = ({
     };
   });
 
-  const { processing } = engine.getSnapshot();
+  const { nodeMetrics } = engine.getSnapshot();
 
   useEffect(() => {
     if (!isInitialised) {
@@ -725,10 +731,10 @@ const PixiContent = ({
         {nodes.map((node) => (
           <PixiNodeGraphic
             key={node.id}
-            fillRatio={computeNodeFillRatio(
+            loadRatio={computeNodeLoadRatio(
               node.id,
               COMPONENT_LIBRARY[node.componentType].capacity,
-              processing,
+              nodeMetrics,
             )}
             isLocked={isLocked || lockedNodeIds.includes(node.id)}
             isOverloaded={overloadedNodeIds.includes(node.id)}

@@ -58,7 +58,7 @@ const NavBar = () => (
 
     <div style={{ alignItems: "center", display: "flex", gap: "12px", justifyContent: "flex-end" }}>
       <a
-        href="#"
+        href="https://donate.freecodecamp.org?source=event-producer&campaign=test-2026&medium=web"
         style={{
           color: "#d0d0d5",
           fontSize: "13px",

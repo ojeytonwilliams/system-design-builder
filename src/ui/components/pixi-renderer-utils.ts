@@ -5,16 +5,19 @@ import {
   sampleCubicBezierByArcLength,
 } from "./bezier-utils";
 
-const computeNodeFillRatio = (
+const computeNodeLoadRatio = (
   nodeId: string,
   capacity: number,
-  processing: Map<string, { nodeId: string }>,
+  nodeMetrics: Map<string, { incomingOpsPerMs: number }>,
 ): number => {
   if (!isFinite(capacity)) {
     return 0;
   }
-  const count = [...processing.values()].filter((p) => p.nodeId === nodeId).length;
-  return Math.min(count / capacity, 1);
+  const metrics = nodeMetrics.get(nodeId);
+  if (metrics === undefined) {
+    return 0;
+  }
+  return Math.min(metrics.incomingOpsPerMs / capacity, 1);
 };
 
 const getTransitDotPosition = (
@@ -41,4 +44,4 @@ const getTransitDotPosition = (
   return { x: pos.x + off.x, y: pos.y + off.y };
 };
 
-export { computeNodeFillRatio, getTransitDotPosition };
+export { computeNodeLoadRatio, getTransitDotPosition };
