@@ -16,8 +16,8 @@ interface ArchitectureEdge {
 }
 
 const GRID_SIZE = 24;
-const NODE_WIDTH = 88;
-const NODE_MIN_HEIGHT = 96;
+const NODE_WIDTH = 108;
+const NODE_MIN_HEIGHT = 112;
 
 const DEFAULT_DROP_POSITION = { x: 160, y: 160 };
 const DEFAULT_OVERLOADED_NODE_IDS: string[] = [];

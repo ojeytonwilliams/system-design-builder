@@ -1,3 +1,4 @@
+import { NODE_MIN_HEIGHT, NODE_WIDTH } from "../../domain/canvas-logic.js";
 import type { ArchitectureEdge, ArchitectureNode } from "../../domain/canvas-logic.js";
 import type { Processing } from "../../simulation/request-types.js";
 import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
@@ -32,38 +33,38 @@ describe(getTransitDotPosition, () => {
   });
 
   it("at progress=0 returns the source handle position", () => {
-    // n-1 at (0,0), n-2 at (200,0): dx>dy → sourceHandle="right" → {x:88, y:48}
+    // n-1 at (0,0), n-2 at (200,0): dx>dy → sourceHandle="right"
     expect(getTransitDotPosition({ edgeId: "e-1", progress: 0 }, edges, nodes)).toStrictEqual({
-      x: 88,
-      y: 48,
+      x: NODE_WIDTH,
+      y: NODE_MIN_HEIGHT / 2,
     });
   });
 
   it("at progress=1 returns the target handle position", () => {
-    // targetHandle="left" → {x:200, y:48}
+    // targetHandle="left"
     expect(getTransitDotPosition({ edgeId: "e-1", progress: 1 }, edges, nodes)).toStrictEqual({
       x: 200,
-      y: 48,
+      y: NODE_MIN_HEIGHT / 2,
     });
   });
 
   it("returns an interpolated position for intermediate progress", () => {
     const pos = getTransitDotPosition({ edgeId: "e-1", progress: 0.5 }, edges, nodes);
     expect(pos).not.toBeNull();
-    expect(pos!.y).toBeCloseTo(48);
-    expect(pos!.x).toBeGreaterThan(88);
+    expect(pos!.y).toBeCloseTo(NODE_MIN_HEIGHT / 2);
+    expect(pos!.x).toBeGreaterThan(NODE_WIDTH);
     expect(pos!.x).toBeLessThan(200);
   });
 
   it("shifts returned position by positive laneOffset on a horizontal curve", () => {
     // horizontal curve → offset is vertical: y += laneOffset
     const pos = getTransitDotPosition({ edgeId: "e-1", progress: 0 }, edges, nodes, 4);
-    expect(pos).toStrictEqual({ x: 88, y: 52 });
+    expect(pos).toStrictEqual({ x: NODE_WIDTH, y: NODE_MIN_HEIGHT / 2 + 4 });
   });
 
   it("shifts returned position by negative laneOffset on a horizontal curve", () => {
     const pos = getTransitDotPosition({ edgeId: "e-1", progress: 0 }, edges, nodes, -4);
-    expect(pos).toStrictEqual({ x: 88, y: 44 });
+    expect(pos).toStrictEqual({ x: NODE_WIDTH, y: NODE_MIN_HEIGHT / 2 - 4 });
   });
 });
 
