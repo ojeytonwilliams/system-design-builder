@@ -2,13 +2,7 @@ import { Application, extend, useApplication, useTick } from "@pixi/react";
 import { Container, Graphics, Text, TextStyle } from "pixi.js";
 import type { FederatedPointerEvent } from "pixi.js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  drawArrowHead,
-  drawDashedBezier,
-  getBezierControlPoints,
-  getBezierLaneOffset,
-  LANE_OFFSET,
-} from "./bezier-utils.js";
+import { drawDashedBezier, getBezierControlPoints, LANE_OFFSET } from "./bezier-utils.js";
 import { TICK_INTERVAL_MS } from "../../simulation/simulation-engine.js";
 import type { SimulationEngine, SimulationSnapshot } from "../../simulation/simulation-engine.js";
 import {
@@ -40,7 +34,10 @@ const REQUEST_DOT_COLOR = 0xa8c4e8;
 const RESPONSE_DOT_COLOR = 0x4fd47f;
 const HANDLE_RADIUS = PORT_HIT_SIZE / 2;
 const HANDLE_DOT_RADIUS = 4;
-const EDGE_HIT_WIDTH = 16;
+const EDGE_HIT_WIDTH = 20;
+const EDGE_ROAD_WIDTH = 16;
+const EDGE_DIVIDER_WIDTH = 1.5;
+const EDGE_DIVIDER_DASH = 6;
 
 const hexToPixi = (hex: string): number => parseInt(hex.replace("#", ""), 16);
 
@@ -362,8 +359,7 @@ const PixiEdgeInner = ({
   const { cp1, cp2 } = getBezierControlPoints(src, tgt);
   const edgeId = edge.id,
     isSelected = edge.selected === true;
-  const strokeColor = isSelected ? 0x22d3ee : 0x3b3b4f,
-    strokeWidth = isSelected ? 3 : 2;
+  const strokeColor = isSelected ? 0x22d3ee : 0x3b3b4f;
   const cp1X = cp1.x,
     cp1Y = cp1.y,
     cp2X = cp2.x,
@@ -375,10 +371,6 @@ const PixiEdgeInner = ({
 
   const draw = useCallback(
     (g: Graphics) => {
-      const off = getBezierLaneOffset({ x: srcX, y: srcY }, { x: tgtX, y: tgtY }, LANE_OFFSET);
-      const ox = off.x,
-        oy = off.y;
-
       g.clear();
 
       // Wide transparent stroke on the centre path for hit detection
@@ -386,27 +378,31 @@ const PixiEdgeInner = ({
       g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
       g.stroke({ alpha: 0, color: 0x000000, width: EDGE_HIT_WIDTH });
 
-      // Request lane (+offset): src → tgt, arrowhead at tgt
-      g.moveTo(srcX + ox, srcY + oy);
-      g.bezierCurveTo(cp1X + ox, cp1Y + oy, cp2X + ox, cp2Y + oy, tgtX + ox, tgtY + oy);
-      g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });
-      drawArrowHead(
-        g,
-        { x: cp2X + ox, y: cp2Y + oy },
-        { color: strokeColor, to: { x: tgtX + ox, y: tgtY + oy } },
-      );
+      // Thick two-lane road: requests travel the lower lane, responses the upper lane
+      g.moveTo(srcX, srcY);
+      g.bezierCurveTo(cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY);
+      g.stroke({ alpha: 0.9, cap: "round", color: strokeColor, width: EDGE_ROAD_WIDTH });
 
-      // Response lane (-offset): tgt → src, arrowhead at src
-      g.moveTo(srcX - ox, srcY - oy);
-      g.bezierCurveTo(cp1X - ox, cp1Y - oy, cp2X - ox, cp2Y - oy, tgtX - ox, tgtY - oy);
-      g.stroke({ alpha: 0.9, color: strokeColor, width: strokeWidth });
-      drawArrowHead(
+      // Dashed centre divider separating the two lanes
+      drawDashedBezier(
         g,
-        { x: cp1X - ox, y: cp1Y - oy },
-        { color: strokeColor, to: { x: srcX - ox, y: srcY - oy } },
+        {
+          cp1: { x: cp1X, y: cp1Y },
+          cp2: { x: cp2X, y: cp2Y },
+          p0: { x: srcX, y: srcY },
+          p3: { x: tgtX, y: tgtY },
+        },
+        {
+          alpha: 0.7,
+          color: CANVAS_BACKGROUND,
+          dashLen: EDGE_DIVIDER_DASH,
+          gapLen: EDGE_DIVIDER_DASH,
+          offset: 0,
+          width: EDGE_DIVIDER_WIDTH,
+        },
       );
     },
-    [srcX, srcY, cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY, strokeColor, strokeWidth],
+    [srcX, srcY, cp1X, cp1Y, cp2X, cp2Y, tgtX, tgtY, strokeColor],
   );
 
   return (
