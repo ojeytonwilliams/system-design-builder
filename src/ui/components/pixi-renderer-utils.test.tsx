@@ -1,15 +1,10 @@
 import { NODE_MIN_HEIGHT, NODE_WIDTH } from "../../domain/canvas-logic.js";
 import type { ArchitectureEdge, ArchitectureNode } from "../../domain/canvas-logic.js";
-import type { Processing } from "../../simulation/request-types.js";
-import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
+import type { NodeMetricsSnapshot } from "../../simulation/metrics.js";
+import { computeNodeLoadRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
 
-const makeProcessing = (nodeId: string): Processing => ({
-  durationMs: 100,
-  elapsedMs: 0,
-  nodeId,
-  progress: 0,
-  requestId: "req-1",
-});
+const makeMetrics = (nodeId: string, incomingOpsPerMs: number): NodeMetricsSnapshot =>
+  new Map([[nodeId, { incomingOpsPerMs, isOverloaded: false, opsPerMs: 0 }]]);
 
 describe(getTransitDotPosition, () => {
   const nodes: ArchitectureNode[] = [
@@ -68,34 +63,24 @@ describe(getTransitDotPosition, () => {
   });
 });
 
-describe(computeNodeFillRatio, () => {
+describe(computeNodeLoadRatio, () => {
+  it("returns 0 when the node has no metrics", () => {
+    expect(computeNodeLoadRatio("n-1", 0.18, new Map())).toBe(0);
+  });
+
   it("returns 0 for Infinity capacity", () => {
-    const processing = new Map([["req-1", makeProcessing("n-1")]]);
-    expect(computeNodeFillRatio("n-1", Infinity, processing)).toBe(0);
+    expect(computeNodeLoadRatio("n-1", Infinity, makeMetrics("n-1", 0.12))).toBe(0);
   });
 
-  it("returns 0 when no processing entries for the node", () => {
-    expect(computeNodeFillRatio("n-1", 50, new Map())).toBe(0);
+  it("returns incoming rate / capacity when under capacity", () => {
+    expect(computeNodeLoadRatio("n-1", 0.18, makeMetrics("n-1", 0.12))).toBeCloseTo(0.12 / 0.18);
   });
 
-  it("returns count / capacity when partially filled", () => {
-    const processing = new Map([
-      ["req-1", makeProcessing("n-1")],
-      ["req-2", { ...makeProcessing("n-1"), requestId: "req-2" }],
-    ]);
-    expect(computeNodeFillRatio("n-1", 50, processing)).toBe(2 / 50);
+  it("clamps to 1 when incoming rate exceeds capacity", () => {
+    expect(computeNodeLoadRatio("n-1", 0.18, makeMetrics("n-1", 0.36))).toBe(1);
   });
 
-  it("clamps to 1 when at capacity", () => {
-    const entries = Array.from({ length: 50 }, (_, i) => [
-      `req-${i}`,
-      { ...makeProcessing("n-1"), requestId: `req-${i}` },
-    ]) as [string, Processing][];
-    expect(computeNodeFillRatio("n-1", 50, new Map(entries))).toBe(1);
-  });
-
-  it("ignores processing entries for other nodes", () => {
-    const processing = new Map([["req-1", makeProcessing("n-2")]]);
-    expect(computeNodeFillRatio("n-1", 50, processing)).toBe(0);
+  it("ignores metrics for other nodes", () => {
+    expect(computeNodeLoadRatio("n-1", 0.18, makeMetrics("n-2", 0.12))).toBe(0);
   });
 });

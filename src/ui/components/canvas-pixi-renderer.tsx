@@ -16,7 +16,7 @@ import type { ArchitectureEdge, ArchitectureNode, HandleSide } from "../../domai
 import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
 import { hasLoad } from "./node-gauge-utils.js";
 import { GAUGE_OUTER_RADIUS, NodeLoadGauge } from "./node-load-gauge.js";
-import { computeNodeFillRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
+import { computeNodeLoadRatio, getTransitDotPosition } from "./pixi-renderer-utils.js";
 
 // oxlint-disable-next-line jest/require-hook
 extend({ Container, Graphics, Text });
@@ -136,7 +136,7 @@ const HandleGraphic = ({
 };
 
 interface PixiNodeGraphicProps {
-  fillRatio: number;
+  loadRatio: number;
   isLocked: boolean;
   isOverloaded: boolean;
   isPendingConnection: boolean;
@@ -154,7 +154,7 @@ interface PixiNodeGraphicProps {
 
 const PixiNodeGraphic = ({
   node,
-  fillRatio,
+  loadRatio,
   isSelected,
   isOverloaded,
   isLocked,
@@ -169,22 +169,16 @@ const PixiNodeGraphic = ({
 
   const fillColor = isSelected ? 0x2a2a40 : 0x1b1b32;
   const borderColor = hexToPixi(accentColor);
-  const accentColorHex = hexToPixi(accentColor);
 
   const drawBackground = useCallback(
     (g: Graphics) => {
       g.clear();
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.fill({ color: fillColor });
-      if (fillRatio > 0) {
-        const fillHeight = NODE_MIN_HEIGHT * fillRatio;
-        g.roundRect(0, NODE_MIN_HEIGHT - fillHeight, NODE_WIDTH, fillHeight, 16);
-        g.fill({ alpha: 0.18, color: accentColorHex });
-      }
       g.roundRect(0, 0, NODE_WIDTH, NODE_MIN_HEIGHT, 16);
       g.stroke({ color: borderColor, width: 2 });
     },
-    [fillColor, borderColor, fillRatio, accentColorHex],
+    [fillColor, borderColor],
   );
 
   const haloRef = useRef<Graphics>(null);
@@ -290,7 +284,7 @@ const PixiNodeGraphic = ({
       <pixiGraphics ref={haloRef} draw={() => {}} />
       <pixiGraphics draw={drawBackground} />
       <pixiGraphics draw={drawPill} x={(NODE_WIDTH - PILL_SIZE) / 2} y={PILL_MARGIN_TOP} />
-      {showGauge && <NodeLoadGauge loadRatio={fillRatio} x={NODE_WIDTH / 2} y={GAUGE_CENTER_Y} />}
+      {showGauge && <NodeLoadGauge loadRatio={loadRatio} x={NODE_WIDTH / 2} y={GAUGE_CENTER_Y} />}
       <pixiText
         anchor={{ x: 0.5, y: 0 }}
         style={labelStyle}
@@ -676,7 +670,7 @@ const PixiContent = ({
     };
   });
 
-  const { processing } = engine.getSnapshot();
+  const { nodeMetrics } = engine.getSnapshot();
 
   useEffect(() => {
     if (!isInitialised) {
@@ -737,10 +731,10 @@ const PixiContent = ({
         {nodes.map((node) => (
           <PixiNodeGraphic
             key={node.id}
-            fillRatio={computeNodeFillRatio(
+            loadRatio={computeNodeLoadRatio(
               node.id,
               COMPONENT_LIBRARY[node.componentType].capacity,
-              processing,
+              nodeMetrics,
             )}
             isLocked={isLocked || lockedNodeIds.includes(node.id)}
             isOverloaded={overloadedNodeIds.includes(node.id)}
