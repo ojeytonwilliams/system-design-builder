@@ -263,6 +263,50 @@ describe("simulation mode", () => {
     expect(screen.getByRole("button", { name: /start traffic/iv })).toBeInTheDocument();
   });
 
+  it("shows a retry screen after the timeout expires", () => {
+    // Use overload config so the win condition is never met
+    const engine = new SimulationEngine();
+    renderScene({
+      engine,
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: overloadLevelConfig,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
+
+    act(() => {
+      for (let t = 0; t < overloadLevelConfig.timeout + 500; t += 16) {
+        engine.tick(16);
+      }
+    });
+
+    expect(screen.getByText(/time's up/iv)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry/iv })).toBeInTheDocument();
+  });
+
+  it("clicking retry after timeout returns to design mode", () => {
+    const engine = new SimulationEngine();
+    renderScene({
+      engine,
+      initialEdges: overloadEdges,
+      initialNodes: overloadNodes,
+      levelConfig: overloadLevelConfig,
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /start traffic/iv }));
+
+    act(() => {
+      for (let t = 0; t < overloadLevelConfig.timeout + 500; t += 16) {
+        engine.tick(16);
+      }
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /retry/iv }));
+
+    expect(screen.queryByText(/time's up/iv)).not.toBeInTheDocument();
+  });
+
   it("inspector load field reflects overloaded state for the selected node", () => {
     const engine = new SimulationEngine();
     renderScene({

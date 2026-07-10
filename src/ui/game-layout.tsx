@@ -447,6 +447,66 @@ const GameScene = ({
           title={currentLevel.title}
         />
       )}
+
+      {phase === "FAILED" && (
+        <div
+          style={{
+            alignItems: "center",
+            background: "rgba(26, 39, 68, 0.72)",
+            bottom: 0,
+            display: "flex",
+            justifyContent: "center",
+            left: 0,
+            position: "fixed",
+            right: 0,
+            top: 0,
+            zIndex: 100,
+          }}
+        >
+          <div
+            style={{
+              background: "#fafaf7",
+              borderRadius: "1.25rem",
+              boxShadow: "0 24px 64px rgba(26, 39, 68, 0.28)",
+              maxWidth: "26rem",
+              padding: "2rem 2.5rem",
+              textAlign: "center",
+              width: "90vw",
+            }}
+          >
+            <h2
+              style={{
+                color: "#1a2744",
+                fontSize: "0.75rem",
+                letterSpacing: "0.1em",
+                margin: "0 0 0.25rem",
+                textTransform: "uppercase",
+              }}
+            >
+              Time&apos;s Up
+            </h2>
+            <p style={{ color: "#4f5b6b", fontSize: "0.875rem", margin: "0.5rem 0 1.25rem" }}>
+              The simulation timed out before meeting the target. Try a different approach.
+            </p>
+            <button
+              onClick={handleReplay}
+              style={{
+                background: "#1a2744",
+                border: "none",
+                borderRadius: "0.625rem",
+                color: "#f5f5f0",
+                cursor: "pointer",
+                fontSize: "0.875rem",
+                fontWeight: 600,
+                padding: "0.6rem 1.25rem",
+              }}
+              type="button"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
