@@ -1,8 +1,8 @@
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
 import type { ComponentDefinition, ComponentType } from "../domain/component-library.js";
 import {
-  toRealDuration as defaultToRealDuration,
-  toRealRate as defaultToRealRate,
+  toDisplayDuration as defaultToDisplayDuration,
+  toDisplayRate as defaultToDisplayRate,
 } from "../domain/sim-time-converter.js";
 import type { ArchitectureNode } from "../domain/canvas-logic.js";
 import type { InspectorProps } from "../ui/components/inspector.js";
@@ -14,12 +14,12 @@ const getInspectorData = (
   nodeMetrics: NodeMetricsSnapshot,
   {
     componentLibrary = COMPONENT_LIBRARY,
-    toRealDuration = defaultToRealDuration,
-    toRealRate = defaultToRealRate,
+    toDisplayDuration = defaultToDisplayDuration,
+    toDisplayRate = defaultToDisplayRate,
   }: {
     componentLibrary?: Record<ComponentType, ComponentDefinition>;
-    toRealDuration?: (simMs: number) => number;
-    toRealRate?: (simRate: number) => number;
+    toDisplayDuration?: (simMs: number) => number;
+    toDisplayRate?: (simRate: number) => number;
   } = {},
 ): InspectorProps => {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
@@ -33,15 +33,15 @@ const getInspectorData = (
   const selectedNodeLabel = def.label;
   const metrics = nodeMetrics.get(selectedNode.id);
   const { monthlyCost: cost } = def;
-  const latencyMs = toRealDuration(def.latencyMs);
+  const latencyMs = toDisplayDuration(def.latencyMs);
   const maxCapacity = latencyMs === 0 ? Infinity : 1 / latencyMs;
 
   const isFiniteCapacity = Number.isFinite(maxCapacity);
 
-  const opsPerMs = metrics?.opsPerMs === undefined ? undefined : toRealRate(metrics.opsPerMs);
+  const opsPerMs = metrics?.opsPerMs === undefined ? undefined : toDisplayRate(metrics.opsPerMs);
 
   const incomingOpsPerMs =
-    metrics?.incomingOpsPerMs === undefined ? undefined : toRealRate(metrics.incomingOpsPerMs);
+    metrics?.incomingOpsPerMs === undefined ? undefined : toDisplayRate(metrics.incomingOpsPerMs);
 
   const loadPercent =
     incomingOpsPerMs === undefined || !isFiniteCapacity

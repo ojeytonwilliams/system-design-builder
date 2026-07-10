@@ -25,7 +25,7 @@ describe(getInspectorData, () => {
     expect(getInspectorData("missing-id", [serverNode], new Map())).toStrictEqual({});
   });
 
-  it("opsPerMs converts simulation ops/ms to real-world ops/ms", () => {
+  it("opsPerMs converts simulation ops/ms to display ops/ms", () => {
     const nodeMetrics: NodeMetricsSnapshot = new Map([
       ["server-1", { incomingOpsPerMs: 0.2, isOverloaded: false, opsPerMs: convertRate(15) }],
     ]);
@@ -41,7 +41,7 @@ describe(getInspectorData, () => {
     expect(result.opsPerMs).toBeUndefined();
   });
 
-  it("incomingOpsPerMs converts simulation incoming ops/ms to real-world ops/ms", () => {
+  it("incomingOpsPerMs converts simulation incoming ops/ms to display ops/ms", () => {
     const nodeMetrics: NodeMetricsSnapshot = new Map([
       ["server-1", { incomingOpsPerMs: convertRate(20), isOverloaded: false, opsPerMs: 0.1 }],
     ]);
@@ -57,7 +57,7 @@ describe(getInspectorData, () => {
     expect(result.incomingOpsPerMs).toBeUndefined();
   });
 
-  it("loadPercent converts simulation incomingOpsPerMs to real-world percentage of capacity", () => {
+  it("loadPercent converts simulation incomingOpsPerMs to display percentage of capacity", () => {
     const serverLatencyMs = COMPONENT_LIBRARY_FIXTURE.server.latencyMs;
     const serverCapacity = 1 / serverLatencyMs;
     const nodeMetrics: NodeMetricsSnapshot = new Map([

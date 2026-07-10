@@ -9,11 +9,11 @@ import { loadProgress } from "../persistence.js";
 import { SimulationEngine } from "../simulation/simulation-engine.js";
 import type { LevelConfig } from "../simulation/types.js";
 
-// Win after 3 sustained seconds: 40 real ops/s < server capacity (50), no drops
+// Win after 3 sustained seconds: 40 display ops/s < server capacity (50), no drops
 const winLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
-  timeout: 1_000_000,
+  timeout: 10_000,
   trafficPeak: convertRate(0.04),
   trafficStart: convertRate(0.04),
   trafficTarget: convertRate(0.04),
@@ -30,32 +30,32 @@ const testLevelConfig: LevelConfig = {
   winSustainMs: 10_000,
 };
 
-// 150 real ops/s → 300% of server capacity (50); overload shows after rolling window fills (~t=4s)
+// 150 display ops/s → 300% of server capacity (50); overload shows after rolling window fills (~t=4s)
 const overloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
-  timeout: 1_000_000,
+  timeout: 10_000,
   trafficPeak: convertRate(0.15),
   trafficStart: convertRate(0.15),
   trafficTarget: convertRate(0.15),
   winSustainMs: 10_000,
 };
 
-// 25 real ops/s → 50% of server capacity (50); steady-state load shown after rolling window fills (~t=4s)
+// 25 display ops/s → 50% of server capacity (50); steady-state load shown after rolling window fills (~t=4s)
 const normalLoadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
-  timeout: 1_000_000,
+  timeout: 10_000,
   trafficPeak: convertRate(0.025),
   trafficStart: convertRate(0.025),
   trafficTarget: convertRate(0.025),
   winSustainMs: 10_000,
 };
 
-// Traffic ramps down from 100 → 0 real ops/s over 4 seconds:
-// T=1: 75 real ops/s (overloaded, server capacity=50)
-// T=2: 50 real ops/s (resolves — exactly at capacity, no drops)
-// T=3: 25 real ops/s (50% load)
+// Traffic ramps down from 100 → 0 display ops/s over 4 seconds:
+// T=1: 75 display ops/s (overloaded, server capacity=50)
+// T=2: 50 display ops/s (resolves — exactly at capacity, no drops)
+// T=3: 25 display ops/s (50% load)
 const resolvingOverloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
@@ -66,7 +66,7 @@ const resolvingOverloadLevelConfig: LevelConfig = {
   winSustainMs: 10_000,
 };
 
-// Traffic drops from 150 to 50 real ops/s over 6s; rolling-window overload starts early,
+// Traffic drops from 150 to 50 display ops/s over 6s; rolling-window overload starts early,
 // resolves once traffic drops below server capacity (100) — used to test overload start/resolution events
 const overloadResolvingConfig: LevelConfig = {
   cacheHitRate: 0,
@@ -125,7 +125,7 @@ const defaultSceneProps = {
   levelConfig: {
     cacheHitRate: 0,
     monthlyBudget: 99999,
-    timeout: 1_000_000,
+    timeout: 10_000,
     trafficPeak: 0,
     trafficStart: 0,
     trafficTarget: 0,
@@ -662,7 +662,7 @@ describe("budget enforcement", () => {
     const tightBudgetConfig: LevelConfig = {
       cacheHitRate: 0,
       monthlyBudget: 20,
-      timeout: 1_000_000,
+      timeout: 10_000,
       trafficPeak: 0.0004,
       trafficStart: 0.0004,
       trafficTarget: 0.0004,

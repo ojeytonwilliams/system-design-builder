@@ -70,7 +70,7 @@ const level3: LevelDefinition = {
       position: { x: 648, y: 192 },
     },
   ],
-  timeout: 1_000_000,
+  timeout: 10_000,
   title: "DB Bottleneck",
   trafficPeak: 0.12,
   trafficStart: 0.12,

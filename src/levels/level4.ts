@@ -72,7 +72,7 @@ const level4: LevelDefinition = {
       position: { x: 696, y: 192 },
     },
   ],
-  timeout: 1_000_000,
+  timeout: 10_000,
   title: "Read Overload",
   trafficPeak: 0.32,
   trafficStart: 0.32,

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { SimulationEngine } from "../simulation/simulation-engine.js";
 import { computeTotalCost } from "../domain/budget.js";
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
-import { toRealDuration, toRealRate } from "../domain/sim-time-converter.js";
+import { toDisplayDuration, toDisplayRate } from "../domain/sim-time-converter.js";
 import type { ComponentType } from "../domain/component-library.js";
 import { CircularGauge } from "./components/circular-gauge.js";
 import { Coach } from "./components/coach.js";
@@ -132,8 +132,10 @@ const GameScene = ({
             if (node === undefined) {
               return Infinity;
             }
-            const realLatencyMs = toRealDuration(COMPONENT_LIBRARY[node.componentType].latencyMs);
-            const capacityOpsPerMs = realLatencyMs === 0 ? Infinity : 1 / realLatencyMs;
+            const displayLatencyMs = toDisplayDuration(
+              COMPONENT_LIBRARY[node.componentType].latencyMs,
+            );
+            const capacityOpsPerMs = displayLatencyMs === 0 ? Infinity : 1 / displayLatencyMs;
             return capacityOpsPerMs * 1000;
           }),
         )
@@ -354,8 +356,8 @@ const GameScene = ({
             <div style={{ display: "grid", gap: "16px", gridTemplateColumns: "1fr 1fr" }}>
               <CircularGauge
                 bottleneckOpsPerSec={bottleneckOpsPerSec}
-                currentReqPerSec={isSimulating ? toRealRate(deliveryOpsPerMs) * 1000 : 0}
-                trafficTarget={toRealRate(levelConfig.trafficTarget) * 1_000}
+                currentReqPerSec={isSimulating ? toDisplayRate(deliveryOpsPerMs) * 1000 : 0}
+                trafficTarget={toDisplayRate(levelConfig.trafficTarget) * 1_000}
               />
               <ProgressCard
                 monthlyBudget={levelConfig.monthlyBudget}
