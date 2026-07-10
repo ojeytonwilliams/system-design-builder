@@ -43,6 +43,7 @@ interface SimulationSnapshot {
   deliveryOpsPerMs: number;
   elapsedMs: number;
   nodeMetrics: NodeMetricsSnapshot;
+  nodeQueues: Map<string, string[]>;
   prevResponseTransitProgresses: Map<string, number>;
   prevTransitProgresses: Map<string, number>;
   processing: Map<string, Processing>;
@@ -58,6 +59,7 @@ const getInitialSnapshot = (): SimulationSnapshot => ({
   deliveryOpsPerMs: 0,
   elapsedMs: 0,
   nodeMetrics: new Map(),
+  nodeQueues: new Map(),
   prevResponseTransitProgresses: new Map(),
   prevTransitProgresses: new Map(),
   processing: new Map(),
@@ -89,6 +91,8 @@ class SimulationEngine {
   private readonly processing = new Map<string, Processing>();
   private readonly responses = new Map<string, SimResponse>();
   private readonly responseTransits = new Map<string, ResponseTransit>();
+  private readonly nodeQueues = new Map<string, string[]>();
+  private readonly nodeExcessTime = new Map<string, number>();
   private nextSpawn = 0;
   private wallClockElapsedMs = 0;
   private metricsWindow: MetricsWindow = new Map();
@@ -152,6 +156,7 @@ class SimulationEngine {
 
     this.advanceTransits(deltaMs, maps);
     this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate);
+    this.drainQueues(maps);
     this.advanceResponseTransits(deltaMs, usersNodeId);
     this.timeoutRequests(maps);
 
@@ -194,6 +199,7 @@ class SimulationEngine {
       deliveryOpsPerMs,
       elapsedMs: elapsed,
       nodeMetrics,
+      nodeQueues: this.nodeQueues,
       prevResponseTransitProgresses,
       prevTransitProgresses,
       processing: this.processing,
@@ -212,6 +218,8 @@ class SimulationEngine {
     this.processing.clear();
     this.responses.clear();
     this.responseTransits.clear();
+    this.nodeQueues.clear();
+    this.nodeExcessTime.clear();
     this.nextSpawn = 0;
     this.wallClockElapsedMs = 0;
     this.metricsWindow = new Map();
@@ -234,21 +242,14 @@ class SimulationEngine {
         if (targetNode === undefined) {
           transitionRequest(requestId, { status: "FULFILLED" }, maps);
         } else {
-          const { latencyMs } = this.componentLibrary[targetNode.componentType];
+          transitionRequest(requestId, { nodeId: targetNode.id, status: "QUEUED" }, maps);
 
-          transitionRequest(
-            requestId,
-            {
-              processing: {
-                durationMs: latencyMs,
-                elapsedMs: excessTime,
-                nodeId: targetNode.id,
-                progress: excessTime / latencyMs,
-              },
-              status: "PROCESSING",
-            },
-            maps,
-          );
+          const queue = this.nodeQueues.get(targetNode.id);
+          if (queue === undefined) {
+            this.nodeQueues.set(targetNode.id, [requestId]);
+          } else {
+            queue.push(requestId);
+          }
 
           pushEvent(
             this.metricsWindow,
@@ -265,12 +266,14 @@ class SimulationEngine {
   }
 
   private advanceProcessing(deltaMs: number, maps: RequestMaps, cacheHitRate: number): void {
+    this.nodeExcessTime.clear();
     for (const [requestId, proc] of [...this.processing]) {
       const newElapsed = proc.elapsedMs + deltaMs;
 
       const excessTime = newElapsed - proc.durationMs;
 
       if (excessTime >= 0) {
+        this.nodeExcessTime.set(proc.nodeId, excessTime);
         const node = this.graphNodes.find((n) => n.id === proc.nodeId);
         const outgoingEdges = this.graphEdges.filter((e) => e.source === proc.nodeId);
         const options =
@@ -316,10 +319,70 @@ class SimulationEngine {
     }
   }
 
+  private drainQueues(maps: RequestMaps): void {
+    for (const [nodeId, queue] of this.nodeQueues) {
+      if (queue.length > 0) {
+        const node = this.graphNodes.find((n) => n.id === nodeId);
+        if (node === undefined) {
+          throw new Error(
+            `drainQueues: node "${nodeId}" has ${queue.length} queued request(s) but does not exist in graphNodes`,
+          );
+        }
+
+        const { latencyMs } = this.componentLibrary[node.componentType];
+
+        if (latencyMs === 0) {
+          while (queue.length > 0) {
+            const requestId = queue.shift()!;
+            transitionRequest(
+              requestId,
+              {
+                processing: {
+                  durationMs: 0,
+                  elapsedMs: 0,
+                  nodeId,
+                  progress: 1,
+                },
+                status: "PROCESSING",
+              },
+              maps,
+            );
+          }
+        } else {
+          const isProcessing = [...this.processing.values()].some((p) => p.nodeId === nodeId);
+          if (!isProcessing) {
+            const requestId = queue.shift()!;
+            const excessTime = this.nodeExcessTime.get(nodeId) ?? 0;
+            transitionRequest(
+              requestId,
+              {
+                processing: {
+                  durationMs: latencyMs,
+                  elapsedMs: excessTime,
+                  nodeId,
+                  progress: excessTime / latencyMs,
+                },
+                status: "PROCESSING",
+              },
+              maps,
+            );
+          }
+        }
+      }
+    }
+  }
+
   private timeoutRequests(maps: RequestMaps): void {
     for (const [requestId, request] of [...this.requests]) {
       if (shouldTimeOut(request, this.wallClockElapsedMs, REQUEST_TIMEOUT_MS)) {
         transitionRequest(requestId, { status: "TIMED_OUT" }, maps);
+        for (const [, queue] of this.nodeQueues) {
+          const idx = queue.indexOf(requestId);
+          if (idx !== -1) {
+            queue.splice(idx, 1);
+            break;
+          }
+        }
       }
     }
   }
