@@ -1,7 +1,7 @@
 import type { ArchitectureEdge, ArchitectureNode } from "../domain/canvas-logic.js";
 import { COMPONENT_LIBRARY_FIXTURE, CONNECTION_LIBRARY_FIXTURE } from "../domain/test-fixtures.js";
 import { convertRate, toRealRate } from "../domain/sim-time-converter.js";
-import { shouldTimeOut, SimulationEngine } from "./simulation-engine.js";
+import { SimulationEngine } from "./simulation-engine.js";
 import type { LevelConfig } from "./types.js";
 
 const makeEngine = () => new SimulationEngine(COMPONENT_LIBRARY_FIXTURE);
@@ -9,7 +9,7 @@ const makeEngine = () => new SimulationEngine(COMPONENT_LIBRARY_FIXTURE);
 const baseConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 100,
-  timeout: 60_000,
+  timeout: 1_000_000,
   trafficPeak: convertRate(0.15),
   trafficStart: convertRate(0.1),
   trafficTarget: convertRate(0.1),
@@ -261,7 +261,7 @@ describe("transit and processing advancement", () => {
   const levelConfig: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
-    timeout: 60000,
+    timeout: 1_000_000,
     trafficPeak: convertRate(SPAWN_RATE),
     trafficStart: convertRate(SPAWN_RATE),
     trafficTarget: convertRate(SPAWN_RATE),
@@ -390,7 +390,7 @@ describe("per-node queue", () => {
   const levelConfig: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
-    timeout: 60000,
+    timeout: 1_000_000,
     trafficPeak: convertRate(SPAWN_RATE),
     trafficStart: convertRate(SPAWN_RATE),
     trafficTarget: convertRate(SPAWN_RATE),
@@ -580,7 +580,7 @@ describe("sub-tick excess time", () => {
     const config: LevelConfig = {
       cacheHitRate: 0,
       monthlyBudget: 100,
-      timeout: 60000,
+      timeout: 1_000_000,
       trafficPeak: convertRate(SPAWN_RATE),
       trafficStart: convertRate(SPAWN_RATE),
       trafficTarget: convertRate(SPAWN_RATE),
@@ -610,7 +610,7 @@ describe("sub-tick excess time", () => {
     const config: LevelConfig = {
       cacheHitRate: 0,
       monthlyBudget: 100,
-      timeout: 60000,
+      timeout: 1_000_000,
       trafficPeak: convertRate(SPAWN_RATE),
       trafficStart: convertRate(SPAWN_RATE),
       trafficTarget: convertRate(SPAWN_RATE),
@@ -630,81 +630,6 @@ describe("sub-tick excess time", () => {
   });
 });
 
-describe("QUEUED request timeout", () => {
-  // Use a server with latency longer than the timeout (15000 > 10000 sim-ms)
-  // so the first request blocks the slot and the second stays QUEUED until timeout.
-  const TICK_MS = CONNECTION_LIBRARY_FIXTURE.standard.transitMs / 2;
-  const SPAWN_RATE = toRealRate(1 / TICK_MS);
-  const config: LevelConfig = {
-    cacheHitRate: 0,
-    monthlyBudget: 100,
-    timeout: 60000,
-    trafficPeak: convertRate(SPAWN_RATE),
-    trafficStart: convertRate(SPAWN_RATE),
-    trafficTarget: convertRate(SPAWN_RATE),
-    winSustainMs: 3_000,
-  };
-  const slowLib = {
-    ...COMPONENT_LIBRARY_FIXTURE,
-    server: { ...COMPONENT_LIBRARY_FIXTURE.server, latencyMs: 15_000 },
-  };
-  const usersNode: ArchitectureNode = {
-    componentType: "users",
-    id: "users-1",
-    position: { x: 0, y: 0 },
-  };
-  const serverNode: ArchitectureNode = {
-    componentType: "server",
-    id: "server-1",
-    position: { x: 0, y: 0 },
-  };
-  const edge: ArchitectureEdge = {
-    id: "e1",
-    source: "users-1",
-    target: "server-1",
-  };
-
-  it("times out a QUEUED request whose age exceeds REQUEST_TIMEOUT_MS", () => {
-    const engine = new SimulationEngine(slowLib);
-    engine.setConfig(config);
-    engine.setGraph([usersNode, serverNode], [edge]);
-    // tick 1: r1 spawns. tick 2: r1 arrives → processing (15000ms).
-    // tick 3: r2 arrives → QUEUED (server busy).
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
-
-    // r2 spawned at ~1000ms. Timeout at ~11000ms. We're at 1500ms, need 9500 more = 19 ticks.
-    for (let i = 0; i < 19; i++) {
-      engine.tick(TICK_MS);
-    }
-    const snap = engine.getSnapshot();
-    const timedOut = [...snap.requests.values()].filter((r) => r.status === "TIMED_OUT");
-
-    expect(timedOut.length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("removes the timed-out request from nodeQueues", () => {
-    const engine = new SimulationEngine(slowLib);
-    engine.setConfig(config);
-    engine.setGraph([usersNode, serverNode], [edge]);
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
-
-    const queuedId = engine.getSnapshot().nodeQueues.get("server-1")?.[0];
-    expect(queuedId).toBeDefined();
-
-    for (let i = 0; i < 19; i++) {
-      engine.tick(TICK_MS);
-    }
-    const snap = engine.getSnapshot();
-
-    expect(snap.nodeQueues.get("server-1")).toBeDefined();
-    expect(snap.nodeQueues.get("server-1")).not.toContain(queuedId);
-  });
-});
-
 describe("response creation", () => {
   const TICK_MS = CONNECTION_LIBRARY_FIXTURE.standard.transitMs / 2;
   const SPAWN_RATE = toRealRate(1 / TICK_MS);
@@ -712,7 +637,7 @@ describe("response creation", () => {
   const singleEdgeConfig: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
-    timeout: 60000,
+    timeout: 1_000_000,
     trafficPeak: convertRate(SPAWN_RATE),
     trafficStart: convertRate(SPAWN_RATE),
     trafficTarget: convertRate(SPAWN_RATE),
@@ -819,7 +744,7 @@ describe("response creation", () => {
       const overloadConfig: LevelConfig = {
         cacheHitRate: 0,
         monthlyBudget: 100,
-        timeout: 60_000,
+        timeout: 1_000_000,
         trafficPeak: convertRate(1100),
         trafficStart: convertRate(1100),
         trafficTarget: convertRate(1100),
@@ -850,7 +775,7 @@ describe("response transit advancement", () => {
   const config: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
-    timeout: 60000,
+    timeout: 1_000_000,
     trafficPeak: convertRate(SPAWN_RATE),
     trafficStart: convertRate(SPAWN_RATE),
     trafficTarget: convertRate(SPAWN_RATE),
@@ -990,7 +915,7 @@ describe("rolling metrics", () => {
   const config: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
-    timeout: 60000,
+    timeout: 1_000_000,
     trafficPeak: convertRate(SPAWN_RATE),
     trafficStart: convertRate(SPAWN_RATE),
     trafficTarget: convertRate(SPAWN_RATE),
@@ -1090,7 +1015,7 @@ describe("server receives all requests emitted by the users node", () => {
   const config: LevelConfig = {
     cacheHitRate: 0,
     monthlyBudget: 100,
-    timeout: 60_000,
+    timeout: 1_000_000,
     trafficPeak: convertRate(SPAWN_RATE),
     trafficStart: convertRate(SPAWN_RATE),
     trafficTarget: convertRate(SPAWN_RATE),
@@ -1130,25 +1055,4 @@ describe("server receives all requests emitted by the users node", () => {
     // and the rate converges to 1/TICK_MS.
     expect(serverMetrics.incomingOpsPerMs).toBe(1 / TICK_MS);
   });
-});
-
-describe(shouldTimeOut, () => {
-  it("returns true when wallClockMs - spawnedAtSimMs >= timeoutMs", () => {
-    expect(shouldTimeOut({ spawnedAtSimMs: 5_000, status: "IN_TRANSIT" }, 15_000, 10_000)).toBe(
-      true,
-    );
-  });
-
-  it("returns false when wallClockMs - spawnedAtSimMs < timeoutMs", () => {
-    expect(shouldTimeOut({ spawnedAtSimMs: 5_000, status: "IN_TRANSIT" }, 14_999, 10_000)).toBe(
-      false,
-    );
-  });
-
-  it.each(["FULFILLED", "DROPPED", "TIMED_OUT"] as const)(
-    "returns false for terminal status %s",
-    (status) => {
-      expect(shouldTimeOut({ spawnedAtSimMs: 0, status }, 10_000, 10_000)).toBe(false);
-    },
-  );
 });

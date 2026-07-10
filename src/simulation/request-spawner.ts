@@ -8,7 +8,6 @@ interface SpawnParams {
   firstSpawnTime: number;
   trafficRate: number;
   usersNodeId: string;
-  wallClockElapsedMs: number;
 }
 
 interface SpawnResult {
@@ -25,7 +24,6 @@ const spawnRequests = ({
   firstSpawnTime,
   trafficRate,
   usersNodeId,
-  wallClockElapsedMs,
 }: SpawnParams): SpawnResult => {
   const intervalPerRequest = 1 / trafficRate;
 
@@ -37,13 +35,11 @@ const spawnRequests = ({
   while (elapsedMs > 0) {
     const id = idGenerator();
 
-    const spawnTime = wallClockElapsedMs + deltaMs - elapsedMs;
     const progress = elapsedMs / edgeTransitMs;
 
     requests.push({
       id,
       originNodeId: usersNodeId,
-      spawnedAtSimMs: spawnTime,
       status: "IN_TRANSIT",
       visitedEdgeIds: [],
       visitedNodeIds: [],

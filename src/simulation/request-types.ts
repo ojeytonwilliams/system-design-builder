@@ -1,9 +1,8 @@
-type RequestStatus = "DROPPED" | "FULFILLED" | "IN_TRANSIT" | "PROCESSING" | "QUEUED" | "TIMED_OUT";
+type RequestStatus = "DROPPED" | "FULFILLED" | "IN_TRANSIT" | "PROCESSING" | "QUEUED";
 
 interface SimRequest {
   id: string;
   originNodeId: string;
-  spawnedAtSimMs: number;
   status: RequestStatus;
   visitedEdgeIds: string[];
   visitedNodeIds: string[];

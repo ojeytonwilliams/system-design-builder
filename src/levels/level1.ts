@@ -52,7 +52,7 @@ const level1: LevelDefinition = {
       position: { x: 480, y: 168 },
     },
   ],
-  timeout: 60_000,
+  timeout: 1_000_000,
   title: "First Request",
   trafficPeak: 0.12,
   trafficStart: 0.12,
