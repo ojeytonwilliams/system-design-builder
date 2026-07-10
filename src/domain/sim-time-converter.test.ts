@@ -1,21 +1,21 @@
-import { toRealDuration, toRealRate } from "./sim-time-converter.js";
+import { toDisplayDuration, toDisplayRate } from "./sim-time-converter.js";
 
-describe(toRealRate, () => {
-  it("converts simulation rate to real-world rate", () => {
-    expect(toRealRate(0.01)).toBeCloseTo(1);
+describe(toDisplayRate, () => {
+  it("converts simulation rate to display rate", () => {
+    expect(toDisplayRate(0.01)).toBeCloseTo(1);
   });
 
   it("handles zero", () => {
-    expect(toRealRate(0)).toBe(0);
+    expect(toDisplayRate(0)).toBe(0);
   });
 });
 
-describe(toRealDuration, () => {
-  it("converts simulation duration to real-world duration", () => {
-    expect(toRealDuration(1000)).toBe(10);
+describe(toDisplayDuration, () => {
+  it("converts simulation duration to display duration", () => {
+    expect(toDisplayDuration(1000)).toBe(10);
   });
 
   it("handles zero", () => {
-    expect(toRealDuration(0)).toBe(0);
+    expect(toDisplayDuration(0)).toBe(0);
   });
 });
