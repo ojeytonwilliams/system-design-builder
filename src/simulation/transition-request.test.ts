@@ -5,7 +5,6 @@ import type { RequestMaps } from "./transition-request.js";
 const makeRequest = (id: string, status: RequestStatus): SimRequest => ({
   id,
   originNodeId: "users-1",
-  spawnedAtSimMs: 0,
   status,
   visitedEdgeIds: [],
   visitedNodeIds: [],
@@ -275,24 +274,6 @@ describe(transitionRequest, () => {
       transitionRequest("r1", { status: "DROPPED" }, maps);
 
       expect(maps.processing.has("r1")).toBe(false);
-    });
-
-    it("updates status to TIMED_OUT", () => {
-      const request = makeRequest("r1", "IN_TRANSIT");
-      const maps = makeMaps(request, makeTransit("r1"));
-
-      transitionRequest("r1", { status: "TIMED_OUT" }, maps);
-
-      expect(maps.requests.get("r1")?.status).toBe("TIMED_OUT");
-    });
-
-    it("removes the transit entry on TIMED_OUT", () => {
-      const request = makeRequest("r1", "IN_TRANSIT");
-      const maps = makeMaps(request, makeTransit("r1"));
-
-      transitionRequest("r1", { status: "TIMED_OUT" }, maps);
-
-      expect(maps.transits.has("r1")).toBe(false);
     });
   });
 

@@ -25,7 +25,6 @@ const baseParams = {
   outgoingEdgeId: "edge-1",
   trafficRate: RATE_ONE_PER_TICK,
   usersNodeId: "users-1",
-  wallClockElapsedMs: 0,
 };
 
 const repeatedSpawn = (params: Partial<typeof baseParams>, ticks: number) => {
@@ -203,17 +202,6 @@ describe(spawnRequests, () => {
       const result = spawnRequests({ ...baseParams, usersNodeId: "users-2" });
 
       expect(result.requests[0]?.originNodeId).toBe("users-2");
-    });
-
-    it("sets spawnedAtSimMs from wallClockElapsedMs", () => {
-      const result = spawnRequests({
-        ...baseParams,
-        trafficRate: RATE_TWO_PER_TICK,
-        wallClockElapsedMs: 500,
-      });
-
-      expect(result.requests[0]?.spawnedAtSimMs).toBe(500);
-      expect(result.requests[1]?.spawnedAtSimMs).toBe(500 + DELTA_MS / 2);
     });
 
     it("starts with empty visitedNodeIds", () => {

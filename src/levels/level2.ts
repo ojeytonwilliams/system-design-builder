@@ -64,7 +64,7 @@ const level2: LevelDefinition = {
       position: { x: 552, y: 192 },
     },
   ],
-  timeout: 60_000,
+  timeout: 1_000_000,
   title: "Over Capacity",
   trafficPeak: 0.12,
   trafficStart: 0.12,

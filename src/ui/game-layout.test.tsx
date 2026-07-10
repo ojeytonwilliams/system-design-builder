@@ -13,7 +13,7 @@ import type { LevelConfig } from "../simulation/types.js";
 const winLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
-  timeout: 60_000,
+  timeout: 1_000_000,
   trafficPeak: convertRate(0.04),
   trafficStart: convertRate(0.04),
   trafficTarget: convertRate(0.04),
@@ -34,7 +34,7 @@ const testLevelConfig: LevelConfig = {
 const overloadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
-  timeout: 60_000,
+  timeout: 1_000_000,
   trafficPeak: convertRate(0.15),
   trafficStart: convertRate(0.15),
   trafficTarget: convertRate(0.15),
@@ -45,7 +45,7 @@ const overloadLevelConfig: LevelConfig = {
 const normalLoadLevelConfig: LevelConfig = {
   cacheHitRate: 0,
   monthlyBudget: 99999,
-  timeout: 60_000,
+  timeout: 1_000_000,
   trafficPeak: convertRate(0.025),
   trafficStart: convertRate(0.025),
   trafficTarget: convertRate(0.025),
@@ -125,7 +125,7 @@ const defaultSceneProps = {
   levelConfig: {
     cacheHitRate: 0,
     monthlyBudget: 99999,
-    timeout: 60_000,
+    timeout: 1_000_000,
     trafficPeak: 0,
     trafficStart: 0,
     trafficTarget: 0,
@@ -662,7 +662,7 @@ describe("budget enforcement", () => {
     const tightBudgetConfig: LevelConfig = {
       cacheHitRate: 0,
       monthlyBudget: 20,
-      timeout: 60_000,
+      timeout: 1_000_000,
       trafficPeak: 0.0004,
       trafficStart: 0.0004,
       trafficTarget: 0.0004,

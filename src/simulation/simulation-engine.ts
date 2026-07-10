@@ -9,7 +9,6 @@ import { getRoutingOptions } from "./request-router.js";
 import { spawnRequests } from "./request-spawner.js";
 import type {
   Processing,
-  RequestStatus,
   ResponseTransit,
   SimRequest,
   SimResponse,
@@ -20,23 +19,6 @@ import type { RequestMaps } from "./transition-request.js";
 import type { LevelConfig } from "./types.js";
 
 type SimComponentLibrary = Record<ComponentType, { latencyMs: number }>;
-
-const REQUEST_TIMEOUT_MS = 10_000;
-
-const shouldTimeOut = (
-  request: { spawnedAtSimMs: number; status: RequestStatus },
-  wallClockMs: number,
-  timeoutMs: number,
-): boolean => {
-  if (
-    request.status === "FULFILLED" ||
-    request.status === "DROPPED" ||
-    request.status === "TIMED_OUT"
-  ) {
-    return false;
-  }
-  return wallClockMs - request.spawnedAtSimMs >= timeoutMs;
-};
 
 interface SimulationSnapshot {
   currentTrafficRate: number;
@@ -158,7 +140,6 @@ class SimulationEngine {
     this.advanceProcessing(deltaMs, maps, this.config.cacheHitRate);
     this.drainQueues(maps);
     this.advanceResponseTransits(deltaMs, usersNodeId);
-    this.timeoutRequests(maps);
 
     if (usersNode !== undefined && outgoingEdge !== undefined) {
       const result = spawnRequests({
@@ -168,7 +149,6 @@ class SimulationEngine {
         outgoingEdgeId: outgoingEdge.id,
         trafficRate: rate,
         usersNodeId: usersNode.id,
-        wallClockElapsedMs: this.wallClockElapsedMs,
       });
       this.nextSpawn = result.nextSpawn;
       for (const req of result.requests) {
@@ -372,21 +352,6 @@ class SimulationEngine {
     }
   }
 
-  private timeoutRequests(maps: RequestMaps): void {
-    for (const [requestId, request] of [...this.requests]) {
-      if (shouldTimeOut(request, this.wallClockElapsedMs, REQUEST_TIMEOUT_MS)) {
-        transitionRequest(requestId, { status: "TIMED_OUT" }, maps);
-        for (const [, queue] of this.nodeQueues) {
-          const idx = queue.indexOf(requestId);
-          if (idx !== -1) {
-            queue.splice(idx, 1);
-            break;
-          }
-        }
-      }
-    }
-  }
-
   private advanceResponseTransits(deltaMs: number, usersNodeId: string): void {
     for (const [responseId, transit] of [...this.responseTransits]) {
       const newElapsed = transit.elapsedMs + deltaMs;
@@ -474,5 +439,5 @@ class SimulationEngine {
 
 const TICK_INTERVAL_MS = 1000 / 60;
 
-export { shouldTimeOut, SimulationEngine, TICK_INTERVAL_MS };
+export { SimulationEngine, TICK_INTERVAL_MS };
 export type { SimulationSnapshot };

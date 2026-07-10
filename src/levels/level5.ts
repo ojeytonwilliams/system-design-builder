@@ -88,7 +88,7 @@ const level5: LevelDefinition = {
       position: { x: 816, y: 264 },
     },
   ],
-  timeout: 60_000,
+  timeout: 1_000_000,
   title: "Right-Sizing",
   trafficPeak: 0.18,
   trafficStart: 0.18,

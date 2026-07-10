@@ -73,7 +73,7 @@ const level6: LevelDefinition = {
       position: { x: 648, y: 192 },
     },
   ],
-  timeout: 90_000,
+  timeout: 1_000_000,
   title: "Full Scale",
   trafficPeak: 0.36,
   trafficStart: 0.36,
