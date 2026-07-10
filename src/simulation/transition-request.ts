@@ -8,7 +8,8 @@ interface RequestMaps {
 
 type TransitionTarget =
   | { processing: Omit<Processing, "requestId">; status: "PROCESSING" }
-  | { status: Exclude<RequestStatus, "IN_TRANSIT" | "PROCESSING"> }
+  | { nodeId: string; status: "QUEUED" }
+  | { status: Exclude<RequestStatus, "IN_TRANSIT" | "PROCESSING" | "QUEUED"> }
   | { status: "IN_TRANSIT"; transit: Omit<Transit, "requestId"> };
 
 const transitionRequest = (
@@ -37,6 +38,11 @@ const transitionRequest = (
     }
     request.visitedNodeIds = [...request.visitedNodeIds, target.processing.nodeId];
     maps.processing.set(requestId, { ...target.processing, requestId });
+  } else if (target.status === "QUEUED") {
+    if (currentTransit !== undefined) {
+      request.visitedEdgeIds = [...request.visitedEdgeIds, currentTransit.edgeId];
+    }
+    request.visitedNodeIds = [...request.visitedNodeIds, target.nodeId];
   }
 };
 

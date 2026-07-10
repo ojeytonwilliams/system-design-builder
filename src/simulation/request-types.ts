@@ -1,4 +1,4 @@
-type RequestStatus = "DROPPED" | "FULFILLED" | "IN_TRANSIT" | "PROCESSING" | "TIMED_OUT";
+type RequestStatus = "DROPPED" | "FULFILLED" | "IN_TRANSIT" | "PROCESSING" | "QUEUED" | "TIMED_OUT";
 
 interface SimRequest {
   id: string;
@@ -40,4 +40,17 @@ interface Processing {
   requestId: string;
 }
 
-export type { Processing, RequestStatus, ResponseTransit, SimRequest, SimResponse, Transit };
+interface QueuedRequest {
+  nodeId: string;
+  requestId: string;
+}
+
+export type {
+  Processing,
+  QueuedRequest,
+  RequestStatus,
+  ResponseTransit,
+  SimRequest,
+  SimResponse,
+  Transit,
+};

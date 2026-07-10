@@ -296,6 +296,53 @@ describe(transitionRequest, () => {
     });
   });
 
+  describe("IN_TRANSIT → QUEUED", () => {
+    it("updates the request status to QUEUED", () => {
+      const request = makeRequest("r1", "IN_TRANSIT");
+      const maps = makeMaps(request, makeTransit("r1"));
+
+      transitionRequest("r1", { nodeId: "server-1", status: "QUEUED" }, maps);
+
+      expect(maps.requests.get("r1")?.status).toBe("QUEUED");
+    });
+
+    it("removes the transit entry", () => {
+      const request = makeRequest("r1", "IN_TRANSIT");
+      const maps = makeMaps(request, makeTransit("r1"));
+
+      transitionRequest("r1", { nodeId: "server-1", status: "QUEUED" }, maps);
+
+      expect(maps.transits.has("r1")).toBe(false);
+    });
+
+    it("does not add a processing entry", () => {
+      const request = makeRequest("r1", "IN_TRANSIT");
+      const maps = makeMaps(request, makeTransit("r1"));
+
+      transitionRequest("r1", { nodeId: "server-1", status: "QUEUED" }, maps);
+
+      expect(maps.processing.has("r1")).toBe(false);
+    });
+
+    it("appends the edgeId to visitedEdgeIds", () => {
+      const request = makeRequest("r1", "IN_TRANSIT");
+      const maps = makeMaps(request, makeTransit("r1"));
+
+      transitionRequest("r1", { nodeId: "server-1", status: "QUEUED" }, maps);
+
+      expect(maps.requests.get("r1")?.visitedEdgeIds).toStrictEqual(["edge-1"]);
+    });
+
+    it("appends the nodeId to visitedNodeIds", () => {
+      const request = makeRequest("r1", "IN_TRANSIT");
+      const maps = makeMaps(request, makeTransit("r1"));
+
+      transitionRequest("r1", { nodeId: "server-1", status: "QUEUED" }, maps);
+
+      expect(maps.requests.get("r1")?.visitedNodeIds).toStrictEqual(["server-1"]);
+    });
+  });
+
   describe("unknown request id", () => {
     it("is a no-op", () => {
       const maps: RequestMaps = {

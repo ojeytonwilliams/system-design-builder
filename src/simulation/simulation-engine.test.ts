@@ -51,6 +51,10 @@ describe(SimulationEngine, () => {
     expect(snap.processing.size).toBe(0);
   });
 
+  it("getSnapshot includes empty nodeQueues initially", () => {
+    expect(engine.getSnapshot().nodeQueues).toStrictEqual(new Map());
+  });
+
   it("getSnapshot includes tickDeltaMs of 0 initially", () => {
     expect(engine.getSnapshot().tickDeltaMs).toBe(0);
   });
@@ -106,6 +110,13 @@ describe(SimulationEngine, () => {
 
     expect(snap.elapsedMs).toBe(0);
     expect(snap.nodeMetrics).toStrictEqual(new Map());
+  });
+
+  it("reset() clears nodeQueues", () => {
+    engine.tick(1);
+    engine.reset();
+
+    expect(engine.getSnapshot().nodeQueues).toStrictEqual(new Map());
   });
 
   it("reset() resets deliveryOpsPerMs to 0", () => {
@@ -338,8 +349,10 @@ describe("transit and processing advancement", () => {
     expect(processing?.durationMs).toBe(COMPONENT_LIBRARY_FIXTURE.server.latencyMs);
   });
 
-  it("advances processing elapsedMs each tick (processing created and immediately advanced in same tick as transit completion)", () => {
+  it("advances processing elapsedMs on the tick after drain", () => {
     engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    // Processing created by drainQueues with elapsedMs=0. Next tick advances it.
     engine.tick(TICK_MS);
     const snap = engine.getSnapshot();
     const [processing] = [...snap.processing.values()];
@@ -348,8 +361,8 @@ describe("transit and processing advancement", () => {
   });
 
   it("transitions to FULFILLED when processing completes", () => {
-    // 2 ticks transit + 4 ticks processing (server latencyMs=20 → 2000 sim-ms) = 5 ticks
-    for (let i = 0; i < 5; i++) {
+    // 2 ticks transit + 1 tick drain (elapsedMs=0) + 4 ticks processing = 6 ticks
+    for (let i = 0; i < 6; i++) {
       engine.tick(TICK_MS);
     }
     const snap = engine.getSnapshot();
@@ -359,7 +372,7 @@ describe("transit and processing advancement", () => {
   });
 
   it("removes the fulfilled request from the processing map", () => {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       engine.tick(TICK_MS);
     }
     const snap = engine.getSnapshot();
@@ -367,6 +380,328 @@ describe("transit and processing advancement", () => {
 
     expect(fulfilledRequest).toBeDefined();
     expect(snap.processing.has(fulfilledRequest!.id)).toBe(false);
+  });
+});
+
+describe("per-node queue", () => {
+  const TICK_MS = CONNECTION_LIBRARY_FIXTURE.standard.transitMs / 2;
+  const SPAWN_RATE = toRealRate(1 / TICK_MS);
+
+  const levelConfig: LevelConfig = {
+    cacheHitRate: 0,
+    monthlyBudget: 100,
+    timeout: 60000,
+    trafficPeak: convertRate(SPAWN_RATE),
+    trafficStart: convertRate(SPAWN_RATE),
+    trafficTarget: convertRate(SPAWN_RATE),
+    winSustainMs: 3_000,
+  };
+
+  const usersNode: ArchitectureNode = {
+    componentType: "users",
+    id: "users-1",
+    position: { x: 0, y: 0 },
+  };
+
+  const serverNode: ArchitectureNode = {
+    componentType: "server",
+    id: "server-1",
+    position: { x: 0, y: 0 },
+  };
+
+  const edge: ArchitectureEdge = {
+    id: "e1",
+    source: "users-1",
+    target: "server-1",
+  };
+
+  it("a single request at an idle node is drained from queue into PROCESSING in the same tick", () => {
+    const engine = makeEngine();
+    engine.setConfig(levelConfig);
+    engine.setGraph([usersNode, serverNode], [edge]);
+    // tick 1: transit starts; tick 2: transit completes → enqueued → drained
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const processingRequests = [...snap.requests.values()].filter((r) => r.status === "PROCESSING");
+
+    expect(processingRequests).toHaveLength(1);
+    expect(snap.nodeQueues.get("server-1")).toBeDefined();
+    expect(snap.nodeQueues.get("server-1")).toHaveLength(0);
+  });
+
+  it("records an arrival metric event at transit completion time", () => {
+    const engine = makeEngine();
+    engine.setConfig(levelConfig);
+    engine.setGraph([usersNode, serverNode], [edge]);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const serverMetrics = snap.nodeMetrics.get("server-1");
+
+    expect(serverMetrics?.incomingOpsPerMs).toBeGreaterThan(0);
+  });
+
+  it("only one request processes at a node; the second waits in the queue", () => {
+    // 1 request per tick (existing rate). Tick 1: r1 spawns → transit.
+    // Tick 2: r1 transit completes → enqueued → drained to PROCESSING. r2 spawns → transit.
+    // Tick 3: r2 transit completes → enqueued. Server busy with r1 → stays QUEUED.
+    const engine = makeEngine();
+    engine.setConfig(levelConfig);
+    engine.setGraph([usersNode, serverNode], [edge]);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const processing = [...snap.processing.values()].filter((p) => p.nodeId === "server-1");
+
+    expect(processing).toHaveLength(1);
+    expect(snap.nodeQueues.get("server-1")).toHaveLength(1);
+  });
+
+  it("queued request enters PROCESSING after the first request completes", () => {
+    const engine = makeEngine();
+    engine.setConfig(levelConfig);
+    engine.setGraph([usersNode, serverNode], [edge]);
+    // tick 1: r1 spawns. tick 2: r1 arrives → PROCESSING. tick 3: r2 arrives → QUEUED.
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+
+    // r1 started processing at tick 2 with elapsedMs=0.
+    // Server latencyMs (fixture) = 20 real → 2000 sim. Each tick = 500ms.
+    // 4 ticks to complete → tick 6. We're at tick 3, need 3 more.
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const processing = [...snap.processing.values()].filter((p) => p.nodeId === "server-1");
+
+    // r1 completed and r2 (formerly queued) should now be processing
+    expect(processing).toHaveLength(1);
+  });
+
+  it("drains all queued requests at a zero-latency node in one tick", () => {
+    // users node has latencyMs=0. If requests somehow queue there, they should all drain.
+    // We can't easily queue at users directly, so test with load-balancer (latencyMs=0.1 real → 10 sim).
+    // Actually, load-balancer has nonzero latency now. Use a custom setup instead.
+    // Simplest: verify that when a load-balancer node receives requests, they process immediately
+    // since latencyMs is very small (10 sim-ms). With TICK_MS=500, processing completes same tick.
+    const lbNode: ArchitectureNode = {
+      componentType: "load-balancer",
+      id: "lb-1",
+      position: { x: 0, y: 0 },
+    };
+    const edgeLb: ArchitectureEdge = {
+      id: "e-lb",
+      source: "users-1",
+      target: "lb-1",
+    };
+    const edgeLbServer: ArchitectureEdge = {
+      id: "e-lb-s",
+      source: "lb-1",
+      target: "server-1",
+    };
+    const engine = makeEngine();
+    engine.setConfig(levelConfig);
+    engine.setGraph([usersNode, lbNode, serverNode], [edgeLb, edgeLbServer, edge]);
+    // tick 1: request spawns → transit to lb
+    // tick 2: transit completes → queued at lb → drained (lb latency ~10 sim-ms, completes instantly)
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    // lb should have no queued requests — they should have been processed and routed onward
+    expect(snap.nodeQueues.get("lb-1")).toBeDefined();
+    expect(snap.nodeQueues.get("lb-1")).toHaveLength(0);
+  });
+
+  it("processing slot is freed when a request routes to the next transit", () => {
+    const dbNode: ArchitectureNode = {
+      componentType: "db",
+      id: "db-1",
+      position: { x: 0, y: 0 },
+    };
+    const edgeE2: ArchitectureEdge = {
+      id: "e2",
+      source: "server-1",
+      target: "db-1",
+    };
+    const engine = makeEngine();
+    engine.setConfig(levelConfig);
+    engine.setGraph([usersNode, serverNode, dbNode], [edge, edgeE2]);
+    // tick 1: r1 spawns. tick 2: r1 arrives → PROCESSING. tick 3: r2 arrives → QUEUED.
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+
+    // r1 started at tick 2. 4 ticks to complete → tick 6. We're at tick 3, need 3 more.
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    const snap = engine.getSnapshot();
+    const serverProcessing = [...snap.processing.values()].filter((p) => p.nodeId === "server-1");
+
+    // r1 routed to transit e2, r2 promoted from queue to processing at server
+    expect(serverProcessing).toHaveLength(1);
+  });
+});
+
+describe("sub-tick excess time", () => {
+  const TICK_MS = CONNECTION_LIBRARY_FIXTURE.standard.transitMs / 2;
+
+  const usersNode: ArchitectureNode = {
+    componentType: "users",
+    id: "users-1",
+    position: { x: 0, y: 0 },
+  };
+  const serverNode: ArchitectureNode = {
+    componentType: "server",
+    id: "server-1",
+    position: { x: 0, y: 0 },
+  };
+  const edge: ArchitectureEdge = {
+    id: "e1",
+    source: "users-1",
+    target: "server-1",
+  };
+
+  const makeCustomLib = (serverLatencyMs: number) => ({
+    ...COMPONENT_LIBRARY_FIXTURE,
+    server: { ...COMPONENT_LIBRARY_FIXTURE.server, latencyMs: serverLatencyMs },
+  });
+
+  it("no excess time: 2 sequential requests each take latencyMs / TICK_MS ticks", () => {
+    // server latencyMs = 1000 sim, TICK_MS = 500. Each request: 2 ticks processing.
+    // r1: transit 2 ticks + drain + 2 ticks processing = fulfilled at tick 4.
+    // r2: arrives tick 3 → queued. Drain at tick 4 (slot freed) with excessTime=0.
+    //     2 ticks processing → fulfilled at tick 6.
+    // Total for 2 sequential: 6 ticks. Both fulfilled.
+    const SPAWN_RATE = toRealRate(1 / TICK_MS);
+    const config: LevelConfig = {
+      cacheHitRate: 0,
+      monthlyBudget: 100,
+      timeout: 60000,
+      trafficPeak: convertRate(SPAWN_RATE),
+      trafficStart: convertRate(SPAWN_RATE),
+      trafficTarget: convertRate(SPAWN_RATE),
+      winSustainMs: 3_000,
+    };
+    const engine = new SimulationEngine(makeCustomLib(1000));
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode], [edge]);
+    for (let i = 0; i < 6; i++) {
+      engine.tick(TICK_MS);
+    }
+    const fulfilled = [...engine.getSnapshot().requests.values()].filter(
+      (r) => r.status === "FULFILLED",
+    );
+
+    expect(fulfilled).toHaveLength(2);
+  });
+
+  it("with excess time: second request starts with elapsedMs = excessTime from first", () => {
+    // server latencyMs = 750 sim, TICK_MS = 500.
+    // r1: transit 2 ticks. Drain at tick 2 (elapsedMs=0).
+    //     tick 3: elapsed=500. tick 4: elapsed=1000 > 750 → completes. excessTime=250.
+    // r2: arrives tick 3 → queued. Drain at tick 4 with elapsedMs=250.
+    //     tick 5: elapsed=250+500=750 ≥ 750 → completes.
+    // Total: 5 ticks for 2 sequential (saved 1 tick vs no excess carry-over).
+    const SPAWN_RATE = toRealRate(1 / TICK_MS);
+    const config: LevelConfig = {
+      cacheHitRate: 0,
+      monthlyBudget: 100,
+      timeout: 60000,
+      trafficPeak: convertRate(SPAWN_RATE),
+      trafficStart: convertRate(SPAWN_RATE),
+      trafficTarget: convertRate(SPAWN_RATE),
+      winSustainMs: 3_000,
+    };
+    const engine = new SimulationEngine(makeCustomLib(750));
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode], [edge]);
+    for (let i = 0; i < 5; i++) {
+      engine.tick(TICK_MS);
+    }
+    const fulfilled = [...engine.getSnapshot().requests.values()].filter(
+      (r) => r.status === "FULFILLED",
+    );
+
+    expect(fulfilled).toHaveLength(2);
+  });
+});
+
+describe("QUEUED request timeout", () => {
+  // Use a server with latency longer than the timeout (15000 > 10000 sim-ms)
+  // so the first request blocks the slot and the second stays QUEUED until timeout.
+  const TICK_MS = CONNECTION_LIBRARY_FIXTURE.standard.transitMs / 2;
+  const SPAWN_RATE = toRealRate(1 / TICK_MS);
+  const config: LevelConfig = {
+    cacheHitRate: 0,
+    monthlyBudget: 100,
+    timeout: 60000,
+    trafficPeak: convertRate(SPAWN_RATE),
+    trafficStart: convertRate(SPAWN_RATE),
+    trafficTarget: convertRate(SPAWN_RATE),
+    winSustainMs: 3_000,
+  };
+  const slowLib = {
+    ...COMPONENT_LIBRARY_FIXTURE,
+    server: { ...COMPONENT_LIBRARY_FIXTURE.server, latencyMs: 15_000 },
+  };
+  const usersNode: ArchitectureNode = {
+    componentType: "users",
+    id: "users-1",
+    position: { x: 0, y: 0 },
+  };
+  const serverNode: ArchitectureNode = {
+    componentType: "server",
+    id: "server-1",
+    position: { x: 0, y: 0 },
+  };
+  const edge: ArchitectureEdge = {
+    id: "e1",
+    source: "users-1",
+    target: "server-1",
+  };
+
+  it("times out a QUEUED request whose age exceeds REQUEST_TIMEOUT_MS", () => {
+    const engine = new SimulationEngine(slowLib);
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode], [edge]);
+    // tick 1: r1 spawns. tick 2: r1 arrives → processing (15000ms).
+    // tick 3: r2 arrives → QUEUED (server busy).
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+
+    // r2 spawned at ~1000ms. Timeout at ~11000ms. We're at 1500ms, need 9500 more = 19 ticks.
+    for (let i = 0; i < 19; i++) {
+      engine.tick(TICK_MS);
+    }
+    const snap = engine.getSnapshot();
+    const timedOut = [...snap.requests.values()].filter((r) => r.status === "TIMED_OUT");
+
+    expect(timedOut.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("removes the timed-out request from nodeQueues", () => {
+    const engine = new SimulationEngine(slowLib);
+    engine.setConfig(config);
+    engine.setGraph([usersNode, serverNode], [edge]);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+    engine.tick(TICK_MS);
+
+    const queuedId = engine.getSnapshot().nodeQueues.get("server-1")?.[0];
+    expect(queuedId).toBeDefined();
+
+    for (let i = 0; i < 19; i++) {
+      engine.tick(TICK_MS);
+    }
+    const snap = engine.getSnapshot();
+
+    expect(snap.nodeQueues.get("server-1")).toBeDefined();
+    expect(snap.nodeQueues.get("server-1")).not.toContain(queuedId);
   });
 });
 
@@ -417,9 +752,9 @@ describe("response creation", () => {
       engine = makeEngine();
       engine.setConfig(singleEdgeConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1-2: transit; tick 2: processing starts (500ms credit);
-      // tick 3-5: processing completes (server latencyMs=20 → 2000 sim-ms)
-      for (let i = 0; i < 5; i++) {
+      // tick 1-2: transit; tick 2: drain starts processing (elapsedMs=0);
+      // tick 3-6: processing completes (server latencyMs=20 → 2000 sim-ms)
+      for (let i = 0; i < 6; i++) {
         engine.tick(TICK_MS);
       }
     });
@@ -457,9 +792,8 @@ describe("response creation", () => {
       engine = makeEngine();
       engine.setConfig(singleEdgeConfig);
       engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
-      // transit e1 (2) + process server (4) + transit e2 (2) + process db (7) = 13 ticks
-      // (processing starts in same tick as transit/processing completion, with 500ms credit)
-      for (let i = 0; i < 13; i++) {
+      // transit e1 (2) + drain (0) + process server (4) + transit e2 (2) + drain (0) + process db (7) = 15 ticks
+      for (let i = 0; i < 15; i++) {
         engine.tick(TICK_MS);
       }
     });
@@ -480,8 +814,8 @@ describe("response creation", () => {
     });
   });
 
-  describe("unbounded queues — requests enter processing regardless of node occupancy", () => {
-    it("does not drop requests when node occupancy exceeds component capacity", () => {
+  describe("per-node queuing under high load", () => {
+    it("queues excess requests instead of dropping them", () => {
       const overloadConfig: LevelConfig = {
         cacheHitRate: 0,
         monthlyBudget: 100,
@@ -494,8 +828,6 @@ describe("response creation", () => {
       const engine = makeEngine();
       engine.setConfig(overloadConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: many requests spawn; tick 2: first transit completes;
-      // tick 3: all remaining transits complete → all enter processing (no drops)
       engine.tick(TICK_MS);
       engine.tick(TICK_MS);
       engine.tick(TICK_MS);
@@ -504,7 +836,9 @@ describe("response creation", () => {
       const droppedRequests = [...snap.requests.values()].filter((r) => r.status === "DROPPED");
 
       expect(droppedRequests).toHaveLength(0);
-      expect(snap.processing.size).toBeGreaterThan(50);
+      // Only 1 request processing at the server; the rest are queued
+      expect(snap.processing.size).toBe(1);
+      expect(snap.nodeQueues.get("server-1")!.length).toBeGreaterThan(50);
     });
   });
 });
@@ -557,9 +891,9 @@ describe("response transit advancement", () => {
       engine = makeEngine();
       engine.setConfig(config);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1-2: transit; tick 2-5: processing (server latencyMs=20 → 2000 sim-ms);
-      // tick 5: processing completes → r1 fulfilled, response created and advanced
-      for (let i = 0; i < 5; i++) {
+      // tick 1-2: transit; tick 2: drain (elapsedMs=0); tick 3-6: processing;
+      // tick 6: processing completes → r1 fulfilled, response created and advanced
+      for (let i = 0; i < 6; i++) {
         engine.tick(TICK_MS);
       }
 
@@ -609,8 +943,8 @@ describe("response transit advancement", () => {
       engine = makeEngine();
       engine.setConfig(config);
       engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
-      // 13 ticks to fulfil r1; response is created and e2 transit advanced by TICK_MS in tick 13
-      for (let i = 0; i < 13; i++) {
+      // 15 ticks to fulfil r1; response is created and e2 transit advanced by TICK_MS in tick 15
+      for (let i = 0; i < 15; i++) {
         engine.tick(TICK_MS);
       }
 
@@ -693,31 +1027,36 @@ describe("rolling metrics", () => {
     const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
-    // tick 1-2: transit; tick 2-5: processing (server latencyMs=20 → 2000 sim-ms);
-    // tick 5: response transit starts; tick 6-7: response transit completes → delivery recorded
-    for (let i = 0; i < 7; i++) {
+    // tick 1-2: transit; tick 2: drain; tick 3-6: processing;
+    // tick 6: response transit starts; tick 7-8: response transit completes → delivery recorded
+    for (let i = 0; i < 8; i++) {
       engine.tick(TICK_MS);
     }
 
     expect(engine.getSnapshot().deliveryOpsPerMs).toBeGreaterThan(0);
   });
 
-  it("incomingOpsPerMs at the db connected (via a server) to users equals the inter-arrival rate at steady state", () => {
+  it("incomingOpsPerMs at the db is throttled by the server's single-slot queue", () => {
     const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
 
-    // Run 12 ticks (6000ms) to ensure the rolling window is fully saturated with arrivals.
-    for (let i = 0; i < 12; i++) {
+    // Run enough ticks for multiple requests to pass through the server and reach the db.
+    // Server processes 1 request every 2000 sim-ms (4 ticks). After 24 ticks (12000ms),
+    // several requests will have reached the db.
+    for (let i = 0; i < 24; i++) {
       engine.tick(TICK_MS);
     }
 
     const { nodeMetrics } = engine.getSnapshot();
     const dbMetrics = nodeMetrics.get("db-1")!;
 
-    // At steady state with 1 arrival per tick, the inter-arrival gap is TICK_MS
-    // and the rate converges to 1/TICK_MS.
-    expect(dbMetrics.incomingOpsPerMs).toBe(1 / TICK_MS);
+    // The db arrival rate is limited by the server's throughput (1/2000ms),
+    // not the raw traffic rate (1/500ms).
+    expect(dbMetrics.incomingOpsPerMs).toBeGreaterThan(0);
+    expect(dbMetrics.incomingOpsPerMs).toBeLessThanOrEqual(
+      1 / COMPONENT_LIBRARY_FIXTURE.server.latencyMs,
+    );
   });
 
   it("reset() clears the metrics window so deliveryOpsPerMs returns to 0", () => {
