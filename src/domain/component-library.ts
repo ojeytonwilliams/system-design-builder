@@ -8,7 +8,6 @@ import { convertComponent, convertConnection } from "./component-converter.js";
 
 interface ComponentDefinition {
   accentColor: string;
-  capacity: number;
   description: string;
   icon: FC<SVGProps<SVGSVGElement>>;
   label: string;
@@ -28,43 +27,38 @@ type ComponentType =
 const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   cache: convertComponent({
     accentColor: "#facc15",
-    capacity: 0.4,
     description: "Caches frequent DB reads in memory",
     icon: CacheIcon,
     label: "Cache",
-    latencyMs: 5,
+    latencyMs: 2.5,
     monthlyCost: 25,
   }),
   db: convertComponent({
     accentColor: "#f472b6",
-    capacity: 0.06,
     description: "Stores and retrieves application data",
     icon: DbIcon,
     label: "Small DB",
-    latencyMs: 15,
+    latencyMs: 16.67,
     monthlyCost: 15,
   }),
   "db-large": convertComponent({
     accentColor: "#f472b6",
-    capacity: 0.18,
     description: "High-capacity managed database",
     icon: DbIcon,
     label: "Large DB",
-    latencyMs: 10,
+    latencyMs: 5.56,
     monthlyCost: 50,
   }),
   "load-balancer": convertComponent({
     accentColor: "#a78bfa",
-    capacity: Infinity,
     description: "Splits traffic evenly across servers",
     icon: LoadBalancerIcon,
     label: "Load Balancer",
-    latencyMs: 2,
+    latencyMs: 0.1,
     monthlyCost: 20,
   }),
   server: convertComponent({
     accentColor: "#22d3ee",
-    capacity: 0.1,
     description: "Handles incoming web requests",
     icon: ServerIcon,
     label: "Small Server",
@@ -73,16 +67,14 @@ const COMPONENT_LIBRARY: Record<ComponentType, ComponentDefinition> = {
   }),
   "server-large": convertComponent({
     accentColor: "#22d3ee",
-    capacity: 0.3,
     description: "High-capacity web server",
     icon: ServerIcon,
     label: "Large Server",
-    latencyMs: 8,
+    latencyMs: 3.33,
     monthlyCost: 80,
   }),
   users: convertComponent({
     accentColor: "#fb7185",
-    capacity: Infinity,
     description: "Traffic source",
     icon: UsersIcon,
     label: "Users",

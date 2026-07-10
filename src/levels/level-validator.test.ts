@@ -2,15 +2,16 @@ import type { ComponentType } from "../domain/component-library.js";
 import type { LevelSolution } from "./types.js";
 import { validateLevelSolution } from "./level-validator.js";
 
-// Mirrors the real COMPONENT_LIBRARY post-conversion values (÷100 for rates).
-const testCapacities = {
-  cache: { capacity: 0.002 },
-  db: { capacity: 0.0003 },
-  "db-large": { capacity: 0.0009 },
-  "load-balancer": { capacity: Infinity },
-  server: { capacity: 0.0005 },
-  "server-large": { capacity: 0.0015 },
-  users: { capacity: Infinity },
+// Mirrors the real COMPONENT_LIBRARY post-conversion values (×100 for durations).
+// capacity is derived as 1 / latencyMs inside the validator.
+const testComponents = {
+  cache: { latencyMs: 500 },
+  db: { latencyMs: 3333.33 },
+  "db-large": { latencyMs: 1111.11 },
+  "load-balancer": { latencyMs: 0 },
+  server: { latencyMs: 2000 },
+  "server-large": { latencyMs: 666.67 },
+  users: { latencyMs: 0 },
 };
 
 const node = (id: string, componentType: ComponentType) => ({
@@ -36,7 +37,7 @@ describe(validateLevelSolution, () => {
     const result = validateLevelSolution(
       { cacheHitRate: 0, trafficTarget: 0.0007 },
       solution,
-      testCapacities,
+      testComponents,
     );
     expect(result.valid).toBe(true);
     expect(result.violations).toHaveLength(0);
@@ -52,7 +53,7 @@ describe(validateLevelSolution, () => {
     const result = validateLevelSolution(
       { cacheHitRate: 0, trafficTarget: 0.001 },
       solution,
-      testCapacities,
+      testComponents,
     );
     expect(result.valid).toBe(false);
     expect(result.violations).toHaveLength(1);
@@ -68,7 +69,7 @@ describe(validateLevelSolution, () => {
     const result = validateLevelSolution(
       { cacheHitRate: 0, trafficTarget: 100 },
       solution,
-      testCapacities,
+      testComponents,
     );
     expect(result.valid).toBe(true);
   });
@@ -88,7 +89,7 @@ describe(validateLevelSolution, () => {
     const result = validateLevelSolution(
       { cacheHitRate: 0, trafficTarget: 0.0014 },
       solution,
-      testCapacities,
+      testComponents,
     );
     expect(result.valid).toBe(true);
   });
@@ -103,7 +104,7 @@ describe(validateLevelSolution, () => {
     const result = validateLevelSolution(
       { cacheHitRate: 0, trafficTarget: 0.001 },
       solution,
-      testCapacities,
+      testComponents,
     );
     const dbViolation = result.violations.find((v) => v.nodeId === "d");
     expect(dbViolation).toBeDefined();
@@ -132,7 +133,7 @@ describe(validateLevelSolution, () => {
     const result = validateLevelSolution(
       { cacheHitRate: 0, trafficTarget: 0.0014 },
       solution,
-      testCapacities,
+      testComponents,
     );
     const dbMetrics = result.violations.find((v) => v.nodeId === "d");
     expect(dbMetrics?.incomingRatePerMs).toBe(0.0014);
@@ -173,11 +174,11 @@ describe(validateLevelSolution, () => {
       ],
     };
     expect(
-      validateLevelSolution({ cacheHitRate: 0.7, trafficTarget: 0.0032 }, solution, testCapacities)
+      validateLevelSolution({ cacheHitRate: 0.7, trafficTarget: 0.0032 }, solution, testComponents)
         .valid,
     ).toBe(false);
     expect(
-      validateLevelSolution({ cacheHitRate: 0.7, trafficTarget: 0.0028 }, solution, testCapacities)
+      validateLevelSolution({ cacheHitRate: 0.7, trafficTarget: 0.0028 }, solution, testComponents)
         .valid,
     ).toBe(true);
   });
@@ -196,11 +197,11 @@ describe(validateLevelSolution, () => {
       ],
     };
     expect(
-      validateLevelSolution({ cacheHitRate: 0, trafficTarget: 0.001 }, solution, testCapacities)
+      validateLevelSolution({ cacheHitRate: 0, trafficTarget: 0.001 }, solution, testComponents)
         .valid,
     ).toBe(false);
     expect(
-      validateLevelSolution({ cacheHitRate: 0.5, trafficTarget: 0.001 }, solution, testCapacities)
+      validateLevelSolution({ cacheHitRate: 0.5, trafficTarget: 0.001 }, solution, testComponents)
         .valid,
     ).toBe(true);
   });

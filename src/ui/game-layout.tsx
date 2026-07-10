@@ -2,7 +2,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { SimulationEngine } from "../simulation/simulation-engine.js";
 import { computeTotalCost } from "../domain/budget.js";
 import { COMPONENT_LIBRARY } from "../domain/component-library.js";
-import { toRealRate } from "../domain/sim-time-converter.js";
+import { toRealDuration, toRealRate } from "../domain/sim-time-converter.js";
 import type { ComponentType } from "../domain/component-library.js";
 import { CircularGauge } from "./components/circular-gauge.js";
 import { Coach } from "./components/coach.js";
@@ -129,10 +129,11 @@ const GameScene = ({
       ? Math.min(
           ...overloadedNodeIds.map((id) => {
             const node = graphState.nodes.find((n) => n.id === id);
-            const capacityOpsPerMs =
-              node === undefined
-                ? Infinity
-                : toRealRate(COMPONENT_LIBRARY[node.componentType].capacity);
+            if (node === undefined) {
+              return Infinity;
+            }
+            const realLatencyMs = toRealDuration(COMPONENT_LIBRARY[node.componentType].latencyMs);
+            const capacityOpsPerMs = realLatencyMs === 0 ? Infinity : 1 / realLatencyMs;
             return capacityOpsPerMs * 1000;
           }),
         )

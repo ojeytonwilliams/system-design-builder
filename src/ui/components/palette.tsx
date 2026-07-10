@@ -1,5 +1,5 @@
 import { COMPONENT_LIBRARY } from "../../domain/component-library.js";
-import { toRealRate } from "../../domain/sim-time-converter.js";
+import { toRealDuration } from "../../domain/sim-time-converter.js";
 import type { ComponentType } from "../../domain/component-library.js";
 import { ResourceItem } from "./palette-item.js";
 
@@ -32,12 +32,14 @@ const Resources = ({
       >
         {availableComponents.map((componentType) => {
           const def = COMPONENT_LIBRARY[componentType];
+          const realLatencyMs = toRealDuration(def.latencyMs);
+          const capacity = realLatencyMs === 0 ? Infinity : 1 / realLatencyMs;
 
           if (onPlaceComponent === undefined) {
             return (
               <ResourceItem
                 accentColor={def.accentColor}
-                capacity={toRealRate(def.capacity)}
+                capacity={capacity}
                 componentType={componentType}
                 description={def.description}
                 icon={def.icon}
@@ -52,7 +54,7 @@ const Resources = ({
           return (
             <ResourceItem
               accentColor={def.accentColor}
-              capacity={toRealRate(def.capacity)}
+              capacity={capacity}
               componentType={componentType}
               description={def.description}
               icon={def.icon}

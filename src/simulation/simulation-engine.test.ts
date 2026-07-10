@@ -348,9 +348,10 @@ describe("transit and processing advancement", () => {
   });
 
   it("transitions to FULFILLED when processing completes", () => {
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
+    // 2 ticks transit + 4 ticks processing (server latencyMs=20 → 2000 sim-ms) = 5 ticks
+    for (let i = 0; i < 5; i++) {
+      engine.tick(TICK_MS);
+    }
     const snap = engine.getSnapshot();
     const fulfilledRequests = [...snap.requests.values()].filter((r) => r.status === "FULFILLED");
 
@@ -358,9 +359,9 @@ describe("transit and processing advancement", () => {
   });
 
   it("removes the fulfilled request from the processing map", () => {
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
+    for (let i = 0; i < 5; i++) {
+      engine.tick(TICK_MS);
+    }
     const snap = engine.getSnapshot();
     const fulfilledRequest = [...snap.requests.values()].find((r) => r.status === "FULFILLED");
 
@@ -416,11 +417,11 @@ describe("response creation", () => {
       engine = makeEngine();
       engine.setConfig(singleEdgeConfig);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: transit starts; tick 2: transit completes, processing starts;
-      // tick 3: processing completes, request fulfilled
-      engine.tick(TICK_MS);
-      engine.tick(TICK_MS);
-      engine.tick(TICK_MS);
+      // tick 1-2: transit; tick 2: processing starts (500ms credit);
+      // tick 3-5: processing completes (server latencyMs=20 → 2000 sim-ms)
+      for (let i = 0; i < 5; i++) {
+        engine.tick(TICK_MS);
+      }
     });
 
     it("creates a response entry when a request is fulfilled", () => {
@@ -456,8 +457,9 @@ describe("response creation", () => {
       engine = makeEngine();
       engine.setConfig(singleEdgeConfig);
       engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
-      // transit e1 (2 ticks) + process server (2) + transit e2 (2) + process db (3) = 7 ticks
-      for (let i = 0; i < 7; i++) {
+      // transit e1 (2) + process server (4) + transit e2 (2) + process db (7) = 13 ticks
+      // (processing starts in same tick as transit/processing completion, with 500ms credit)
+      for (let i = 0; i < 13; i++) {
         engine.tick(TICK_MS);
       }
     });
@@ -555,11 +557,11 @@ describe("response transit advancement", () => {
       engine = makeEngine();
       engine.setConfig(config);
       engine.setGraph([usersNode, serverNode], [edgeE1]);
-      // tick 1: transit starts; tick 2: transit completes, processing starts;
-      // tick 3: processing completes → r1 fulfilled, response created and advanced
-      engine.tick(TICK_MS);
-      engine.tick(TICK_MS);
-      engine.tick(TICK_MS);
+      // tick 1-2: transit; tick 2-5: processing (server latencyMs=20 → 2000 sim-ms);
+      // tick 5: processing completes → r1 fulfilled, response created and advanced
+      for (let i = 0; i < 5; i++) {
+        engine.tick(TICK_MS);
+      }
 
       const [response] = [...engine.getSnapshot().responses.values()];
       responseId = response!.id;
@@ -607,8 +609,8 @@ describe("response transit advancement", () => {
       engine = makeEngine();
       engine.setConfig(config);
       engine.setGraph([usersNode, serverNode, dbNode], [edgeE1, edgeE2]);
-      // 7 ticks to fulfil r1; response is created and e2 transit advanced by TICK_MS in tick 7
-      for (let i = 0; i < 7; i++) {
+      // 13 ticks to fulfil r1; response is created and e2 transit advanced by TICK_MS in tick 13
+      for (let i = 0; i < 13; i++) {
         engine.tick(TICK_MS);
       }
 
@@ -691,13 +693,11 @@ describe("rolling metrics", () => {
     const engine = makeEngine();
     engine.setConfig(config);
     engine.setGraph([usersNode, serverNode], [edgeE1]);
-    // tick 1: transit starts; tick 2: transit completes, processing starts;
-    // tick 3: processing completes, request fulfilled, response transit starts;
-    // tick 4: response transit completes → delivery recorded
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
-    engine.tick(TICK_MS);
+    // tick 1-2: transit; tick 2-5: processing (server latencyMs=20 → 2000 sim-ms);
+    // tick 5: response transit starts; tick 6-7: response transit completes → delivery recorded
+    for (let i = 0; i < 7; i++) {
+      engine.tick(TICK_MS);
+    }
 
     expect(engine.getSnapshot().deliveryOpsPerMs).toBeGreaterThan(0);
   });

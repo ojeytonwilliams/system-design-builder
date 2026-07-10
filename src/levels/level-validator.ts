@@ -109,14 +109,15 @@ const predictMeasuredRate = (ratePerMs: number): number => {
 const validateLevelSolution = (
   level: Pick<LevelDefinition, "cacheHitRate" | "trafficTarget">,
   solution: LevelSolution,
-  componentCapacities: Record<string, { readonly capacity: number }>,
+  componentLatencies: Record<string, { readonly latencyMs: number }>,
 ): ValidationResult => {
   const nodeRates = computeNodeRates(solution, level.trafficTarget, level.cacheHitRate);
   const violations: NodeViolation[] = [];
 
   for (const node of solution.nodes) {
     const incomingRatePerMs = nodeRates.get(node.id) ?? 0;
-    const capacity = componentCapacities[node.componentType]?.capacity ?? Infinity;
+    const latencyMs = componentLatencies[node.componentType]?.latencyMs ?? 0;
+    const capacity = latencyMs === 0 ? Infinity : 1 / latencyMs;
 
     if (isFinite(capacity)) {
       const maxMeasuredRatePerMs = predictMeasuredRate(incomingRatePerMs);

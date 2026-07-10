@@ -33,8 +33,8 @@ const getInspectorData = (
   const selectedNodeLabel = def.label;
   const metrics = nodeMetrics.get(selectedNode.id);
   const { monthlyCost: cost } = def;
-  const maxCapacity = toRealRate(def.capacity);
   const latencyMs = toRealDuration(def.latencyMs);
+  const maxCapacity = latencyMs === 0 ? Infinity : 1 / latencyMs;
 
   const isFiniteCapacity = Number.isFinite(maxCapacity);
 

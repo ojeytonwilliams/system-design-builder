@@ -1,9 +1,8 @@
 import type { ComponentDefinition } from "./component-library";
-import { convertDuration, convertRate } from "./sim-time-converter";
+import { convertDuration } from "./sim-time-converter";
 
 const convertComponent = (def: ComponentDefinition): ComponentDefinition => ({
   ...def,
-  capacity: Number.isFinite(def.capacity) ? convertRate(def.capacity) : def.capacity,
   latencyMs: convertDuration(def.latencyMs),
 });
 

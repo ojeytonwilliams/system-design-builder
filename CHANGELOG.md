@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.12.0] - 2026-07-10
+
+### Changed
+
+- **Latency is now the single source of truth for component throughput**: Removed the `capacity` field from `ComponentDefinition`. Each component's throughput is derived as `1 / latencyMs`, eliminating the contradiction where `capacity` and `latencyMs` implied different processing speeds for most components. New `latencyMs` values are set to `1 / oldCapacity` to preserve the game's existing balance (e.g. server stays at 100 ops/s, cache at 400 ops/s).
+- **Load balancer uses a very small latency instead of infinite capacity**: The load balancer's `latencyMs` is now 0.1ms (10,000 ops/s) rather than a special-cased `Infinity` capacity, making it consistent with all other components while remaining effectively unbounded.
+- **Overload detection and level validation derive capacity from latency**: `computeNodeMetrics` and `validateLevelSolution` both compute capacity inline as `1 / latencyMs` rather than reading a separate field. The metrics module itself is unchanged — it still receives a numeric capacities map.
+- **Inspector, palette, gauge, and canvas renderer derive capacity from latency**: All UI consumers that previously read `def.capacity` now compute `1 / latencyMs` at their call sites, keeping display values consistent with the simulation.
+
 ## [2.11.0] - 2026-07-02
 
 ### Changed

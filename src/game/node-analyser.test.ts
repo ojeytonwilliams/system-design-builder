@@ -10,9 +10,9 @@ const serverNode: ArchitectureNode = {
   position: { x: 0, y: 0 },
 };
 
-const lbNode: ArchitectureNode = {
-  componentType: "load-balancer",
-  id: "lb-1",
+const usersNode: ArchitectureNode = {
+  componentType: "users",
+  id: "users-1",
   position: { x: 0, y: 0 },
 };
 
@@ -58,7 +58,8 @@ describe(getInspectorData, () => {
   });
 
   it("loadPercent converts simulation incomingOpsPerMs to real-world percentage of capacity", () => {
-    const serverCapacity = COMPONENT_LIBRARY_FIXTURE.server.capacity;
+    const serverLatencyMs = COMPONENT_LIBRARY_FIXTURE.server.latencyMs;
+    const serverCapacity = 1 / serverLatencyMs;
     const nodeMetrics: NodeMetricsSnapshot = new Map([
       [
         "server-1",
@@ -79,12 +80,12 @@ describe(getInspectorData, () => {
     expect(result.loadPercent).toBeUndefined();
   });
 
-  it("loadPercent is undefined for infinite-capacity nodes", () => {
+  it("loadPercent is undefined for infinite-capacity nodes (latencyMs = 0)", () => {
     const nodeMetrics: NodeMetricsSnapshot = new Map([
-      ["lb-1", { incomingOpsPerMs: 100, isOverloaded: false, opsPerMs: 100 }],
+      ["users-1", { incomingOpsPerMs: 100, isOverloaded: false, opsPerMs: 100 }],
     ]);
 
-    const result = getInspectorData("lb-1", [lbNode], nodeMetrics);
+    const result = getInspectorData("users-1", [usersNode], nodeMetrics);
 
     expect(result.loadPercent).toBeUndefined();
   });

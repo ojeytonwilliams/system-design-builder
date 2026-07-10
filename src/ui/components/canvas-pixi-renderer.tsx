@@ -202,7 +202,7 @@ const PixiNodeGraphic = ({
     g.stroke({ alpha: t * 0.45, color: 0xf472b6, width: 8 });
   });
 
-  const showGauge = hasLoad(def.capacity);
+  const showGauge = hasLoad(def.latencyMs === 0 ? Infinity : 1 / def.latencyMs);
 
   const drawPill = useCallback(
     (g: Graphics) => {
@@ -728,25 +728,25 @@ const PixiContent = ({
         nodes={nodes}
       />
       <pixiContainer>
-        {nodes.map((node) => (
-          <PixiNodeGraphic
-            key={node.id}
-            loadRatio={computeNodeLoadRatio(
-              node.id,
-              COMPONENT_LIBRARY[node.componentType].capacity,
-              nodeMetrics,
-            )}
-            isLocked={isLocked || lockedNodeIds.includes(node.id)}
-            isOverloaded={overloadedNodeIds.includes(node.id)}
-            isPendingConnection={pendingEdge !== null}
-            isSelected={selectedNodeId === node.id}
-            node={node}
-            onContextMenu={onNodeContextMenu}
-            onHandleClick={onHandleClick}
-            onPointerDown={onNodePointerDown}
-            onSelect={onNodeSelect}
-          />
-        ))}
+        {nodes.map((node) => {
+          const rl = COMPONENT_LIBRARY[node.componentType].latencyMs;
+          const cap = rl === 0 ? Infinity : 1 / rl;
+          return (
+            <PixiNodeGraphic
+              key={node.id}
+              loadRatio={computeNodeLoadRatio(node.id, cap, nodeMetrics)}
+              isLocked={isLocked || lockedNodeIds.includes(node.id)}
+              isOverloaded={overloadedNodeIds.includes(node.id)}
+              isPendingConnection={pendingEdge !== null}
+              isSelected={selectedNodeId === node.id}
+              node={node}
+              onContextMenu={onNodeContextMenu}
+              onHandleClick={onHandleClick}
+              onPointerDown={onNodePointerDown}
+              onSelect={onNodeSelect}
+            />
+          );
+        })}
       </pixiContainer>
     </pixiContainer>
   );

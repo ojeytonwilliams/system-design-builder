@@ -19,7 +19,7 @@ import { transitionRequest } from "./transition-request.js";
 import type { RequestMaps } from "./transition-request.js";
 import type { LevelConfig } from "./types.js";
 
-type SimComponentLibrary = Record<ComponentType, { capacity: number; latencyMs: number }>;
+type SimComponentLibrary = Record<ComponentType, { latencyMs: number }>;
 
 const REQUEST_TIMEOUT_MS = 10_000;
 
@@ -175,7 +175,10 @@ class SimulationEngine {
     }
 
     const nodeCapacities = new Map(
-      this.graphNodes.map((n) => [n.id, this.componentLibrary[n.componentType].capacity]),
+      this.graphNodes.map((n) => {
+        const { latencyMs } = this.componentLibrary[n.componentType];
+        return [n.id, latencyMs === 0 ? Infinity : 1 / latencyMs];
+      }),
     );
     const rawMetrics = computeNodeMetrics(this.metricsWindow, nodeCapacities);
     const nodeMetrics: NodeMetricsSnapshot = new Map(
