@@ -56,60 +56,26 @@ const NavBar = () => (
       <img alt="freeCodeCamp" src="/fcc-logo.svg" style={{ height: "26px", width: "auto" }} />
     </div>
 
-    <div style={{ alignItems: "center", display: "flex", gap: "12px", justifyContent: "flex-end" }}>
+    <div
+      style={{
+        alignItems: "center",
+        display: "flex",
+        gap: "12px",
+        justifyContent: "flex-end",
+      }}
+    >
       <a
-        href="https://donate.freecodecamp.org?source=event-producer&campaign=test-2026&medium=web"
+        href="https://donate.freecodecamp.dev?source=123r1wef1235123asdf&campaign=universal-navigation-button"
         style={{
           color: "#d0d0d5",
           fontSize: "13px",
           fontWeight: 500,
           textDecoration: "none",
         }}
+        target="blank"
       >
         Donate
       </a>
-      <button
-        aria-label="Menu"
-        style={{
-          alignItems: "center",
-          background: "rgba(42, 42, 64, 0.6)",
-          border: "1px solid rgba(59, 59, 79, 0.55)",
-          borderRadius: "8px",
-          color: "#d0d0d5",
-          cursor: "pointer",
-          display: "flex",
-          height: "32px",
-          justifyContent: "center",
-          padding: 0,
-          width: "32px",
-        }}
-        type="button"
-      >
-        <svg aria-hidden="true" fill="none" height="14" viewBox="0 0 14 14" width="14">
-          <path
-            d="M1 3h12M1 7h12M1 11h12"
-            stroke="currentColor"
-            strokeLinecap="round"
-            strokeWidth="1.5"
-          />
-        </svg>
-      </button>
-      <div
-        style={{
-          alignItems: "center",
-          background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
-          borderRadius: "50%",
-          color: "#0a0a23",
-          display: "grid",
-          fontSize: "11px",
-          fontWeight: 700,
-          height: "32px",
-          placeItems: "center",
-          width: "32px",
-        }}
-      >
-        JD
-      </div>
     </div>
   </div>
 );
